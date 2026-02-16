@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { callOpenAI } from '@/lib/ai';
+import { callAI } from '@/lib/ai';
 import {
   getAssessmentPrompt,
   getAssessmentSystemPrompt,
@@ -15,14 +15,14 @@ export async function POST(request: NextRequest) {
     if (body.type === 'workout') {
       const { logs } = body as { type: string; logs: WorkoutLog[] };
       const prompt = getAssessmentPrompt(logs);
-      const result = await callOpenAI(prompt, getAssessmentSystemPrompt());
+      const result = await callAI(prompt, getAssessmentSystemPrompt());
       return NextResponse.json(JSON.parse(result));
     }
 
     if (body.type === 'food') {
       const { productName, macros, ratio } = body;
       const prompt = getFoodAlternativePrompt(productName, macros, ratio);
-      const result = await callOpenAI(prompt, getFoodAlternativeSystemPrompt());
+      const result = await callAI(prompt, getFoodAlternativeSystemPrompt());
       return NextResponse.json(JSON.parse(result));
     }
 

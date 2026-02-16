@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { callOpenAI } from '@/lib/ai';
+import { callAI } from '@/lib/ai';
 import { getMealPlanPrompt, getMealSystemPrompt } from '@/lib/prompts';
 import { UserProfile, MealPlan } from '@/types';
 import { generateId, calculateMacroTargets, formatDate } from '@/lib/utils';
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const { profile } = body as { profile: UserProfile };
 
     const prompt = getMealPlanPrompt(profile);
-    const result = await callOpenAI(prompt, getMealSystemPrompt());
+    const result = await callAI(prompt, getMealSystemPrompt());
     const parsed = JSON.parse(result);
 
     const targets = calculateMacroTargets(profile);

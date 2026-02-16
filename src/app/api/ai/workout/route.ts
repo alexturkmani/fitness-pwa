@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { callOpenAI } from '@/lib/ai';
+import { callAI } from '@/lib/ai';
 import { getWorkoutPlanPrompt, getWorkoutSystemPrompt } from '@/lib/prompts';
 import { UserProfile, WorkoutPlan, WorkoutLog } from '@/types';
 import { generateId } from '@/lib/utils';
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     };
 
     const prompt = getWorkoutPlanPrompt(profile, previousLogs, assessment);
-    const result = await callOpenAI(prompt, getWorkoutSystemPrompt());
+    const result = await callAI(prompt, getWorkoutSystemPrompt());
     const parsed = JSON.parse(result);
 
     const startDate = new Date();
