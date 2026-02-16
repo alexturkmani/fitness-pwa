@@ -17,6 +17,7 @@ export default function WorkoutsPage() {
   const { currentPlan, savePlan, isIntervalComplete, getCurrentWeek, getDaysRemaining } = useWorkoutPlan();
   const { logs, getLogsByDate, getLogsByPlan } = useWorkoutLogs();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [assessmentResult, setAssessmentResult] = useState<any>(null);
 
   const today = formatDate(new Date());
@@ -27,6 +28,7 @@ export default function WorkoutsPage() {
 
   const handleGenerateNewPlan = async () => {
     setLoading(true);
+    setError(null);
     try {
       let assessment: string | undefined;
 
@@ -61,13 +63,21 @@ export default function WorkoutsPage() {
         const plan = await res.json();
         savePlan(plan);
         setAssessmentResult(null);
+      } else {
+        const errData = await res.json().catch(() => ({ error: 'Unknown error' }));
+        setError(errData.error || 'Failed to generate workout plan. Please try again.');
       }
-    } catch (error) {
-      console.error('Failed to generate plan:', error);
+    } catch (err: any) {
+      console.error('Failed to generate plan:', err);
+      setError(err.message || 'Failed to generate workout plan. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  if (loading) {
+    return <LoadingSpinner message="AI is designing your workout plan..." />;
+  }
 
   if (!currentPlan) {
     return (
@@ -79,7 +89,11 @@ export default function WorkoutsPage() {
           actionLabel="Generate Plan"
           onAction={handleGenerateNewPlan}
         />
-        {loading && <LoadingSpinner message="AI is designing your workout plan..." />}
+        {error && (
+          <Card className="border-red-500/30 bg-red-500/5 mt-4">
+            <p className="text-sm text-red-400">{error}</p>
+          </Card>
+        )}
       </div>
     );
   }

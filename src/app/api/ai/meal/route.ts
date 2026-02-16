@@ -11,7 +11,14 @@ export async function POST(request: NextRequest) {
 
     const prompt = getMealPlanPrompt(profile);
     const result = await callAI(prompt, getMealSystemPrompt());
-    const parsed = JSON.parse(result);
+
+    let parsed;
+    try {
+      parsed = JSON.parse(result);
+    } catch (parseError) {
+      console.error('Failed to parse Gemini response:', result.substring(0, 500));
+      return NextResponse.json({ error: 'AI returned invalid response. Please try again.' }, { status: 500 });
+    }
 
     const targets = calculateMacroTargets(profile);
 

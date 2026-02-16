@@ -20,12 +20,14 @@ export default function MealsPage() {
   const { currentPlan, savePlan } = useMealPlan();
   const { addEntry } = useFoodLog();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const targets = profile.onboardingCompleted ? calculateMacroTargets(profile) : null;
 
   const handleGenerate = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/ai/meal', {
         method: 'POST',
@@ -35,9 +37,13 @@ export default function MealsPage() {
       if (res.ok) {
         const plan = await res.json();
         savePlan(plan);
+      } else {
+        const errData = await res.json().catch(() => ({ error: 'Unknown error' }));
+        setError(errData.error || 'Failed to generate meal plan. Please try again.');
       }
-    } catch (error) {
-      console.error('Failed to generate meal plan:', error);
+    } catch (err: any) {
+      console.error('Failed to generate meal plan:', err);
+      setError(err.message || 'Failed to generate meal plan. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -72,6 +78,11 @@ export default function MealsPage() {
           actionLabel="Generate Meal Plan"
           onAction={handleGenerate}
         />
+        {error && (
+          <Card className="border-red-500/30 bg-red-500/5 mt-4">
+            <p className="text-sm text-red-400">{error}</p>
+          </Card>
+        )}
       </div>
     );
   }
