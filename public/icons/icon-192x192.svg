@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="40" fill="#0f172a"/>
+  <g transform="translate(96,86)">
+    <rect x="-60" y="-8" width="120" height="16" rx="8" fill="#10b981"/>
+    <rect x="-70" y="-24" width="20" height="48" rx="6" fill="#10b981"/>
+    <rect x="50" y="-24" width="20" height="48" rx="6" fill="#10b981"/>
+    <rect x="-80" y="-16" width="16" height="32" rx="4" fill="#059669"/>
+    <rect x="64" y="-16" width="16" height="32" rx="4" fill="#059669"/>
+  </g>
+  <text x="96" y="155" text-anchor="middle" font-family="system-ui,sans-serif" font-size="22" font-weight="bold" fill="#10b981">FitForge</text>
+</svg>
