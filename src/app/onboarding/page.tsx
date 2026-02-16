@@ -23,6 +23,7 @@ export default function OnboardingPage() {
   const { savePlan } = useWorkoutPlan();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     weight: '',
     height: '',
@@ -53,6 +54,7 @@ export default function OnboardingPage() {
 
   const handleComplete = async () => {
     setLoading(true);
+    setError(null);
     try {
       const profile: UserProfile = {
         id: generateId(),
@@ -71,6 +73,7 @@ export default function OnboardingPage() {
 
       setProfile(profile);
 
+      let planGenerated = false;
       try {
         const res = await fetch('/api/ai/workout', {
           method: 'POST',
@@ -81,15 +84,18 @@ export default function OnboardingPage() {
         if (res.ok) {
           const plan = await res.json();
           savePlan(plan);
+          planGenerated = true;
+        } else {
+          const errData = await res.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('Workout API error:', errData);
         }
       } catch (e) {
         console.error('Failed to generate workout plan:', e);
       }
 
-      router.push('/');
-    } catch (error) {
-      console.error('Onboarding error:', error);
-    } finally {
+      router.push(planGenerated ? '/workouts' : '/');
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.');
       setLoading(false);
     }
   };
@@ -347,6 +353,13 @@ export default function OnboardingPage() {
             </p>
           </Card>
         </div>
+      )}
+
+      {/* Error Display */}
+      {error && (
+        <Card className="border-red-500/30 bg-red-500/5 mt-4">
+          <p className="text-sm text-red-400">{error}</p>
+        </Card>
       )}
 
       {/* Navigation Buttons */}
