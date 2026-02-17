@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import BottomNav from '@/components/layout/BottomNav';
 import AuthProvider from '@/components/AuthProvider';
+import AppShell from '@/components/layout/AppShell';
 
 export const metadata: Metadata = {
   title: 'FitMate - AI Fitness Coach',
@@ -28,11 +29,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
-      <body className="animated-bg min-h-screen pb-nav">
+      <body className="animated-bg min-h-screen">
         <AuthProvider>
-          <main className="max-w-lg mx-auto px-4">
+          <AppShell>
             {children}
-          </main>
+          </AppShell>
           <BottomNav />
         </AuthProvider>
         <script

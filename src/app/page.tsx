@@ -80,7 +80,7 @@ function LandingContent() {
   ];
 
   return (
-    <div className="min-h-screen -mx-4 overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden">
       {/* Nav */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-lg border-b border-dark-700/50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
