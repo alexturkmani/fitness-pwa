@@ -20,7 +20,7 @@ export default function PaywallPage() {
   // Redirect if user has access and is not a new user viewing paywall for first time
   useEffect(() => {
     if (hasAccess && !isNewUser) {
-      router.push('/');
+      router.push('/dashboard');
     }
   }, [hasAccess, isNewUser, router]);
 

@@ -36,14 +36,15 @@ export default withAuth(
 export const config = {
   matcher: [
     /*
-     * Match all routes except:
-     * - /api (API routes)
-     * - /login, /register (auth pages)
-     * - /paywall, /subscription (subscription pages)
-     * - /onboarding
-     * - /_next (Next.js internals)
-     * - Static files (favicon, manifest, icons, sw.js, etc.)
+     * Protect app routes only — landing page (/) is public.
+     * Match /dashboard and all app routes except public ones.
      */
-    '/((?!api|login|register|paywall|subscription|onboarding|_next/static|_next/image|favicon\\.ico|manifest\\.json|icons|sw\\.js|robots\\.txt|sitemap\\.xml|\\.well-known).*)',
+    '/dashboard/:path*',
+    '/workouts/:path*',
+    '/meals/:path*',
+    '/nutrition/:path*',
+    '/scanner/:path*',
+    '/progress/:path*',
+    '/profile/:path*',
   ],
 };

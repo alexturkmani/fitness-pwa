@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/?subscribed=true`,
+      success_url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dashboard?subscribed=true`,
       cancel_url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/paywall`,
       subscription_data: {
         metadata: { userId: user.id },
