@@ -1,7 +1,7 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useTheme } from '@/components/ThemeProvider';
@@ -9,10 +9,11 @@ import { ACTIVITY_LEVELS, FITNESS_GOALS } from '@/lib/constants';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
+import Toast from '@/components/ui/Toast';
 import {
   ArrowLeft, User, Save, Check, Pencil,
   TrendingDown, Dumbbell, Zap, Heart, Activity, Sparkles,
-  Crown, ChevronRight, LogOut, Sun, Moon
+  Crown, ChevronRight, LogOut, Sun, Moon, Lock, Mail, Eye, EyeOff
 } from 'lucide-react';
 
 const goalIcons: Record<string, any> = {
@@ -20,9 +21,22 @@ const goalIcons: Record<string, any> = {
 };
 
 export default function ProfilePage() {
+  return (
+    <Suspense fallback={null}>
+      <ProfileContent />
+    </Suspense>
+  );
+}
+
+function ProfileContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const { profile, updateProfile } = useUserProfile();
   const { theme, toggleTheme } = useTheme();
+
+  // Email change status from redirect
+  const emailChangeStatus = searchParams.get('email-change');
 
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -41,6 +55,111 @@ export default function ProfilePage() {
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Password change state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showPasswords, setShowPasswords] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+
+  // Email change state
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
+
+  // Check if user signed up with password (not Google-only)
+  const isPasswordUser = !!(session?.user as any)?.email;
+  // Google users don't have a password field set, so we allow email change for all but password change only for credential users
+
+  useEffect(() => {
+    if (emailChangeStatus === 'success') {
+      setToast('Email updated successfully! Please sign in again.');
+      // Clear the query param
+      router.replace('/profile');
+      // Sign out so they sign in with new email
+      setTimeout(() => signOut({ callbackUrl: '/login' }), 3000);
+    } else if (emailChangeStatus === 'expired') {
+      setToast('Email change link expired. Please try again.');
+      router.replace('/profile');
+    } else if (emailChangeStatus === 'taken') {
+      setToast('That email is already in use by another account.');
+      router.replace('/profile');
+    } else if (emailChangeStatus === 'invalid' || emailChangeStatus === 'failed') {
+      setToast('Email change failed. Please try again.');
+      router.replace('/profile');
+    }
+  }, [emailChangeStatus, router]);
+
+  const handleChangePassword = async () => {
+    setPasswordError('');
+
+    if (newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError('Passwords do not match');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPasswordError(data.error || 'Failed to change password');
+      } else {
+        setShowPasswordModal(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmNewPassword('');
+        setToast('Password updated successfully!');
+      }
+    } catch {
+      setPasswordError('Something went wrong');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handleChangeEmail = async () => {
+    setEmailError('');
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
+
+    setEmailLoading(true);
+    try {
+      const res = await fetch('/api/auth/change-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEmailError(data.error || 'Failed to send verification email');
+      } else {
+        setEmailSent(true);
+      }
+    } catch {
+      setEmailError('Something went wrong');
+    } finally {
+      setEmailLoading(false);
+    }
+  };
 
   const updateField = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -82,6 +201,8 @@ export default function ProfilePage() {
 
   return (
     <div className="py-6 space-y-6">
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -398,6 +519,131 @@ export default function ProfilePage() {
           </div>
         </Card>
       </div>
+
+      {/* Account Security */}
+      <div>
+        <h3 className="text-lg font-semibold text-dark-200 mb-3">Account Security</h3>
+        <Card>
+          <div className="space-y-4">
+            {/* Current Email */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Mail className="text-dark-500" size={18} />
+                <div>
+                  <p className="text-sm text-dark-400">Email</p>
+                  <p className="text-sm font-medium text-dark-100">{session?.user?.email || '—'}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowEmailModal(true); setNewEmail(''); setEmailError(''); setEmailSent(false); }}
+                className="text-sm text-primary-400 font-medium hover:text-primary-300"
+              >
+                Change
+              </button>
+            </div>
+            <div className="border-t border-dark-700/50" />
+            {/* Password */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Lock className="text-dark-500" size={18} />
+                <div>
+                  <p className="text-sm text-dark-400">Password</p>
+                  <p className="text-sm font-medium text-dark-100">••••••••</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowPasswordModal(true); setCurrentPassword(''); setNewPassword(''); setConfirmNewPassword(''); setPasswordError(''); }}
+                className="text-sm text-primary-400 font-medium hover:text-primary-300"
+              >
+                Change
+              </button>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Change Password Modal */}
+      <Modal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Change Password">
+        <div className="space-y-4">
+          <div className="relative">
+            <input
+              type={showPasswords ? 'text' : 'password'}
+              placeholder="Current password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="input-field pr-12"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPasswords(!showPasswords)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-500 hover:text-dark-300"
+            >
+              {showPasswords ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          <input
+            type={showPasswords ? 'text' : 'password'}
+            placeholder="New password (min. 6 characters)"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            className="input-field"
+          />
+          <input
+            type={showPasswords ? 'text' : 'password'}
+            placeholder="Confirm new password"
+            value={confirmNewPassword}
+            onChange={(e) => setConfirmNewPassword(e.target.value)}
+            className="input-field"
+          />
+          {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
+          <Button
+            className="w-full"
+            onClick={handleChangePassword}
+            loading={passwordLoading}
+            disabled={!currentPassword || !newPassword || !confirmNewPassword}
+          >
+            Update Password
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Change Email Modal */}
+      <Modal isOpen={showEmailModal} onClose={() => setShowEmailModal(false)} title="Change Email">
+        {emailSent ? (
+          <div className="space-y-4 text-center">
+            <div className="w-14 h-14 rounded-full bg-primary-500/20 flex items-center justify-center mx-auto">
+              <Mail className="text-primary-500" size={24} />
+            </div>
+            <h3 className="text-lg font-semibold text-dark-100">Check your inbox</h3>
+            <p className="text-sm text-dark-400">
+              We sent a verification link to <span className="font-medium text-dark-200">{newEmail}</span>. Click the link to confirm your new email address.
+            </p>
+            <Button variant="secondary" className="w-full" onClick={() => setShowEmailModal(false)}>
+              Done
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-sm text-dark-400">Enter your new email address. You&apos;ll need to verify it before the change takes effect.</p>
+            <input
+              type="email"
+              placeholder="New email address"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              className="input-field"
+            />
+            {emailError && <p className="text-sm text-red-500">{emailError}</p>}
+            <Button
+              className="w-full"
+              onClick={handleChangeEmail}
+              loading={emailLoading}
+              disabled={!newEmail}
+            >
+              Send Verification Email
+            </Button>
+          </div>
+        )}
+      </Modal>
 
       {/* Subscription & Account */}
       <Link href="/subscription">

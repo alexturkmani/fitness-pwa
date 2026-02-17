@@ -47,6 +47,7 @@ model User {
   rcCustomerId         String?
   stripeCustomerId     String?   @unique
   stripeSubscriptionId String?
+  pendingEmail         String?
   accounts             Account[]
   sessions             Session[]
   createdAt            DateTime  @default(now())
