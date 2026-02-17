@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import BottomNav from '@/components/layout/BottomNav';
+import AuthProvider from '@/components/AuthProvider';
 
 export const metadata: Metadata = {
   title: 'FitMate - AI Fitness Coach',
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0f172a',
+  themeColor: '#ffffff',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -28,10 +29,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body className="animated-bg min-h-screen pb-nav">
-        <main className="max-w-lg mx-auto px-4">
-          {children}
-        </main>
-        <BottomNav />
+        <AuthProvider>
+          <main className="max-w-lg mx-auto px-4">
+            {children}
+          </main>
+          <BottomNav />
+        </AuthProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `
