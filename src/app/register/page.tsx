@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Dumbbell, Mail, Lock, User, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
+import { Dumbbell, Mail, Lock, User, Eye, EyeOff, ArrowRight, CheckCircle, MailCheck } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -15,6 +15,7 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,20 +48,9 @@ export default function RegisterPage() {
         return;
       }
 
-      // Auto sign in after registration
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setError('Account created but sign-in failed. Please log in manually.');
-        setLoading(false);
-      } else {
-        router.push('/paywall');
-        router.refresh();
-      }
+      // Show "check your email" message
+      setEmailSent(true);
+      setLoading(false);
     } catch (err) {
       setError('Something went wrong. Please try again.');
       setLoading(false);
@@ -85,6 +75,34 @@ export default function RegisterPage() {
       </div>
 
       <div className="w-full max-w-sm space-y-5">
+        {emailSent ? (
+          /* Email sent confirmation */
+          <div className="text-center space-y-5 py-8">
+            <div className="w-16 h-16 rounded-full bg-primary-500/10 flex items-center justify-center mx-auto">
+              <MailCheck className="text-primary-500" size={32} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-dark-100">Check your email</h2>
+              <p className="text-dark-400 mt-2">
+                We sent a verification link to <br />
+                <span className="font-medium text-dark-200">{email}</span>
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-primary-500/5 border border-primary-500/20">
+              <p className="text-sm text-dark-300">
+                Click the link in your email to verify your account, then sign in to start your 7-day free trial.
+              </p>
+            </div>
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 text-primary-400 font-medium hover:text-primary-300"
+            >
+              Go to Sign In
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+        ) : (
+        <>
         <div className="text-center">
           <h2 className="text-2xl font-bold text-dark-100">Create account</h2>
           <p className="text-dark-400 mt-1">Start your 7-day free trial</p>
@@ -211,6 +229,8 @@ export default function RegisterPage() {
             Sign in
           </Link>
         </p>
+        </>
+        )}
       </div>
     </div>
   );

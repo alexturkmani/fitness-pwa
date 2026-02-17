@@ -1,16 +1,31 @@
 'use client';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Dumbbell, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Dumbbell, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const verified = searchParams.get('verified') === 'true';
+  const tokenError = searchParams.get('error');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(
+    tokenError === 'invalid-token' ? 'Invalid verification link.' :
+    tokenError === 'token-expired' ? 'Verification link expired. Please register again.' :
+    tokenError === 'verification-failed' ? 'Verification failed. Please try again.' : ''
+  );
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -52,6 +67,13 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full max-w-sm space-y-6">
+        {verified && (
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-primary-500/10 border border-primary-500/30">
+            <CheckCircle className="text-primary-500 flex-shrink-0" size={18} />
+            <p className="text-sm text-primary-600 font-medium">Email verified! You can now sign in.</p>
+          </div>
+        )}
+
         <div className="text-center">
           <h2 className="text-2xl font-bold text-dark-100">Welcome back</h2>
           <p className="text-dark-400 mt-1">Sign in to continue your journey</p>

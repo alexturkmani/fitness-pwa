@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import prisma from '@/lib/prisma';
+import { sendVerificationEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,7 +32,20 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ id: user.id, email: user.email });
+    // Generate verification token
+    const token = crypto.randomBytes(32).toString('hex');
+    await prisma.verificationToken.create({
+      data: {
+        identifier: email,
+        token,
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      },
+    });
+
+    // Send verification email
+    await sendVerificationEmail(email, token);
+
+    return NextResponse.json({ id: user.id, email: user.email, requiresVerification: true });
   } catch (error: any) {
     console.error('Registration error:', error);
     return NextResponse.json({ error: 'Failed to create account' }, { status: 500 });
