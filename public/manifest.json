@@ -1,6 +1,6 @@
 {
-  "name": "FitForge - AI Fitness Coach",
-  "short_name": "FitForge",
+  "name": "FitMate - AI Fitness Coach",
+  "short_name": "FitMate",
   "description": "AI-powered fitness and nutrition tracking",
   "start_url": "/",
   "display": "standalone",

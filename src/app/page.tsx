@@ -59,7 +59,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-dark-100">
-            <span className="gradient-text">FitForge</span>
+            <span className="gradient-text">FitMate</span>
           </h1>
           <p className="text-dark-400 mt-1">
             Goal: <span className="text-primary-400">{goalLabels[profile.fitnessGoal] || 'Fitness'}</span>

@@ -3,13 +3,13 @@ import './globals.css';
 import BottomNav from '@/components/layout/BottomNav';
 
 export const metadata: Metadata = {
-  title: 'FitForge - AI Fitness Coach',
+  title: 'FitMate - AI Fitness Coach',
   description: 'AI-powered fitness and nutrition tracking',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'FitForge',
+    title: 'FitMate',
   },
 };
 
