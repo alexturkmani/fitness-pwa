@@ -15,7 +15,7 @@ import Modal from '@/components/ui/Modal';
 import {
   Dumbbell, Flame, Target, Scale, ChevronRight, Calendar,
   UtensilsCrossed, BarChart3, ScanLine, Sparkles, Settings,
-  TrendingDown, Zap, Heart, Activity, Check
+  TrendingDown, Zap, Heart, Activity, Check, UserCircle
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -63,19 +63,32 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-dark-100">
-            <span className="gradient-text">FitMate</span>
+            {profile.name ? (
+              <>Hi, <span className="gradient-text">{profile.name}</span></>
+            ) : (
+              <span className="gradient-text">FitMate</span>
+            )}
           </h1>
           <p className="text-dark-400 mt-1">
             Goals: <span className="text-primary-400">{goalDisplay}</span>
           </p>
         </div>
-        <button
-          onClick={() => { setSelectedGoals([...(profile.fitnessGoals || ['general_fitness'])]); setShowGoalModal(true); }}
-          className="p-2.5 bg-dark-800/60 border border-dark-700 rounded-xl text-dark-400 hover:text-primary-400 hover:border-primary-500/50 transition-all"
-          title="Change Goal"
-        >
-          <Settings size={20} />
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/profile"
+            className="p-2.5 bg-dark-800/60 border border-dark-700 rounded-xl text-dark-400 hover:text-primary-400 hover:border-primary-500/50 transition-all"
+            title="My Profile"
+          >
+            <UserCircle size={20} />
+          </Link>
+          <button
+            onClick={() => { setSelectedGoals([...(profile.fitnessGoals || ['general_fitness'])]); setShowGoalModal(true); }}
+            className="p-2.5 bg-dark-800/60 border border-dark-700 rounded-xl text-dark-400 hover:text-primary-400 hover:border-primary-500/50 transition-all"
+            title="Change Goal"
+          >
+            <Settings size={20} />
+          </button>
+        </div>
       </div>
 
       {/* Quick Stats */}

@@ -4,6 +4,7 @@ import { UserProfile, StorageKeys } from '@/types';
 
 const defaultProfile: UserProfile = {
   id: '',
+  name: '',
   weight: 0,
   height: 0,
   age: 0,

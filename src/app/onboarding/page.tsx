@@ -10,7 +10,7 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import {
   User, Activity, Target, Calendar, RotateCcw, ChevronRight, ChevronLeft,
-  TrendingDown, Dumbbell, Zap, Heart, Sparkles, Check
+  TrendingDown, Dumbbell, Zap, Heart, Sparkles, Check, Users
 } from 'lucide-react';
 
 const goalIcons: Record<string, any> = {
@@ -25,6 +25,7 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
+    name: '',
     weight: '',
     height: '',
     age: '',
@@ -33,9 +34,10 @@ export default function OnboardingPage() {
     fitnessGoals: [] as string[],
     targetWeight: '',
     intervalWeeks: 6 as 6 | 8,
+    workoutStyle: 'muscle_group' as 'single_muscle' | 'muscle_group',
   });
 
-  const totalSteps = 5;
+  const totalSteps = 6;
 
   const updateField = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -43,11 +45,12 @@ export default function OnboardingPage() {
 
   const canProceed = () => {
     switch (step) {
-      case 1: return formData.weight && formData.height && formData.age;
+      case 1: return formData.name && formData.weight && formData.height && formData.age;
       case 2: return formData.activityLevel;
       case 3: return formData.fitnessGoals.length > 0;
       case 4: return formData.targetWeight;
       case 5: return true;
+      case 6: return true;
       default: return false;
     }
   };
@@ -58,6 +61,7 @@ export default function OnboardingPage() {
     try {
       const profile: UserProfile = {
         id: generateId(),
+        name: formData.name.trim(),
         weight: parseFloat(formData.weight),
         height: parseFloat(formData.height),
         age: parseInt(formData.age),
@@ -78,7 +82,7 @@ export default function OnboardingPage() {
         const res = await fetch('/api/ai/workout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ profile, currentInterval: 0 }),
+          body: JSON.stringify({ profile, currentInterval: 0, workoutStyle: formData.workoutStyle }),
         });
 
         if (res.ok) {
@@ -130,6 +134,16 @@ export default function OnboardingPage() {
           </div>
 
           <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-dark-300 mb-2">Your Name</label>
+              <input
+                type="text"
+                className="input-field"
+                placeholder="John"
+                value={formData.name}
+                onChange={(e) => updateField('name', e.target.value)}
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-dark-300 mb-2">Weight (kg)</label>
               <input
@@ -360,6 +374,59 @@ export default function OnboardingPage() {
               automatically assess your progress at the end of each interval to create an optimized follow-up plan.
             </p>
           </Card>
+        </div>
+      )}
+
+      {/* Step 6: Workout Style */}
+      {step === 6 && (
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-3 bg-accent-500/20 rounded-xl">
+              <Dumbbell className="text-accent-400" size={24} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-dark-100">Workout Style</h1>
+              <p className="text-dark-400">How should your workouts be structured?</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => updateField('workoutStyle', 'single_muscle')}
+              className={`w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3 ${
+                formData.workoutStyle === 'single_muscle'
+                  ? 'border-primary-500 bg-primary-500/10'
+                  : 'border-dark-700 bg-dark-800/60 hover:border-dark-600'
+              }`}
+            >
+              <div className={`p-2.5 rounded-lg ${formData.workoutStyle === 'single_muscle' ? 'bg-primary-500/20' : 'bg-dark-700/50'}`}>
+                <User className={formData.workoutStyle === 'single_muscle' ? 'text-primary-400' : 'text-dark-400'} size={20} />
+              </div>
+              <div className="flex-1">
+                <p className={`font-medium ${formData.workoutStyle === 'single_muscle' ? 'text-primary-400' : 'text-dark-200'}`}>Single Muscle</p>
+                <p className="text-xs text-dark-500">Each day targets one specific muscle (e.g., Chest Day, Back Day, Arm Day)</p>
+              </div>
+              {formData.workoutStyle === 'single_muscle' && <Check className="text-primary-400" size={18} />}
+            </button>
+
+            <button
+              onClick={() => updateField('workoutStyle', 'muscle_group')}
+              className={`w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3 ${
+                formData.workoutStyle === 'muscle_group'
+                  ? 'border-primary-500 bg-primary-500/10'
+                  : 'border-dark-700 bg-dark-800/60 hover:border-dark-600'
+              }`}
+            >
+              <div className={`p-2.5 rounded-lg ${formData.workoutStyle === 'muscle_group' ? 'bg-primary-500/20' : 'bg-dark-700/50'}`}>
+                <Users className={formData.workoutStyle === 'muscle_group' ? 'text-primary-400' : 'text-dark-400'} size={20} />
+              </div>
+              <div className="flex-1">
+                <p className={`font-medium ${formData.workoutStyle === 'muscle_group' ? 'text-primary-400' : 'text-dark-200'}`}>Muscle Groups</p>
+                <p className="text-xs text-dark-500">Combine related muscles per day (e.g., Push/Pull/Legs, Upper/Lower)</p>
+              </div>
+              {formData.workoutStyle === 'muscle_group' && <Check className="text-primary-400" size={18} />}
+            </button>
+          </div>
         </div>
       )}
 
