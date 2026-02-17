@@ -34,19 +34,21 @@ model Session {
 }
 
 model User {
-  id                 String    @id @default(cuid())
-  name               String?
-  email              String    @unique
-  emailVerified      DateTime?
-  image              String?
-  password           String?
-  trialEndsAt        DateTime?
-  subscriptionActive Boolean   @default(false)
-  rcCustomerId       String?
-  accounts           Account[]
-  sessions           Session[]
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  name                 String?
+  email                String    @unique
+  emailVerified        DateTime?
+  image                String?
+  password             String?
+  trialEndsAt          DateTime?
+  subscriptionActive   Boolean   @default(false)
+  rcCustomerId         String?
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?
+  accounts             Account[]
+  sessions             Session[]
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 model VerificationToken {

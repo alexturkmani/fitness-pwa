@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useSubscription } from '@/hooks/useSubscription';
-import { initRevenueCat, getOfferings, purchasePackage } from '@/lib/revenuecat';
 import {
   Dumbbell, Crown, CheckCircle, Sparkles, ArrowRight,
   Zap, Apple, BarChart3, ScanLine, Shield
@@ -13,7 +12,6 @@ export default function PaywallPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const { hasAccess, trialDaysLeft, isTrialActive } = useSubscription();
-  const [offerings, setOfferings] = useState<any>(null);
   const [purchasing, setPurchasing] = useState(false);
   const [error, setError] = useState('');
 
@@ -26,45 +24,24 @@ export default function PaywallPage() {
     }
   }, [hasAccess, isNewUser, router]);
 
-  // Initialize RevenueCat and load offerings
-  useEffect(() => {
-    async function init() {
-      if (session?.user?.id) {
-        await initRevenueCat(session.user.id);
-        const off = await getOfferings();
-        setOfferings(off);
-      }
-    }
-    init();
-  }, [session]);
-
   const handleSubscribe = async () => {
-    const monthlyPackage = offerings?.current?.monthly;
-    if (!monthlyPackage) {
-      setError('Subscription not available yet. Please try again later.');
-      return;
-    }
-
     setPurchasing(true);
     setError('');
 
     try {
-      await purchasePackage(monthlyPackage);
-      // Update subscription status on server
-      await fetch('/api/auth/subscription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'activate' }),
-      });
-      router.push('/');
-      router.refresh();
-    } catch (err: any) {
-      if (err.message?.includes('cancelled')) {
-        // User cancelled — not an error
-      } else {
-        setError('Payment failed. Please try again.');
+      const res = await fetch('/api/stripe/checkout', { method: 'POST' });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Failed to start checkout');
+        setPurchasing(false);
+        return;
       }
-    } finally {
+
+      // Redirect to Stripe Checkout
+      window.location.href = data.url;
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
       setPurchasing(false);
     }
   };

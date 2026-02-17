@@ -23,20 +23,37 @@ export default function SubscriptionPage() {
   const email = user?.email || '';
   const trialEndsAt = user?.trialEndsAt ? new Date(user.trialEndsAt) : null;
 
+  const [loadingPortal, setLoadingPortal] = useState(false);
+
+  const handleManageBilling = async () => {
+    setLoadingPortal(true);
+    setError('');
+    try {
+      const res = await fetch('/api/stripe/portal', { method: 'POST' });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error || 'Failed to open billing portal.');
+      }
+    } catch (e) {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoadingPortal(false);
+    }
+  };
+
   const handleCancel = async () => {
     setCancelling(true);
     setError('');
     try {
-      const res = await fetch('/api/auth/subscription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'deactivate' }),
-      });
-      if (res.ok) {
-        setSuccess('Your subscription has been cancelled. You\'ll retain access until the end of your billing period.');
-        setShowCancelConfirm(false);
+      // Open Stripe portal where user can cancel directly
+      const res = await fetch('/api/stripe/portal', { method: 'POST' });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
       } else {
-        setError('Failed to cancel subscription. Please try again.');
+        setError('Failed to open billing portal.');
       }
     } catch (e) {
       setError('Something went wrong. Please try again.');
@@ -127,6 +144,17 @@ export default function SubscriptionPage() {
             <Crown size={18} />
             {isTrialActive ? 'Upgrade to Premium' : 'Subscribe — $4.99/month'}
           </Button>
+        )}
+
+        {isSubscribed && (
+          <button
+            onClick={handleManageBilling}
+            disabled={loadingPortal}
+            className="w-full flex items-center justify-center gap-2 p-3.5 rounded-xl bg-primary-500 text-white font-medium hover:bg-primary-600 transition-all disabled:opacity-50"
+          >
+            <CreditCard size={18} />
+            {loadingPortal ? 'Opening...' : 'Manage Billing'}
+          </button>
         )}
 
         {isSubscribed && !showCancelConfirm && (
