@@ -30,6 +30,7 @@ export default function ProfilePage() {
     fitnessGoals: profile.fitnessGoals || ['general_fitness'],
     targetWeight: String(profile.targetWeight || ''),
     intervalWeeks: profile.intervalWeeks || 6,
+    gymDaysPerWeek: profile.gymDaysPerWeek || 5,
   });
 
   const [showGoalModal, setShowGoalModal] = useState(false);
@@ -51,6 +52,7 @@ export default function ProfilePage() {
       fitnessGoals: formData.fitnessGoals as any,
       targetWeight: parseFloat(formData.targetWeight) || profile.targetWeight,
       intervalWeeks: formData.intervalWeeks as 6 | 8,
+      gymDaysPerWeek: formData.gymDaysPerWeek,
     });
     setEditing(false);
     setSaved(true);
@@ -250,29 +252,54 @@ export default function ProfilePage() {
 
       {/* Training Interval */}
       <div>
-        <h3 className="text-lg font-semibold text-dark-200 mb-3">Training Interval</h3>
+        <h3 className="text-lg font-semibold text-dark-200 mb-3">Training Settings</h3>
         <Card>
-          <div className="flex items-center justify-between">
-            <span className="text-dark-400">Rotation period</span>
-            {editing ? (
-              <div className="flex gap-2">
-                {([6, 8] as const).map((w) => (
-                  <button
-                    key={w}
-                    onClick={() => updateField('intervalWeeks', w)}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                      formData.intervalWeeks === w
-                        ? 'bg-primary-500/20 border border-primary-500 text-primary-400'
-                        : 'bg-dark-800/60 border border-dark-700 text-dark-400'
-                    }`}
-                  >
-                    {w} weeks
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <span className="text-dark-100 font-medium">{profile.intervalWeeks} weeks</span>
-            )}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-dark-400">Rotation period</span>
+              {editing ? (
+                <div className="flex gap-2">
+                  {([6, 8] as const).map((w) => (
+                    <button
+                      key={w}
+                      onClick={() => updateField('intervalWeeks', w)}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                        formData.intervalWeeks === w
+                          ? 'bg-primary-500/20 border border-primary-500 text-primary-400'
+                          : 'bg-dark-800/60 border border-dark-700 text-dark-400'
+                      }`}
+                    >
+                      {w} weeks
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-dark-100 font-medium">{profile.intervalWeeks} weeks</span>
+              )}
+            </div>
+            <div className="border-t border-dark-700/50" />
+            <div className="flex items-center justify-between">
+              <span className="text-dark-400">Gym days / week</span>
+              {editing ? (
+                <div className="flex gap-1.5">
+                  {[3, 4, 5, 6, 7].map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => updateField('gymDaysPerWeek', d)}
+                      className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${
+                        formData.gymDaysPerWeek === d
+                          ? 'bg-primary-500/20 border border-primary-500 text-primary-400'
+                          : 'bg-dark-800/60 border border-dark-700 text-dark-400'
+                      }`}
+                    >
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-dark-100 font-medium">{profile.gymDaysPerWeek || 5} days</span>
+              )}
+            </div>
           </div>
         </Card>
       </div>

@@ -9,6 +9,7 @@ export interface UserProfile {
   fitnessGoals: ('weight_loss' | 'muscle_gain' | 'strength' | 'endurance' | 'general_fitness')[];
   targetWeight: number;
   intervalWeeks: 6 | 8;
+  gymDaysPerWeek: number;
   onboardingCompleted: boolean;
   createdAt: string;
   updatedAt: string;

@@ -34,6 +34,7 @@ export default function OnboardingPage() {
     fitnessGoals: [] as string[],
     targetWeight: '',
     intervalWeeks: 6 as 6 | 8,
+    gymDaysPerWeek: 5,
     workoutStyle: 'muscle_group' as 'single_muscle' | 'muscle_group',
   });
 
@@ -70,6 +71,7 @@ export default function OnboardingPage() {
         fitnessGoals: formData.fitnessGoals as UserProfile['fitnessGoals'],
         targetWeight: parseFloat(formData.targetWeight),
         intervalWeeks: formData.intervalWeeks,
+        gymDaysPerWeek: formData.gymDaysPerWeek,
         onboardingCompleted: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -333,6 +335,30 @@ export default function OnboardingPage() {
                     </span>
                     <span className={`block text-sm mt-1 ${formData.intervalWeeks === weeks ? 'text-primary-400' : 'text-dark-500'}`}>
                       weeks
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-dark-300 mb-3">How many days per week do you want to train?</label>
+              <div className="grid grid-cols-5 gap-2">
+                {[3, 4, 5, 6, 7].map((days) => (
+                  <button
+                    key={days}
+                    onClick={() => updateField('gymDaysPerWeek', days)}
+                    className={`p-3 rounded-xl text-center transition-all ${
+                      formData.gymDaysPerWeek === days
+                        ? 'bg-primary-500/20 border-2 border-primary-500'
+                        : 'bg-dark-800/60 border-2 border-dark-700 hover:border-dark-600'
+                    }`}
+                  >
+                    <span className={`text-lg font-bold ${formData.gymDaysPerWeek === days ? 'text-primary-400' : 'text-dark-300'}`}>
+                      {days}
+                    </span>
+                    <span className={`block text-xs mt-0.5 ${formData.gymDaysPerWeek === days ? 'text-primary-400' : 'text-dark-500'}`}>
+                      days
                     </span>
                   </button>
                 ))}

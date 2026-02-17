@@ -9,7 +9,7 @@ import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Modal from '@/components/ui/Modal';
-import { Dumbbell, Calendar, Clock, ChevronRight, Trophy, AlertCircle, Check, User, Users, ClipboardList } from 'lucide-react';
+import { Dumbbell, Calendar, Clock, ChevronRight, Trophy, AlertCircle, Check, User, Users, ClipboardList, Trash2, AlertTriangle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -18,13 +18,19 @@ type WorkoutStyle = 'single_muscle' | 'muscle_group';
 export default function WorkoutsPage() {
   const router = useRouter();
   const { profile } = useUserProfile();
-  const { currentPlan, savePlan, isIntervalComplete, getCurrentWeek, getDaysRemaining } = useWorkoutPlan();
+  const { currentPlan, savePlan, deletePlan, isIntervalComplete, getCurrentWeek, getDaysRemaining } = useWorkoutPlan();
   const { logs, getLogsByDate, getLogsByPlan } = useWorkoutLogs();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [assessmentResult, setAssessmentResult] = useState<any>(null);
   const [showStyleModal, setShowStyleModal] = useState(false);
   const [workoutStyle, setWorkoutStyle] = useState<WorkoutStyle>('muscle_group');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleDeletePlan = () => {
+    deletePlan();
+    setShowDeleteConfirm(false);
+  };
 
   const today = formatDate(new Date());
   const todayDayNumber = new Date().getDay() || 7; // 1=Mon, 7=Sun
@@ -175,6 +181,13 @@ export default function WorkoutsPage() {
           <Link href="/workouts/custom" className="p-2 rounded-xl text-dark-400 hover:text-primary-400 bg-dark-800/60 hover:bg-dark-700/60 border border-dark-700 hover:border-primary-500/50 transition-all" title="My Custom Workouts">
             <ClipboardList size={18} />
           </Link>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="p-2 rounded-xl text-dark-400 hover:text-red-400 bg-dark-800/60 hover:bg-red-500/10 border border-dark-700 hover:border-red-500/50 transition-all"
+            title="Delete Workout Plan"
+          >
+            <Trash2 size={18} />
+          </button>
           <Button size="sm" variant="secondary" onClick={promptStyleSelection}>
             Regenerate
           </Button>
@@ -338,6 +351,25 @@ export default function WorkoutsPage() {
           <Button className="w-full mt-2" onClick={() => handleGenerateNewPlan(workoutStyle)}>
             Generate Plan
           </Button>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} title="Delete Workout Plan?">
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+            <AlertTriangle className="text-red-400 flex-shrink-0 mt-0.5" size={18} />
+            <p className="text-sm text-red-400">This will permanently delete your current workout plan and all progress tracking. You can generate a new one anytime.</p>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
+            <button
+              onClick={handleDeletePlan}
+              className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition-all"
+            >
+              Delete Plan
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

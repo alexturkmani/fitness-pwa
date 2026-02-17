@@ -11,5 +11,9 @@ export function useMealPlan() {
     setPlans((prev) => [...prev, plan]);
   };
 
-  return { plans, currentPlan, savePlan };
+  const deletePlan = () => {
+    setPlans([]);
+  };
+
+  return { plans, currentPlan, savePlan, deletePlan };
 }

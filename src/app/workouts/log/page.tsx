@@ -175,7 +175,7 @@ function WorkoutLogContent() {
                       type="number"
                       value={set.weight || ''}
                       onChange={(e) => updateSet(exIdx, setIdx, 'weight', parseFloat(e.target.value) || 0)}
-                      className="w-full text-center bg-dark-900/60 border border-dark-700 rounded-lg py-1.5 text-sm text-dark-200 focus:border-primary-500 outline-none"
+                      className="w-full text-center bg-white border-2 border-dark-700 rounded-xl py-2 text-sm font-semibold text-dark-100 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       placeholder="0"
                     />
                     <button onClick={() => updateSet(exIdx, setIdx, 'weight', set.weight + 2.5)} className="p-1 text-dark-500 hover:text-dark-300">
@@ -190,7 +190,7 @@ function WorkoutLogContent() {
                       type="number"
                       value={set.reps || ''}
                       onChange={(e) => updateSet(exIdx, setIdx, 'reps', parseInt(e.target.value) || 0)}
-                      className="w-full text-center bg-dark-900/60 border border-dark-700 rounded-lg py-1.5 text-sm text-dark-200 focus:border-primary-500 outline-none"
+                      className="w-full text-center bg-white border-2 border-dark-700 rounded-xl py-2 text-sm font-semibold text-dark-100 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <button onClick={() => updateSet(exIdx, setIdx, 'reps', set.reps + 1)} className="p-1 text-dark-500 hover:text-dark-300">
                       <Plus size={14} />

@@ -13,6 +13,7 @@ const defaultProfile: UserProfile = {
   fitnessGoals: ['general_fitness'],
   targetWeight: 0,
   intervalWeeks: 6,
+  gymDaysPerWeek: 5,
   onboardingCompleted: false,
   createdAt: '',
   updatedAt: '',

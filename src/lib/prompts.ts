@@ -4,6 +4,8 @@ import { calculateTDEE, calculateMacroTargets } from './utils';
 export function getWorkoutPlanPrompt(profile: UserProfile, previousLogs?: WorkoutLog[], assessment?: string, workoutStyle?: 'single_muscle' | 'muscle_group'): string {
   const isFirstPlan = !previousLogs || previousLogs.length === 0;
   const isSingleMuscle = workoutStyle === 'single_muscle';
+  const gymDays = profile.gymDaysPerWeek || 5;
+  const restDays = 7 - gymDays;
 
   let prompt = `Generate a structured ${profile.intervalWeeks}-week workout plan for the following user:
 
@@ -14,6 +16,7 @@ export function getWorkoutPlanPrompt(profile: UserProfile, previousLogs?: Workou
 - Activity Level: ${profile.activityLevel.replace('_', ' ')}
 - Goal: ${(profile.fitnessGoals || ['general_fitness']).map(g => g.replace('_', ' ')).join(', ')}
 - Target Weight: ${profile.targetWeight}kg
+- Training days per week: ${gymDays} (${restDays} rest day${restDays !== 1 ? 's' : ''})
 `;
 
   if (!isFirstPlan && assessment) {
@@ -30,10 +33,10 @@ The user has explicitly chosen a SINGLE MUSCLE isolation split. You MUST follow 
 - NEVER label a day "Push Day", "Pull Day", "Upper Body", "Lower Body", or any combined muscle group
 - NEVER create separate "Bicep Day" and "Tricep Day" — always combine them into "Arm Day"
 - ALL exercises on a given day must target that day's muscle(s) exclusively
-- Include 1-2 rest days
+- Include ${restDays} rest day${restDays !== 1 ? 's' : ''}
 
 Requirements:
-- Plan for 7 days (Monday to Sunday, include 1-2 rest days)
+- Plan for 7 days (Monday to Sunday, include exactly ${restDays} rest day${restDays !== 1 ? 's' : ''} and ${gymDays} training days)
 - Each workout day should have 4-6 exercises targeting that day's muscle
 - For each exercise provide: name, muscleGroup, sets (3-5), reps (use a range string like "8-12"), restSeconds (60-180)
 - Include brief notes for the overall plan
@@ -69,7 +72,7 @@ WORKOUT STYLE: Muscle Group Split
 - Each day can target multiple related muscles
 
 Requirements:
-- Plan for 7 days (Monday to Sunday, include 1-2 rest days)
+- Plan for 7 days (Monday to Sunday, include exactly ${restDays} rest day${restDays !== 1 ? 's' : ''} and ${gymDays} training days)
 - Each workout day should have 4-6 exercises
 - For each exercise provide: name, muscleGroup, sets (3-5), reps (use a range string like "8-12"), restSeconds (60-180)
 - Use a split appropriate for the user's goal
@@ -138,6 +141,34 @@ Return JSON with this structure:
 
 export function getMealSystemPrompt(): string {
   return 'You are a certified sports nutritionist. Generate practical, balanced meal plans with accurate macro calculations. Always return valid JSON matching the requested structure exactly. Do not include any text outside the JSON.';
+}
+
+export function getMealSubstitutionPrompt(mealName: string, foodName: string, reason: string, currentMacros: { calories: number; protein: number; carbs: number; fats: number }): string {
+  return `The user wants to substitute "${foodName}" from their "${mealName}" meal.
+Reason: ${reason || 'Personal preference'}
+
+Current macros for this food: ${currentMacros.calories} cal, ${currentMacros.protein}g protein, ${currentMacros.carbs}g carbs, ${currentMacros.fats}g fats
+
+Suggest 3 alternative foods that:
+1. Have similar macros (especially similar calories and protein)
+2. Are common and easy to prepare
+3. Fit well in the same meal
+
+Return JSON:
+{
+  "substitutions": [
+    {
+      "name": "Alternative Food Name",
+      "servingSize": "portion size",
+      "macros": { "calories": 0, "protein": 0, "carbs": 0, "fats": 0 },
+      "reason": "Why this is a good substitute"
+    }
+  ]
+}`;
+}
+
+export function getMealSubstitutionSystemPrompt(): string {
+  return 'You are a sports nutritionist helping with meal substitutions. Suggest practical alternatives with similar nutritional profiles. Always return valid JSON.';
 }
 
 export function getAssessmentPrompt(logs: WorkoutLog[]): string {

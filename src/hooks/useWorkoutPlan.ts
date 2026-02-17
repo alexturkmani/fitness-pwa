@@ -11,6 +11,10 @@ export function useWorkoutPlan() {
     setPlans((prev) => [...prev, plan]);
   };
 
+  const deletePlan = () => {
+    setPlans([]);
+  };
+
   const isIntervalComplete = () => {
     if (!currentPlan) return false;
     return new Date() > new Date(currentPlan.endDate);
@@ -33,5 +37,5 @@ export function useWorkoutPlan() {
     return Math.max(0, Math.ceil(diff / (24 * 60 * 60 * 1000)));
   };
 
-  return { plans, currentPlan, savePlan, isIntervalComplete, getCurrentWeek, getDaysRemaining };
+  return { plans, currentPlan, savePlan, deletePlan, isIntervalComplete, getCurrentWeek, getDaysRemaining };
 }

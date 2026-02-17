@@ -11,7 +11,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Modal from '@/components/ui/Modal';
 import Toast from '@/components/ui/Toast';
-import { UtensilsCrossed, RefreshCw, Plus, Flame, Beef, Wheat, Droplets, AlertTriangle, X } from 'lucide-react';
+import { UtensilsCrossed, RefreshCw, Plus, Flame, Beef, Wheat, Droplets, AlertTriangle, X, Trash2, MessageCircle, Sparkles, Send } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 const MACRO_COLORS = ['#10b981', '#06b6d4', '#f59e0b'];
@@ -22,7 +22,7 @@ const COMMON_ALLERGIES = [
 
 export default function MealsPage() {
   const { profile } = useUserProfile();
-  const { currentPlan, savePlan } = useMealPlan();
+  const { currentPlan, savePlan, deletePlan } = useMealPlan();
   const { addEntry } = useFoodLog();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +30,12 @@ export default function MealsPage() {
   const [showAllergyModal, setShowAllergyModal] = useState(false);
   const [allergies, setAllergies] = useState<string[]>([]);
   const [customAllergy, setCustomAllergy] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showSubModal, setShowSubModal] = useState(false);
+  const [subLoading, setSubLoading] = useState(false);
+  const [selectedFood, setSelectedFood] = useState<{ mealName: string; foodName: string; macros: any } | null>(null);
+  const [subReason, setSubReason] = useState('');
+  const [subResults, setSubResults] = useState<any[] | null>(null);
 
   const targets = profile.onboardingCompleted ? calculateMacroTargets(profile) : null;
 
@@ -89,6 +95,44 @@ export default function MealsPage() {
     };
     addEntry(entry);
     setToast(`${mealName} added to food log`);
+  };
+
+  const openSubstitution = (mealName: string, foodName: string, macros: any) => {
+    setSelectedFood({ mealName, foodName, macros });
+    setSubReason('');
+    setSubResults(null);
+    setShowSubModal(true);
+  };
+
+  const handleSubstitute = async () => {
+    if (!selectedFood) return;
+    setSubLoading(true);
+    try {
+      const res = await fetch('/api/ai/meal-substitute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mealName: selectedFood.mealName,
+          foodName: selectedFood.foodName,
+          reason: subReason,
+          currentMacros: selectedFood.macros,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSubResults(data.substitutions || []);
+      }
+    } catch (err) {
+      console.error('Substitution error:', err);
+    } finally {
+      setSubLoading(false);
+    }
+  };
+
+  const handleDeletePlan = () => {
+    deletePlan();
+    setShowDeleteConfirm(false);
+    setToast('Meal plan deleted');
   };
 
   if (loading) {
@@ -184,9 +228,18 @@ export default function MealsPage() {
           <h1 className="text-2xl font-bold text-dark-100">Meal Plan</h1>
           <p className="text-dark-400 mt-1">AI-designed for your goals</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={promptAllergySelection} loading={loading}>
-          <RefreshCw size={16} /> New Plan
-        </Button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="p-2 rounded-xl text-dark-400 hover:text-red-400 bg-dark-800/60 hover:bg-red-500/10 border border-dark-700 hover:border-red-500/50 transition-all"
+            title="Delete Meal Plan"
+          >
+            <Trash2 size={18} />
+          </button>
+          <Button variant="secondary" size="sm" onClick={promptAllergySelection} loading={loading}>
+            <RefreshCw size={16} /> New Plan
+          </Button>
+        </div>
       </div>
 
       {/* Macro Summary */}
@@ -263,13 +316,22 @@ export default function MealsPage() {
             <div className="space-y-2">
               {meal.foods.map((food) => (
                 <div key={food.id} className="flex items-center justify-between py-1.5 border-b border-dark-700/30 last:border-0">
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm text-dark-200">{food.name}</p>
                     <p className="text-xs text-dark-500">{food.servingSize}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-dark-400">{food.macros.calories} cal</p>
-                    <p className="text-xs text-dark-500">P:{food.macros.protein}g C:{food.macros.carbs}g F:{food.macros.fats}g</p>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <p className="text-xs text-dark-400">{food.macros.calories} cal</p>
+                      <p className="text-xs text-dark-500">P:{food.macros.protein}g C:{food.macros.carbs}g F:{food.macros.fats}g</p>
+                    </div>
+                    <button
+                      onClick={() => openSubstitution(meal.name, food.name, food.macros)}
+                      className="p-1.5 rounded-lg text-dark-500 hover:text-accent-400 hover:bg-accent-500/10 transition-all flex-shrink-0"
+                      title="Find substitutions"
+                    >
+                      <MessageCircle size={14} />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -336,6 +398,82 @@ export default function MealsPage() {
         {allergies.length === 0 && (
           <p className="text-xs text-dark-500 text-center mt-2">No allergies? Just tap Generate to proceed.</p>
         )}
+      </Modal>
+
+      {/* Substitution Modal */}
+      <Modal isOpen={showSubModal} onClose={() => setShowSubModal(false)} title="Substitute Ingredient">
+        {selectedFood && (
+          <div className="space-y-4">
+            <div className="p-3 rounded-xl bg-dark-800/60 border border-dark-700">
+              <p className="text-sm font-medium text-dark-200">{selectedFood.foodName}</p>
+              <p className="text-xs text-dark-500 mt-1">
+                from {selectedFood.mealName} &bull; {selectedFood.macros.calories} cal &bull; P:{selectedFood.macros.protein}g C:{selectedFood.macros.carbs}g F:{selectedFood.macros.fats}g
+              </p>
+            </div>
+
+            <div>
+              <label className="text-xs text-dark-400 mb-1.5 block">Why do you want to substitute? (optional)</label>
+              <div className="flex gap-2">
+                <input
+                  className="input-field flex-1"
+                  placeholder="e.g. I don't like it, too expensive..."
+                  value={subReason}
+                  onChange={(e) => setSubReason(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSubstitute()}
+                />
+                <button
+                  onClick={handleSubstitute}
+                  disabled={subLoading}
+                  className="p-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white transition-all disabled:opacity-50"
+                >
+                  {subLoading ? <Sparkles size={18} className="animate-spin" /> : <Send size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {subResults && subResults.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-dark-400 uppercase tracking-wider">Suggestions</p>
+                {subResults.map((sub: any, i: number) => (
+                  <div key={i} className="p-3 rounded-xl bg-dark-800/40 border border-dark-700/50 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-dark-200">{sub.name}</p>
+                      <span className="text-xs text-primary-400 font-medium">{sub.macros?.calories || '–'} cal</span>
+                    </div>
+                    <p className="text-xs text-dark-500">{sub.servingSize}</p>
+                    {sub.macros && (
+                      <p className="text-xs text-dark-500">P:{sub.macros.protein}g C:{sub.macros.carbs}g F:{sub.macros.fats}g</p>
+                    )}
+                    {sub.reason && <p className="text-xs text-dark-400 italic mt-1">{sub.reason}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {subResults && subResults.length === 0 && (
+              <p className="text-sm text-dark-500 text-center">No substitutions found. Try a different reason.</p>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} title="Delete Meal Plan?">
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+            <AlertTriangle className="text-red-400 flex-shrink-0 mt-0.5" size={18} />
+            <p className="text-sm text-red-400">This will permanently delete your current meal plan. You can always generate a new one.</p>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
+            <button
+              onClick={handleDeletePlan}
+              className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition-all"
+            >
+              Delete Plan
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
