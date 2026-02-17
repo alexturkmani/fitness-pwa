@@ -9,8 +9,9 @@ export default withAuth(
     // Check trial/subscription status for protected routes
     const trialEndsAt = token?.trialEndsAt as string | null | undefined;
     const subscriptionActive = token?.subscriptionActive as boolean | undefined;
+    const isFreeAccount = token?.isFreeAccount as boolean | undefined;
     const isTrialActive = trialEndsAt ? new Date(trialEndsAt) > new Date() : false;
-    const hasAccess = isTrialActive || subscriptionActive;
+    const hasAccess = isFreeAccount || isTrialActive || subscriptionActive;
 
     // If subscription data hasn't loaded yet (both undefined), allow through
     // This prevents lockout when DB is temporarily unavailable
