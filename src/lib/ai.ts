@@ -70,15 +70,18 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
   }
 }
 
-export async function callAI(prompt: string, systemPrompt: string, maxRetries = 2): Promise<string> {
+export async function callAI(prompt: string, systemPrompt: string, maxRetries = 3): Promise<string> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await callGemini(prompt, systemPrompt);
     } catch (error: any) {
       if (error.message === 'RATE_LIMITED' && attempt < maxRetries) {
-        // Wait before retrying (exponential backoff: 3s, 6s)
-        await new Promise((resolve) => setTimeout(resolve, 3000 * (attempt + 1)));
+        // Wait before retrying (exponential backoff: 10s, 20s, 30s)
+        await new Promise((resolve) => setTimeout(resolve, 10000 * (attempt + 1)));
         continue;
+      }
+      if (error.message === 'RATE_LIMITED') {
+        throw new Error('The AI is temporarily busy. Please wait a minute and try again.');
       }
       throw error;
     }
