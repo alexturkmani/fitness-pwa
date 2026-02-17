@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Dumbbell, Mail, Lock, User, Eye, EyeOff, ArrowRight, CheckCircle, MailCheck } from 'lucide-react';
+import { Dumbbell, Mail, Lock, User, Eye, EyeOff, ArrowRight, CheckCircle, MailCheck, ArrowLeft } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -63,7 +63,18 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 -mt-10">
+    <div className="min-h-screen flex flex-col items-center px-6 py-8 overflow-y-auto">
+      {/* Back to Home */}
+      <div className="w-full max-w-sm mb-4">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-dark-400 hover:text-dark-200 transition-colors"
+        >
+          <ArrowLeft size={16} />
+          Back to Home
+        </Link>
+      </div>
+
       {/* Logo */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-12 h-12 rounded-2xl bg-primary-500 flex items-center justify-center">

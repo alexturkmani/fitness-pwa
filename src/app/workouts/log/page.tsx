@@ -158,15 +158,15 @@ function WorkoutLogContent() {
 
             <div className="space-y-2">
               <div className="grid grid-cols-12 gap-2 text-xs text-dark-500 px-1">
-                <span className="col-span-2">Set</span>
+                <span className="col-span-1">Set</span>
                 <span className="col-span-4">Weight (kg)</span>
-                <span className="col-span-3">Reps</span>
+                <span className="col-span-4">Reps</span>
                 <span className="col-span-3 text-right">Done</span>
               </div>
 
               {exLog.sets.map((set, setIdx) => (
                 <div key={set.setNumber} className={`grid grid-cols-12 gap-2 items-center p-2 rounded-lg ${set.completed ? 'bg-primary-500/10' : 'bg-dark-800/40'}`}>
-                  <span className="col-span-2 text-sm font-medium text-dark-400">{set.setNumber}</span>
+                  <span className="col-span-1 text-sm font-medium text-dark-400">{set.setNumber}</span>
                   <div className="col-span-4 flex items-center gap-1">
                     <button onClick={() => updateSet(exIdx, setIdx, 'weight', Math.max(0, set.weight - 2.5))} className="p-1 text-dark-500 hover:text-dark-300">
                       <Minus size={14} />
@@ -182,7 +182,7 @@ function WorkoutLogContent() {
                       <Plus size={14} />
                     </button>
                   </div>
-                  <div className="col-span-3 flex items-center gap-1">
+                  <div className="col-span-4 flex items-center gap-1">
                     <button onClick={() => updateSet(exIdx, setIdx, 'reps', Math.max(0, set.reps - 1))} className="p-1 text-dark-500 hover:text-dark-300">
                       <Minus size={14} />
                     </button>
