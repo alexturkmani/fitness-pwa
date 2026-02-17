@@ -159,9 +159,14 @@ export default function WorkoutsPage() {
   return (
     <div className="py-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-dark-100">Your Workout Plan</h1>
-        <p className="text-dark-400 mt-1">Interval #{currentPlan.intervalNumber}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-dark-100">Your Workout Plan</h1>
+          <p className="text-dark-400 mt-1">Interval #{currentPlan.intervalNumber}</p>
+        </div>
+        <Button size="sm" variant="secondary" onClick={promptStyleSelection}>
+          Regenerate
+        </Button>
       </div>
 
       {/* Progress Stats */}
