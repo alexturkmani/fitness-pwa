@@ -6,17 +6,20 @@ import bcrypt from 'bcryptjs';
 import prisma from './prisma';
 
 function createAuthOptions(): NextAuthOptions {
-  return {
-    adapter: process.env.DATABASE_URL ? PrismaAdapter(prisma) : undefined,
-    session: { strategy: 'jwt' },
-    pages: {
-      signIn: '/login',
-    },
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
+  const providers: any[] = [];
+
+  // Only add Google provider when credentials are configured
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    providers.push(
+      GoogleProvider({
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      })
+    );
+  }
+
+  // Always add credentials provider
+  providers.push(
     CredentialsProvider({
       name: 'Email',
       credentials: {
@@ -25,54 +28,77 @@ function createAuthOptions(): NextAuthOptions {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
+        if (!process.env.DATABASE_URL) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+          });
 
-        if (!user || !user.password) return null;
+          if (!user || !user.password) return null;
 
-        const isValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isValid) return null;
+          const isValid = await bcrypt.compare(credentials.password, user.password);
+          if (!isValid) return null;
 
-        return { id: user.id, name: user.name, email: user.email, image: user.image };
-      },
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-      }
-      if (token.id) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { trialEndsAt: true, subscriptionActive: true },
-        });
-        if (dbUser) {
-          token.trialEndsAt = dbUser.trialEndsAt?.toISOString() || null;
-          token.subscriptionActive = dbUser.subscriptionActive;
+          return { id: user.id, name: user.name, email: user.email, image: user.image };
+        } catch (e) {
+          return null;
         }
-      }
-      return token;
+      },
+    })
+  );
+
+  return {
+    adapter: process.env.DATABASE_URL ? PrismaAdapter(prisma) : undefined,
+    secret: process.env.NEXTAUTH_SECRET,
+    session: { strategy: 'jwt' },
+    pages: {
+      signIn: '/login',
     },
-    async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).trialEndsAt = token.trialEndsAt;
-        (session.user as any).subscriptionActive = token.subscriptionActive;
-      }
-      return session;
+    providers,
+    callbacks: {
+      async jwt({ token, user }) {
+        if (user) {
+          token.id = user.id;
+        }
+        if (token.id && process.env.DATABASE_URL) {
+          try {
+            const dbUser = await prisma.user.findUnique({
+              where: { id: token.id as string },
+              select: { trialEndsAt: true, subscriptionActive: true },
+            });
+            if (dbUser) {
+              token.trialEndsAt = dbUser.trialEndsAt?.toISOString() || null;
+              token.subscriptionActive = dbUser.subscriptionActive;
+            }
+          } catch (e) {
+            // DB not available — continue with existing token data
+          }
+        }
+        return token;
+      },
+      async session({ session, token }) {
+        if (session.user) {
+          (session.user as any).id = token.id;
+          (session.user as any).trialEndsAt = token.trialEndsAt;
+          (session.user as any).subscriptionActive = token.subscriptionActive;
+        }
+        return session;
+      },
     },
-  },
-  events: {
-    async createUser({ user }) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
-      });
+    events: {
+      async createUser({ user }) {
+        if (!process.env.DATABASE_URL) return;
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+          });
+        } catch (e) {
+          // DB not available
+        }
+      },
     },
-  },
   };
 }
 
