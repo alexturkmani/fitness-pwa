@@ -1,6 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
+import Link from 'next/link';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { ACTIVITY_LEVELS, FITNESS_GOALS } from '@/lib/constants';
 import Card from '@/components/ui/Card';
@@ -8,7 +10,8 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import {
   ArrowLeft, User, Save, Check, Pencil,
-  TrendingDown, Dumbbell, Zap, Heart, Activity, Sparkles
+  TrendingDown, Dumbbell, Zap, Heart, Activity, Sparkles,
+  Crown, ChevronRight, LogOut
 } from 'lucide-react';
 
 const goalIcons: Record<string, any> = {
@@ -361,6 +364,32 @@ export default function ProfilePage() {
         </div>
         <Button className="w-full mt-3" onClick={() => setShowGoalModal(false)}>Done</Button>
       </Modal>
+
+      {/* Subscription & Account */}
+      <Link href="/subscription">
+        <Card className="card-hover">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center">
+                <Crown className="text-yellow-500" size={20} />
+              </div>
+              <div>
+                <p className="font-medium text-dark-100">Subscription & Billing</p>
+                <p className="text-sm text-dark-400">Manage your plan, cancel, or upgrade</p>
+              </div>
+            </div>
+            <ChevronRight className="text-dark-500" size={20} />
+          </div>
+        </Card>
+      </Link>
+
+      <button
+        onClick={() => signOut({ callbackUrl: '/login' })}
+        className="w-full flex items-center justify-center gap-2 p-3.5 rounded-xl border border-dark-700 text-red-400 font-medium hover:bg-red-500/5 hover:border-red-500/30 transition-all"
+      >
+        <LogOut size={18} />
+        Sign Out
+      </button>
     </div>
   );
 }
