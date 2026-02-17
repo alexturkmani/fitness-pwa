@@ -39,6 +39,6 @@ export const config = {
      * - /_next (Next.js internals)
      * - Static files (favicon, manifest, icons, sw.js, etc.)
      */
-    '/((?!api|login|register|paywall|_next/static|_next/image|favicon\\.ico|manifest\\.json|icons|sw\\.js|robots\\.txt|sitemap\\.xml|\\.well-known).*)',
+    '/((?!api|login|register|paywall|onboarding|_next/static|_next/image|favicon\\.ico|manifest\\.json|icons|sw\\.js|robots\\.txt|sitemap\\.xml|\\.well-known).*)',
   ],
 };

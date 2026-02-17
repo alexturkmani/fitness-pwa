@@ -39,7 +39,13 @@ export default function DashboardPage() {
     }
   }, [isOnboarded, router]);
 
-  if (!isOnboarded) return null;
+  if (!isOnboarded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-3 border-primary-500/30 border-t-primary-500 rounded-full spinner" />
+      </div>
+    );
+  }
 
   const today = formatDate(new Date());
   const todayTotals = getDayTotals(today);
