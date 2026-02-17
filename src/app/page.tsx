@@ -8,6 +8,7 @@ import { useFoodLog } from '@/hooks/useFoodLog';
 import { useWeightLog } from '@/hooks/useWeightLog';
 import { formatDate } from '@/lib/utils';
 import { FITNESS_GOALS } from '@/lib/constants';
+import { UserProfile } from '@/types';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
