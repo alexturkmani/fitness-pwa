@@ -7,6 +7,7 @@ interface SubscriptionState {
   isSubscribed: boolean;
   hasAccess: boolean;
   trialDaysLeft: number;
+  hasUsedTrial: boolean;
   loading: boolean;
 }
 
@@ -17,6 +18,7 @@ export function useSubscription(): SubscriptionState {
     isSubscribed: false,
     hasAccess: false,
     trialDaysLeft: 0,
+    hasUsedTrial: false,
     loading: true,
   });
 
@@ -24,7 +26,7 @@ export function useSubscription(): SubscriptionState {
     if (status === 'loading') return;
 
     if (!session?.user) {
-      setState({ isTrialActive: false, isSubscribed: false, hasAccess: false, trialDaysLeft: 0, loading: false });
+      setState({ isTrialActive: false, isSubscribed: false, hasAccess: false, trialDaysLeft: 0, hasUsedTrial: false, loading: false });
       return;
     }
 
@@ -35,9 +37,10 @@ export function useSubscription(): SubscriptionState {
     const isTrialActive = trialEndsAt ? trialEndsAt > now : false;
     const trialDaysLeft = trialEndsAt ? Math.max(0, Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
     const isSubscribed = user.subscriptionActive || false;
+    const hasUsedTrial = user.hasUsedTrial || false;
     const hasAccess = isTrialActive || isSubscribed;
 
-    setState({ isTrialActive, isSubscribed, hasAccess, trialDaysLeft, loading: false });
+    setState({ isTrialActive, isSubscribed, hasAccess, trialDaysLeft, hasUsedTrial, loading: false });
   }, [session, status]);
 
   return state;

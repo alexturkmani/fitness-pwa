@@ -43,6 +43,7 @@ model User {
   trialEndsAt          DateTime?
   subscriptionActive   Boolean   @default(false)
   isFreeAccount        Boolean   @default(false)
+  hasUsedTrial         Boolean   @default(false)
   rcCustomerId         String?
   stripeCustomerId     String?   @unique
   stripeSubscriptionId String?

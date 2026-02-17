@@ -65,12 +65,13 @@ function createAuthOptions(): NextAuthOptions {
           try {
             const dbUser = await prisma.user.findUnique({
               where: { id: token.id as string },
-              select: { trialEndsAt: true, subscriptionActive: true, isFreeAccount: true },
+              select: { trialEndsAt: true, subscriptionActive: true, isFreeAccount: true, hasUsedTrial: true },
             });
             if (dbUser) {
               token.trialEndsAt = dbUser.trialEndsAt?.toISOString() || null;
               token.subscriptionActive = dbUser.subscriptionActive;
               token.isFreeAccount = dbUser.isFreeAccount;
+              token.hasUsedTrial = dbUser.hasUsedTrial;
             }
           } catch (e) {
             // DB not available — continue with existing token data
@@ -84,6 +85,7 @@ function createAuthOptions(): NextAuthOptions {
           (session.user as any).trialEndsAt = token.trialEndsAt;
           (session.user as any).subscriptionActive = token.subscriptionActive;
           (session.user as any).isFreeAccount = token.isFreeAccount;
+          (session.user as any).hasUsedTrial = token.hasUsedTrial;
         }
         return session;
       },
@@ -94,7 +96,7 @@ function createAuthOptions(): NextAuthOptions {
         try {
           await prisma.user.update({
             where: { id: user.id },
-            data: { trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+            data: { trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), hasUsedTrial: true },
           });
         } catch (e) {
           // DB not available

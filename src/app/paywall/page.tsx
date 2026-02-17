@@ -11,11 +11,12 @@ import {
 export default function PaywallPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { hasAccess, trialDaysLeft, isTrialActive } = useSubscription();
+  const { hasAccess, trialDaysLeft, isTrialActive, hasUsedTrial } = useSubscription();
   const [purchasing, setPurchasing] = useState(false);
   const [error, setError] = useState('');
 
   const isNewUser = typeof window !== 'undefined' && !localStorage.getItem('onboarding_complete');
+  const canStartTrial = isNewUser && !hasUsedTrial;
 
   // Redirect if user has access and is not a new user viewing paywall for first time
   useEffect(() => {
@@ -63,7 +64,7 @@ export default function PaywallPage() {
         <h1 className="text-2xl font-bold text-dark-100">FitMate Premium</h1>
       </div>
       <p className="text-dark-400 text-center mb-8">
-        {isNewUser
+        {canStartTrial
           ? 'Start with a 7-day free trial, then $4.99/month.'
           : 'Your free trial has ended. Subscribe to keep your AI fitness coach.'}
       </p>
@@ -118,7 +119,7 @@ export default function PaywallPage() {
           Secured by Stripe. Your payment info is never stored on our servers.
         </p>
 
-        {isNewUser && (
+        {canStartTrial && (
           <button
             onClick={() => router.push('/onboarding')}
             className="w-full mt-3 p-3.5 rounded-xl border border-dark-700 text-dark-300 font-medium hover:bg-dark-950 transition-all text-center"
