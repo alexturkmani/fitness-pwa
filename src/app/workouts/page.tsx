@@ -8,8 +8,11 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { Dumbbell, Calendar, Clock, ChevronRight, Trophy, AlertCircle, Check } from 'lucide-react';
+import Modal from '@/components/ui/Modal';
+import { Dumbbell, Calendar, Clock, ChevronRight, Trophy, AlertCircle, Check, User, Users } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+
+type WorkoutStyle = 'single_muscle' | 'muscle_group';
 
 export default function WorkoutsPage() {
   const router = useRouter();
@@ -19,6 +22,8 @@ export default function WorkoutsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [assessmentResult, setAssessmentResult] = useState<any>(null);
+  const [showStyleModal, setShowStyleModal] = useState(false);
+  const [workoutStyle, setWorkoutStyle] = useState<WorkoutStyle>('muscle_group');
 
   const today = formatDate(new Date());
   const todayDayNumber = new Date().getDay() || 7; // 1=Mon, 7=Sun
@@ -26,9 +31,15 @@ export default function WorkoutsPage() {
   const todayLog = getLogsByDate(today);
   const todayWorkout = currentPlan?.days.find((d) => d.dayNumber === todayDayNumber);
 
-  const handleGenerateNewPlan = async () => {
+  const promptStyleSelection = () => {
+    setShowStyleModal(true);
+  };
+
+  const handleGenerateNewPlan = async (style?: WorkoutStyle) => {
+    setShowStyleModal(false);
     setLoading(true);
     setError(null);
+    const chosenStyle = style || workoutStyle;
     try {
       let assessment: string | undefined;
 
@@ -56,6 +67,7 @@ export default function WorkoutsPage() {
           previousLogs: currentPlan ? getLogsByPlan(currentPlan.id) : undefined,
           assessment,
           currentInterval: currentPlan?.intervalNumber || 0,
+          workoutStyle: chosenStyle,
         }),
       });
 
@@ -87,7 +99,7 @@ export default function WorkoutsPage() {
           title="No Workout Plan"
           description="Generate your AI-powered workout plan to get started."
           actionLabel="Generate Plan"
-          onAction={handleGenerateNewPlan}
+          onAction={promptStyleSelection}
         />
         {error && (
           <Card className="border-red-500/30 bg-red-500/5 mt-4">
@@ -135,7 +147,7 @@ export default function WorkoutsPage() {
               <p className="text-sm text-dark-400 mt-1">
                 Time to rotate your exercises. The AI will assess your progress and design your next plan.
               </p>
-              <Button onClick={handleGenerateNewPlan} loading={loading} size="sm" className="mt-3">
+              <Button onClick={promptStyleSelection} loading={loading} size="sm" className="mt-3">
                 Generate Next Plan
               </Button>
             </div>
@@ -219,6 +231,52 @@ export default function WorkoutsPage() {
           );
         })}
       </div>
+
+      {/* Workout Style Selection Modal */}
+      <Modal isOpen={showStyleModal} onClose={() => setShowStyleModal(false)} title="Workout Style">
+        <p className="text-sm text-dark-400 mb-4">How would you like your workouts structured?</p>
+        <div className="space-y-3">
+          <button
+            onClick={() => setWorkoutStyle('single_muscle')}
+            className={`w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3 ${
+              workoutStyle === 'single_muscle'
+                ? 'border-primary-500 bg-primary-500/10'
+                : 'border-dark-700 bg-dark-800/60 hover:border-dark-600'
+            }`}
+          >
+            <div className={`p-2.5 rounded-lg ${workoutStyle === 'single_muscle' ? 'bg-primary-500/20' : 'bg-dark-700/50'}`}>
+              <User className={workoutStyle === 'single_muscle' ? 'text-primary-400' : 'text-dark-400'} size={20} />
+            </div>
+            <div className="flex-1">
+              <p className={`font-medium ${workoutStyle === 'single_muscle' ? 'text-primary-400' : 'text-dark-200'}`}>Single Muscle</p>
+              <p className="text-xs text-dark-500">Each day targets one specific muscle (e.g., Chest Day, Back Day)</p>
+            </div>
+            {workoutStyle === 'single_muscle' && <Check className="text-primary-400" size={18} />}
+          </button>
+
+          <button
+            onClick={() => setWorkoutStyle('muscle_group')}
+            className={`w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3 ${
+              workoutStyle === 'muscle_group'
+                ? 'border-primary-500 bg-primary-500/10'
+                : 'border-dark-700 bg-dark-800/60 hover:border-dark-600'
+            }`}
+          >
+            <div className={`p-2.5 rounded-lg ${workoutStyle === 'muscle_group' ? 'bg-primary-500/20' : 'bg-dark-700/50'}`}>
+              <Users className={workoutStyle === 'muscle_group' ? 'text-primary-400' : 'text-dark-400'} size={20} />
+            </div>
+            <div className="flex-1">
+              <p className={`font-medium ${workoutStyle === 'muscle_group' ? 'text-primary-400' : 'text-dark-200'}`}>Muscle Groups</p>
+              <p className="text-xs text-dark-500">Combine related muscles per day (e.g., Push/Pull/Legs, Upper/Lower)</p>
+            </div>
+            {workoutStyle === 'muscle_group' && <Check className="text-primary-400" size={18} />}
+          </button>
+
+          <Button className="w-full mt-2" onClick={() => handleGenerateNewPlan(workoutStyle)}>
+            Generate Plan
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

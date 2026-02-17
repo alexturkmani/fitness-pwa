@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useWorkoutPlan } from '@/hooks/useWorkoutPlan';
@@ -7,17 +7,26 @@ import { useWorkoutLogs } from '@/hooks/useWorkoutLogs';
 import { useFoodLog } from '@/hooks/useFoodLog';
 import { useWeightLog } from '@/hooks/useWeightLog';
 import { formatDate } from '@/lib/utils';
+import { FITNESS_GOALS } from '@/lib/constants';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
 import {
   Dumbbell, Flame, Target, Scale, ChevronRight, Calendar,
-  UtensilsCrossed, BarChart3, ScanLine, Sparkles
+  UtensilsCrossed, BarChart3, ScanLine, Sparkles, Settings,
+  TrendingDown, Zap, Heart, Activity, Check
 } from 'lucide-react';
 import Link from 'next/link';
 
+const goalIcons: Record<string, any> = {
+  TrendingDown, Dumbbell, Zap, Heart, Activity,
+};
+
 export default function DashboardPage() {
   const router = useRouter();
-  const { profile, isOnboarded } = useUserProfile();
+  const { profile, isOnboarded, updateProfile } = useUserProfile();
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState(profile.fitnessGoal);
   const { currentPlan, getCurrentWeek, getDaysRemaining } = useWorkoutPlan();
   const { getThisWeekCount } = useWorkoutLogs();
   const { getDayTotals } = useFoodLog();
@@ -47,13 +56,22 @@ export default function DashboardPage() {
   return (
     <div className="py-6 space-y-6">
       {/* Greeting */}
-      <div>
-        <h1 className="text-2xl font-bold text-dark-100">
-          <span className="gradient-text">FitForge</span>
-        </h1>
-        <p className="text-dark-400 mt-1">
-          Goal: <span className="text-primary-400">{goalLabels[profile.fitnessGoal] || 'Fitness'}</span>
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-dark-100">
+            <span className="gradient-text">FitForge</span>
+          </h1>
+          <p className="text-dark-400 mt-1">
+            Goal: <span className="text-primary-400">{goalLabels[profile.fitnessGoal] || 'Fitness'}</span>
+          </p>
+        </div>
+        <button
+          onClick={() => { setSelectedGoal(profile.fitnessGoal); setShowGoalModal(true); }}
+          className="p-2.5 bg-dark-800/60 border border-dark-700 rounded-xl text-dark-400 hover:text-primary-400 hover:border-primary-500/50 transition-all"
+          title="Change Goal"
+        >
+          <Settings size={20} />
+        </button>
       </div>
 
       {/* Quick Stats */}
@@ -154,6 +172,48 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* Change Goal Modal */}
+      <Modal isOpen={showGoalModal} onClose={() => setShowGoalModal(false)} title="Change Your Goal">
+        <div className="space-y-3">
+          {FITNESS_GOALS.map((goal) => {
+            const Icon = goalIcons[goal.icon] || Sparkles;
+            return (
+              <button
+                key={goal.value}
+                onClick={() => setSelectedGoal(goal.value as typeof profile.fitnessGoal)}
+                className={`w-full text-left p-3 rounded-xl border transition-all flex items-center gap-3 ${
+                  selectedGoal === goal.value
+                    ? 'border-primary-500 bg-primary-500/10'
+                    : 'border-dark-700 bg-dark-800/60 hover:border-dark-600'
+                }`}
+              >
+                <div className={`p-2 rounded-lg ${selectedGoal === goal.value ? 'bg-primary-500/20' : 'bg-dark-700/50'}`}>
+                  <Icon className={selectedGoal === goal.value ? 'text-primary-400' : 'text-dark-400'} size={18} />
+                </div>
+                <div className="flex-1">
+                  <p className={`font-medium ${selectedGoal === goal.value ? 'text-primary-400' : 'text-dark-200'}`}>{goal.label}</p>
+                  <p className="text-xs text-dark-500">{goal.description}</p>
+                </div>
+                {selectedGoal === goal.value && <Check className="text-primary-400" size={18} />}
+              </button>
+            );
+          })}
+          <Button
+            className="w-full mt-2"
+            onClick={() => {
+              updateProfile({ fitnessGoal: selectedGoal });
+              setShowGoalModal(false);
+            }}
+            disabled={selectedGoal === profile.fitnessGoal}
+          >
+            Update Goal
+          </Button>
+          <p className="text-xs text-dark-500 text-center mt-1">
+            Changing your goal will affect meal plans and macro targets. Generate a new workout plan to match.
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 }

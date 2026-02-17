@@ -1,8 +1,11 @@
 import { UserProfile, WorkoutLog } from '@/types';
 import { calculateTDEE, calculateMacroTargets } from './utils';
 
-export function getWorkoutPlanPrompt(profile: UserProfile, previousLogs?: WorkoutLog[], assessment?: string): string {
+export function getWorkoutPlanPrompt(profile: UserProfile, previousLogs?: WorkoutLog[], assessment?: string, workoutStyle?: 'single_muscle' | 'muscle_group'): string {
   const isFirstPlan = !previousLogs || previousLogs.length === 0;
+  const styleLabel = workoutStyle === 'single_muscle' 
+    ? 'single muscle isolation (each day targets one specific muscle, e.g., Chest Day, Back Day, Shoulder Day, Bicep Day, Tricep Day, Leg Day)' 
+    : 'muscle group split (combine related muscle groups per day, e.g., Push/Pull/Legs or Upper/Lower)';
 
   let prompt = `Generate a structured ${profile.intervalWeeks}-week workout plan for the following user:
 
@@ -13,6 +16,7 @@ export function getWorkoutPlanPrompt(profile: UserProfile, previousLogs?: Workou
 - Activity Level: ${profile.activityLevel.replace('_', ' ')}
 - Goal: ${profile.fitnessGoal.replace('_', ' ')}
 - Target Weight: ${profile.targetWeight}kg
+- Workout Style Preference: ${styleLabel}
 `;
 
   if (!isFirstPlan && assessment) {
@@ -49,16 +53,21 @@ export function getWorkoutSystemPrompt(): string {
   return 'You are an expert fitness coach and exercise scientist. Generate structured, evidence-based workout plans. Always return valid JSON matching the requested structure exactly. Do not include any text outside the JSON.';
 }
 
-export function getMealPlanPrompt(profile: UserProfile): string {
+export function getMealPlanPrompt(profile: UserProfile, allergies?: string[]): string {
   const tdee = calculateTDEE(profile);
   const macros = calculateMacroTargets(profile);
+
+  let allergyClause = '';
+  if (allergies && allergies.length > 0) {
+    allergyClause = `\n- ALLERGIES/INTOLERANCES: ${allergies.join(', ')} — STRICTLY avoid all foods containing these allergens. Do NOT include any ingredient that contains or is derived from these.\n`;
+  }
 
   return `Generate a complete daily meal plan for:
 
 - Weight: ${profile.weight}kg, Height: ${profile.height}cm, Age: ${profile.age}, Gender: ${profile.gender}
 - Goal: ${profile.fitnessGoal.replace('_', ' ')}
 - TDEE: ${tdee} calories
-- Target Macros: ${macros.protein}g protein, ${macros.carbs}g carbs, ${macros.fats}g fats, ${macros.calories} calories
+- Target Macros: ${macros.protein}g protein, ${macros.carbs}g carbs, ${macros.fats}g fats, ${macros.calories} calories${allergyClause}
 
 Requirements:
 - Include 5 meals: Breakfast, Morning Snack, Lunch, Afternoon Snack, Dinner

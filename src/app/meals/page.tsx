@@ -9,11 +9,16 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import Modal from '@/components/ui/Modal';
 import Toast from '@/components/ui/Toast';
-import { UtensilsCrossed, RefreshCw, Plus, Flame, Beef, Wheat, Droplets } from 'lucide-react';
+import { UtensilsCrossed, RefreshCw, Plus, Flame, Beef, Wheat, Droplets, AlertTriangle, X } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 const MACRO_COLORS = ['#10b981', '#06b6d4', '#f59e0b'];
+
+const COMMON_ALLERGIES = [
+  'Dairy', 'Gluten', 'Nuts', 'Peanuts', 'Eggs', 'Soy', 'Shellfish', 'Fish', 'Wheat', 'Sesame',
+];
 
 export default function MealsPage() {
   const { profile } = useUserProfile();
@@ -22,17 +27,39 @@ export default function MealsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [showAllergyModal, setShowAllergyModal] = useState(false);
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [customAllergy, setCustomAllergy] = useState('');
 
   const targets = profile.onboardingCompleted ? calculateMacroTargets(profile) : null;
 
-  const handleGenerate = async () => {
+  const toggleAllergy = (allergy: string) => {
+    setAllergies((prev) =>
+      prev.includes(allergy) ? prev.filter((a) => a !== allergy) : [...prev, allergy]
+    );
+  };
+
+  const addCustomAllergy = () => {
+    const trimmed = customAllergy.trim();
+    if (trimmed && !allergies.includes(trimmed)) {
+      setAllergies((prev) => [...prev, trimmed]);
+    }
+    setCustomAllergy('');
+  };
+
+  const promptAllergySelection = () => {
+    setShowAllergyModal(true);
+  };
+
+  const handleGenerate = async (selectedAllergies?: string[]) => {
+    setShowAllergyModal(false);
     setLoading(true);
     setError(null);
     try {
       const res = await fetch('/api/ai/meal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile }),
+        body: JSON.stringify({ profile, allergies: selectedAllergies || allergies }),
       });
       if (res.ok) {
         const plan = await res.json();
@@ -76,7 +103,7 @@ export default function MealsPage() {
           title="No Meal Plan"
           description="Generate an AI-powered meal plan tailored to your goals and macro targets."
           actionLabel="Generate Meal Plan"
-          onAction={handleGenerate}
+          onAction={promptAllergySelection}
         />
         {error && (
           <Card className="border-red-500/30 bg-red-500/5 mt-4">
@@ -103,7 +130,7 @@ export default function MealsPage() {
           <h1 className="text-2xl font-bold text-dark-100">Meal Plan</h1>
           <p className="text-dark-400 mt-1">AI-designed for your goals</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={handleGenerate} loading={loading}>
+        <Button variant="secondary" size="sm" onClick={promptAllergySelection} loading={loading}>
           <RefreshCw size={16} /> New Plan
         </Button>
       </div>
@@ -201,6 +228,61 @@ export default function MealsPage() {
           </Card>
         ))}
       </div>
+
+      {/* Allergy Selection Modal */}
+      <Modal isOpen={showAllergyModal} onClose={() => setShowAllergyModal(false)} title="Any Allergies?">
+        <p className="text-sm text-dark-400 mb-4">Select any food allergies or intolerances so the AI can avoid them in your meal plan.</p>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {COMMON_ALLERGIES.map((allergy) => (
+            <button
+              key={allergy}
+              onClick={() => toggleAllergy(allergy)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
+                allergies.includes(allergy)
+                  ? 'border-primary-500 bg-primary-500/20 text-primary-400'
+                  : 'border-dark-700 bg-dark-800/60 text-dark-400 hover:border-dark-600'
+              }`}
+            >
+              {allergy}
+            </button>
+          ))}
+        </div>
+        {/* Custom allergy tags */}
+        {allergies.filter((a) => !COMMON_ALLERGIES.includes(a)).length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {allergies.filter((a) => !COMMON_ALLERGIES.includes(a)).map((a) => (
+              <span key={a} className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-primary-500/20 text-primary-400 border border-primary-500/30">
+                {a}
+                <button onClick={() => toggleAllergy(a)}><X size={12} /></button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="flex gap-2 mb-4">
+          <input
+            className="input-field flex-1"
+            placeholder="Add custom allergy..."
+            value={customAllergy}
+            onChange={(e) => setCustomAllergy(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addCustomAllergy()}
+          />
+          <Button variant="secondary" size="sm" onClick={addCustomAllergy} disabled={!customAllergy.trim()}>
+            Add
+          </Button>
+        </div>
+        {allergies.length > 0 && (
+          <div className="flex items-start gap-2 mb-4 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+            <AlertTriangle className="text-yellow-400 flex-shrink-0 mt-0.5" size={14} />
+            <p className="text-xs text-yellow-400">The meal plan will exclude: {allergies.join(', ')}</p>
+          </div>
+        )}
+        <Button className="w-full" onClick={() => handleGenerate(allergies)}>
+          Generate Meal Plan
+        </Button>
+        {allergies.length === 0 && (
+          <p className="text-xs text-dark-500 text-center mt-2">No allergies? Just tap Generate to proceed.</p>
+        )}
+      </Modal>
     </div>
   );
 }

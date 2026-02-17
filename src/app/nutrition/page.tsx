@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useFoodLog } from '@/hooks/useFoodLog';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { FoodLogEntry } from '@/types';
@@ -8,7 +8,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Toast from '@/components/ui/Toast';
-import { Apple, Plus, Trash2, ScanLine, Flame, Beef, Wheat, Droplets } from 'lucide-react';
+import { Apple, Plus, Trash2, ScanLine, Flame, Beef, Wheat, Droplets, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function NutritionPage() {
@@ -21,6 +21,52 @@ export default function NutritionPage() {
   const [newFood, setNewFood] = useState({
     name: '', servingSize: '', calories: '', protein: '', carbs: '', fats: '',
   });
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [autoFilled, setAutoFilled] = useState(false);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const fetchNutrition = useCallback(async (foodName: string, servingSize: string) => {
+    if (!foodName || foodName.length < 2) return;
+    setLookupLoading(true);
+    try {
+      const res = await fetch('/api/ai/food-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ foodName, servingSize: servingSize || 'standard serving' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNewFood((prev) => ({
+          ...prev,
+          calories: String(data.calories || ''),
+          protein: String(data.protein || ''),
+          carbs: String(data.carbs || ''),
+          fats: String(data.fats || ''),
+        }));
+        setAutoFilled(true);
+      }
+    } catch {
+      // silently fail - user can still enter manually
+    } finally {
+      setLookupLoading(false);
+    }
+  }, []);
+
+  const handleFoodFieldChange = (field: 'name' | 'servingSize', value: string) => {
+    const updated = { ...newFood, [field]: value };
+    setNewFood(updated);
+    setAutoFilled(false);
+
+    // Debounce the lookup - trigger when food name is entered and serving size changes, or vice versa
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const foodName = field === 'name' ? value : updated.name;
+    const servingSize = field === 'servingSize' ? value : updated.servingSize;
+    if (foodName.trim().length >= 2 && servingSize.trim().length >= 1) {
+      debounceRef.current = setTimeout(() => {
+        fetchNutrition(foodName.trim(), servingSize.trim());
+      }, 800);
+    }
+  };
 
   const targets = profile.onboardingCompleted ? calculateMacroTargets(profile) : { calories: 2000, protein: 150, carbs: 250, fats: 65 };
   const weekData = getWeekEntries();
@@ -47,6 +93,7 @@ export default function NutritionPage() {
     addEntry(entry);
     setNewFood({ name: '', servingSize: '', calories: '', protein: '', carbs: '', fats: '' });
     setShowAddModal(false);
+    setAutoFilled(false);
     setToast(`${entry.foodName} added`);
   };
 
@@ -194,12 +241,23 @@ export default function NutritionPage() {
         <div className="space-y-3">
           <div>
             <label className="block text-xs text-dark-400 mb-1">Food Name</label>
-            <input className="input-field" placeholder="e.g., Chicken Breast" value={newFood.name} onChange={(e) => setNewFood({ ...newFood, name: e.target.value })} />
+            <input className="input-field" placeholder="e.g., Chicken Breast" value={newFood.name} onChange={(e) => handleFoodFieldChange('name', e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs text-dark-400 mb-1">Serving Size</label>
-            <input className="input-field" placeholder="e.g., 150g" value={newFood.servingSize} onChange={(e) => setNewFood({ ...newFood, servingSize: e.target.value })} />
+            <label className="block text-xs text-dark-400 mb-1">Serving Size / Weight</label>
+            <input className="input-field" placeholder="e.g., 150g" value={newFood.servingSize} onChange={(e) => handleFoodFieldChange('servingSize', e.target.value)} />
           </div>
+          {lookupLoading && (
+            <div className="flex items-center gap-2 text-primary-400 text-xs py-1">
+              <Loader2 size={14} className="animate-spin" />
+              <span>Estimating nutrition info...</span>
+            </div>
+          )}
+          {autoFilled && !lookupLoading && (
+            <div className="text-xs text-primary-400 bg-primary-500/10 border border-primary-500/20 rounded-lg px-3 py-1.5">
+              Nutrition auto-filled from AI estimate. You can adjust values if needed.
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-dark-400 mb-1">Calories</label>

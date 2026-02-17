@@ -7,13 +7,14 @@ import { generateId } from '@/lib/utils';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { profile, previousLogs, assessment } = body as {
+    const { profile, previousLogs, assessment, workoutStyle } = body as {
       profile: UserProfile;
       previousLogs?: WorkoutLog[];
       assessment?: string;
+      workoutStyle?: 'single_muscle' | 'muscle_group';
     };
 
-    const prompt = getWorkoutPlanPrompt(profile, previousLogs, assessment);
+    const prompt = getWorkoutPlanPrompt(profile, previousLogs, assessment, workoutStyle);
     const result = await callAI(prompt, getWorkoutSystemPrompt());
 
     let parsed;

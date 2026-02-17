@@ -7,9 +7,9 @@ import { generateId, calculateMacroTargets, formatDate } from '@/lib/utils';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { profile } = body as { profile: UserProfile };
+    const { profile, allergies } = body as { profile: UserProfile; allergies?: string[] };
 
-    const prompt = getMealPlanPrompt(profile);
+    const prompt = getMealPlanPrompt(profile, allergies);
     const result = await callAI(prompt, getMealSystemPrompt());
 
     let parsed;
