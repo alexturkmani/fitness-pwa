@@ -3,9 +3,7 @@ import { calculateTDEE, calculateMacroTargets } from './utils';
 
 export function getWorkoutPlanPrompt(profile: UserProfile, previousLogs?: WorkoutLog[], assessment?: string, workoutStyle?: 'single_muscle' | 'muscle_group'): string {
   const isFirstPlan = !previousLogs || previousLogs.length === 0;
-  const styleLabel = workoutStyle === 'single_muscle' 
-    ? 'single muscle isolation (each day targets one specific muscle, e.g., Chest Day, Back Day, Shoulder Day, Bicep Day, Tricep Day, Leg Day)' 
-    : 'muscle group split (combine related muscle groups per day, e.g., Push/Pull/Legs or Upper/Lower)';
+  const isSingleMuscle = workoutStyle === 'single_muscle';
 
   let prompt = `Generate a structured ${profile.intervalWeeks}-week workout plan for the following user:
 
@@ -16,14 +14,58 @@ export function getWorkoutPlanPrompt(profile: UserProfile, previousLogs?: Workou
 - Activity Level: ${profile.activityLevel.replace('_', ' ')}
 - Goal: ${(profile.fitnessGoals || ['general_fitness']).map(g => g.replace('_', ' ')).join(', ')}
 - Target Weight: ${profile.targetWeight}kg
-- Workout Style Preference: ${styleLabel}
 `;
 
   if (!isFirstPlan && assessment) {
     prompt += `\nPrevious interval assessment: ${assessment}\nPlease design the next interval to address the identified weak points.\n`;
   }
 
-  prompt += `
+  if (isSingleMuscle) {
+    prompt += `
+CRITICAL REQUIREMENT — SINGLE MUSCLE SPLIT:
+The user has explicitly chosen a SINGLE MUSCLE isolation split. You MUST follow these rules strictly:
+- Each training day focuses on ONE specific muscle ONLY (not a combination)
+- Valid day labels: "Chest Day", "Back Day", "Shoulder Day", "Bicep Day", "Tricep Day", "Leg Day", "Abs Day", "Forearm Day", "Glute Day", "Hamstring Day", "Quad Day", "Calf Day"
+- NEVER label a day "Push Day", "Pull Day", "Upper Body", "Lower Body", or any combined muscle group
+- ALL exercises on a given day must target that single muscle exclusively
+- Example schedule: Monday: Chest Day, Tuesday: Back Day, Wednesday: Shoulder Day, Thursday: Leg Day, Friday: Bicep & Tricep Day is WRONG — separate them into individual days
+- Include 1-2 rest days
+
+Requirements:
+- Plan for 7 days (Monday to Sunday, include 1-2 rest days)
+- Each workout day should have 4-6 exercises ALL targeting the SAME single muscle
+- For each exercise provide: name, muscleGroup (must be the SAME for all exercises in a day), sets (3-5), reps (use a range string like "8-12"), restSeconds (60-180)
+- Include brief notes for the overall plan
+
+Return JSON with this exact structure:
+{
+  "days": [
+    {
+      "dayNumber": 1,
+      "dayLabel": "Chest Day",
+      "isRestDay": false,
+      "exercises": [
+        { "name": "Bench Press", "muscleGroup": "Chest", "sets": 4, "reps": "8-12", "restSeconds": 90, "notes": "" },
+        { "name": "Incline Dumbbell Press", "muscleGroup": "Chest", "sets": 4, "reps": "8-12", "restSeconds": 90, "notes": "" }
+      ]
+    },
+    {
+      "dayNumber": 2,
+      "dayLabel": "Back Day",
+      "isRestDay": false,
+      "exercises": [
+        { "name": "Barbell Row", "muscleGroup": "Back", "sets": 4, "reps": "8-12", "restSeconds": 90, "notes": "" }
+      ]
+    }
+  ],
+  "aiNotes": "Brief explanation of the plan design"
+}`;
+  } else {
+    prompt += `
+WORKOUT STYLE: Muscle Group Split
+- Combine related muscle groups per day (e.g., Push/Pull/Legs, Upper/Lower, or similar grouping)
+- Each day can target multiple related muscles
+
 Requirements:
 - Plan for 7 days (Monday to Sunday, include 1-2 rest days)
 - Each workout day should have 4-6 exercises
@@ -45,6 +87,7 @@ Return JSON with this exact structure:
   ],
   "aiNotes": "Brief explanation of the plan design"
 }`;
+  }
 
   return prompt;
 }
