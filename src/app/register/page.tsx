@@ -58,7 +58,7 @@ export default function RegisterPage() {
         setError('Account created but sign-in failed. Please log in manually.');
         setLoading(false);
       } else {
-        router.push('/onboarding');
+        router.push('/paywall');
         router.refresh();
       }
     } catch (err) {
@@ -69,7 +69,7 @@ export default function RegisterPage() {
 
   const handleGoogleRegister = async () => {
     setGoogleLoading(true);
-    await signIn('google', { callbackUrl: '/onboarding' });
+    await signIn('google', { callbackUrl: '/paywall' });
   };
 
   return (

@@ -17,12 +17,14 @@ export default function PaywallPage() {
   const [purchasing, setPurchasing] = useState(false);
   const [error, setError] = useState('');
 
-  // Redirect if user has access
+  const isNewUser = typeof window !== 'undefined' && !localStorage.getItem('onboarding_complete');
+
+  // Redirect if user has access and is not a new user viewing paywall for first time
   useEffect(() => {
-    if (hasAccess) {
+    if (hasAccess && !isNewUser) {
       router.push('/');
     }
-  }, [hasAccess, router]);
+  }, [hasAccess, isNewUser, router]);
 
   // Initialize RevenueCat and load offerings
   useEffect(() => {
@@ -84,7 +86,9 @@ export default function PaywallPage() {
         <h1 className="text-2xl font-bold text-dark-100">FitMate Premium</h1>
       </div>
       <p className="text-dark-400 text-center mb-8">
-        Your free trial has ended. Subscribe to keep your AI fitness coach.
+        {isNewUser
+          ? 'Start with a 7-day free trial, then $4.99/month.'
+          : 'Your free trial has ended. Subscribe to keep your AI fitness coach.'}
       </p>
 
       {/* Features */}
@@ -136,6 +140,15 @@ export default function PaywallPage() {
         <p className="text-xs text-dark-500 text-center mt-4">
           Secured by Stripe. Your payment info is never stored on our servers.
         </p>
+
+        {isNewUser && (
+          <button
+            onClick={() => router.push('/onboarding')}
+            className="w-full mt-3 p-3.5 rounded-xl border border-dark-700 text-dark-300 font-medium hover:bg-dark-950 transition-all text-center"
+          >
+            Start 7-Day Free Trial Instead
+          </button>
+        )}
       </div>
     </div>
   );
