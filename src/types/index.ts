@@ -145,6 +145,30 @@ export interface ProgressSnapshot {
   createdAt: string;
 }
 
+export interface CustomExerciseLog {
+  id: string;
+  name: string;
+  muscleGroup: string;
+  sets: { weight: number; reps: number }[];
+}
+
+export interface CustomWorkoutLog {
+  id: string;
+  date: string;
+  name: string;
+  exercises: CustomExerciseLog[];
+  duration?: number;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface ExerciseSuggestion {
+  exerciseName: string;
+  assessment: string;
+  improvementTips: string[];
+  alternatives: { name: string; reason: string }[];
+}
+
 export enum StorageKeys {
   USER_PROFILE = 'fitpwa_user_profile',
   WORKOUT_PLANS = 'fitpwa_workout_plans',
@@ -154,4 +178,5 @@ export enum StorageKeys {
   PROGRESS_SNAPSHOTS = 'fitpwa_progress_snapshots',
   WEIGHT_ENTRIES = 'fitpwa_weight_entries',
   OPENAI_KEY = 'fitpwa_openai_key',
+  CUSTOM_WORKOUT_LOGS = 'fitpwa_custom_workout_logs',
 }

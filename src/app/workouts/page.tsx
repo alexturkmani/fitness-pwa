@@ -9,8 +9,9 @@ import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Modal from '@/components/ui/Modal';
-import { Dumbbell, Calendar, Clock, ChevronRight, Trophy, AlertCircle, Check, User, Users } from 'lucide-react';
+import { Dumbbell, Calendar, Clock, ChevronRight, Trophy, AlertCircle, Check, User, Users, ClipboardList } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import Link from 'next/link';
 
 type WorkoutStyle = 'single_muscle' | 'muscle_group';
 
@@ -101,6 +102,12 @@ export default function WorkoutsPage() {
           actionLabel="Generate Plan"
           onAction={promptStyleSelection}
         />
+        <div className="mt-4 px-4">
+          <Link href="/workouts/custom" className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dark-700 bg-dark-800/60 hover:border-primary-500/50 text-dark-300 hover:text-primary-400 transition-all">
+            <ClipboardList size={18} />
+            <span className="font-medium">My Custom Workouts</span>
+          </Link>
+        </div>
         {error && (
           <Card className="border-red-500/30 bg-red-500/5 mt-4">
             <p className="text-sm text-red-400">{error}</p>
@@ -164,9 +171,14 @@ export default function WorkoutsPage() {
           <h1 className="text-2xl font-bold text-dark-100">Your Workout Plan</h1>
           <p className="text-dark-400 mt-1">Interval #{currentPlan.intervalNumber}</p>
         </div>
-        <Button size="sm" variant="secondary" onClick={promptStyleSelection}>
-          Regenerate
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link href="/workouts/custom" className="p-2 rounded-xl text-dark-400 hover:text-primary-400 bg-dark-800/60 hover:bg-dark-700/60 border border-dark-700 hover:border-primary-500/50 transition-all" title="My Custom Workouts">
+            <ClipboardList size={18} />
+          </Link>
+          <Button size="sm" variant="secondary" onClick={promptStyleSelection}>
+            Regenerate
+          </Button>
+        </div>
       </div>
 
       {/* Progress Stats */}

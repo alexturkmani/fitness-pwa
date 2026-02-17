@@ -1,4 +1,4 @@
-import { UserProfile, WorkoutLog } from '@/types';
+import { UserProfile, WorkoutLog, CustomExerciseLog } from '@/types';
 import { calculateTDEE, calculateMacroTargets } from './utils';
 
 export function getWorkoutPlanPrompt(profile: UserProfile, previousLogs?: WorkoutLog[], assessment?: string, workoutStyle?: 'single_muscle' | 'muscle_group'): string {
@@ -150,4 +150,42 @@ Return JSON:
 
 export function getFoodAlternativeSystemPrompt(): string {
   return 'You are a sports nutrition expert. Assess food products and suggest better alternatives when protein-to-calorie ratios are suboptimal. Always return valid JSON.';
+}
+
+export function getExerciseSuggestionPrompt(exercises: CustomExerciseLog[], userGoals: string[]): string {
+  const exerciseSummary = exercises.map(ex => ({
+    name: ex.name,
+    muscleGroup: ex.muscleGroup,
+    sets: ex.sets.map(s => `${s.weight}kg x ${s.reps} reps`),
+  }));
+
+  return `Analyze each exercise from the following custom workout log and provide improvement suggestions and alternative exercises:
+
+User's fitness goals: ${userGoals.map(g => g.replace('_', ' ')).join(', ')}
+
+Exercises logged:
+${JSON.stringify(exerciseSummary, null, 2)}
+
+For EACH exercise provide:
+1. A brief assessment of their form/performance based on the weight and reps logged
+2. 2-3 specific tips to improve or progress on that exercise
+3. 2-3 alternative exercises that target the same muscle group, with a reason why each is a good alternative
+
+Return JSON with this exact structure:
+{
+  "suggestions": [
+    {
+      "exerciseName": "Exercise Name",
+      "assessment": "Brief assessment of performance",
+      "improvementTips": ["tip 1", "tip 2", "tip 3"],
+      "alternatives": [
+        { "name": "Alternative Exercise", "reason": "Why this is a good alternative" }
+      ]
+    }
+  ]
+}`;
+}
+
+export function getExerciseSuggestionSystemPrompt(): string {
+  return 'You are an expert strength and conditioning coach. Analyze workout exercises and provide actionable improvement tips and smart alternative exercise suggestions. Always return valid JSON matching the requested structure exactly. Do not include any text outside the JSON.';
 }
