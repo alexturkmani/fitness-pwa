@@ -5,12 +5,13 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import prisma from './prisma';
 
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
-  session: { strategy: 'jwt' },
-  pages: {
-    signIn: '/login',
-  },
+function createAuthOptions(): NextAuthOptions {
+  return {
+    adapter: process.env.DATABASE_URL ? PrismaAdapter(prisma) : undefined,
+    session: { strategy: 'jwt' },
+    pages: {
+      signIn: '/login',
+    },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -72,4 +73,14 @@ export const authOptions: NextAuthOptions = {
       });
     },
   },
-};
+  };
+}
+
+// Lazy getter — only creates options when actually needed at runtime
+let _authOptions: NextAuthOptions | null = null;
+export function getAuthOptions(): NextAuthOptions {
+  if (!_authOptions) {
+    _authOptions = createAuthOptions();
+  }
+  return _authOptions;
+}
