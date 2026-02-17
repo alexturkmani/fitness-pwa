@@ -26,7 +26,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { profile, isOnboarded, updateProfile } = useUserProfile();
   const [showGoalModal, setShowGoalModal] = useState(false);
-  const [selectedGoal, setSelectedGoal] = useState(profile.fitnessGoal);
+  const [selectedGoals, setSelectedGoals] = useState<string[]>(profile.fitnessGoals || ['general_fitness']);
   const { currentPlan, getCurrentWeek, getDaysRemaining } = useWorkoutPlan();
   const { getThisWeekCount } = useWorkoutLogs();
   const { getDayTotals } = useFoodLog();
@@ -53,6 +53,9 @@ export default function DashboardPage() {
     general_fitness: 'General Fitness',
   };
 
+  const activeGoals = profile.fitnessGoals || ['general_fitness'];
+  const goalDisplay = activeGoals.map(g => goalLabels[g] || g).join(', ');
+
   return (
     <div className="py-6 space-y-6">
       {/* Greeting */}
@@ -62,11 +65,11 @@ export default function DashboardPage() {
             <span className="gradient-text">FitMate</span>
           </h1>
           <p className="text-dark-400 mt-1">
-            Goal: <span className="text-primary-400">{goalLabels[profile.fitnessGoal] || 'Fitness'}</span>
+            Goals: <span className="text-primary-400">{goalDisplay}</span>
           </p>
         </div>
         <button
-          onClick={() => { setSelectedGoal(profile.fitnessGoal); setShowGoalModal(true); }}
+          onClick={() => { setSelectedGoals([...(profile.fitnessGoals || ['general_fitness'])]); setShowGoalModal(true); }}
           className="p-2.5 bg-dark-800/60 border border-dark-700 rounded-xl text-dark-400 hover:text-primary-400 hover:border-primary-500/50 transition-all"
           title="Change Goal"
         >
@@ -174,43 +177,53 @@ export default function DashboardPage() {
       </div>
 
       {/* Change Goal Modal */}
-      <Modal isOpen={showGoalModal} onClose={() => setShowGoalModal(false)} title="Change Your Goal">
+      <Modal isOpen={showGoalModal} onClose={() => setShowGoalModal(false)} title="Change Your Goals">
+        <p className="text-sm text-dark-400 mb-3">Select one or more fitness goals.</p>
         <div className="space-y-3">
           {FITNESS_GOALS.map((goal) => {
             const Icon = goalIcons[goal.icon] || Sparkles;
+            const isSelected = selectedGoals.includes(goal.value);
             return (
               <button
                 key={goal.value}
-                onClick={() => setSelectedGoal(goal.value as typeof profile.fitnessGoal)}
+                onClick={() => {
+                  if (isSelected) {
+                    if (selectedGoals.length > 1) {
+                      setSelectedGoals(selectedGoals.filter(g => g !== goal.value));
+                    }
+                  } else {
+                    setSelectedGoals([...selectedGoals, goal.value]);
+                  }
+                }}
                 className={`w-full text-left p-3 rounded-xl border transition-all flex items-center gap-3 ${
-                  selectedGoal === goal.value
+                  isSelected
                     ? 'border-primary-500 bg-primary-500/10'
                     : 'border-dark-700 bg-dark-800/60 hover:border-dark-600'
                 }`}
               >
-                <div className={`p-2 rounded-lg ${selectedGoal === goal.value ? 'bg-primary-500/20' : 'bg-dark-700/50'}`}>
-                  <Icon className={selectedGoal === goal.value ? 'text-primary-400' : 'text-dark-400'} size={18} />
+                <div className={`p-2 rounded-lg ${isSelected ? 'bg-primary-500/20' : 'bg-dark-700/50'}`}>
+                  <Icon className={isSelected ? 'text-primary-400' : 'text-dark-400'} size={18} />
                 </div>
                 <div className="flex-1">
-                  <p className={`font-medium ${selectedGoal === goal.value ? 'text-primary-400' : 'text-dark-200'}`}>{goal.label}</p>
+                  <p className={`font-medium ${isSelected ? 'text-primary-400' : 'text-dark-200'}`}>{goal.label}</p>
                   <p className="text-xs text-dark-500">{goal.description}</p>
                 </div>
-                {selectedGoal === goal.value && <Check className="text-primary-400" size={18} />}
+                {isSelected && <Check className="text-primary-400" size={18} />}
               </button>
             );
           })}
           <Button
             className="w-full mt-2"
             onClick={() => {
-              updateProfile({ fitnessGoal: selectedGoal });
+              updateProfile({ fitnessGoals: selectedGoals as UserProfile['fitnessGoals'] });
               setShowGoalModal(false);
             }}
-            disabled={selectedGoal === profile.fitnessGoal}
+            disabled={JSON.stringify(selectedGoals.sort()) === JSON.stringify([...(profile.fitnessGoals || ['general_fitness'])].sort())}
           >
-            Update Goal
+            Update Goals
           </Button>
           <p className="text-xs text-dark-500 text-center mt-1">
-            Changing your goal will affect meal plans and macro targets. Generate a new workout plan to match.
+            Changing your goals will affect meal plans and macro targets. Generate a new workout plan to match.
           </p>
         </div>
       </Modal>

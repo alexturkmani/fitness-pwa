@@ -14,7 +14,7 @@ export function getWorkoutPlanPrompt(profile: UserProfile, previousLogs?: Workou
 - Age: ${profile.age}
 - Gender: ${profile.gender}
 - Activity Level: ${profile.activityLevel.replace('_', ' ')}
-- Goal: ${profile.fitnessGoal.replace('_', ' ')}
+- Goal: ${(profile.fitnessGoals || ['general_fitness']).map(g => g.replace('_', ' ')).join(', ')}
 - Target Weight: ${profile.targetWeight}kg
 - Workout Style Preference: ${styleLabel}
 `;
@@ -65,7 +65,7 @@ export function getMealPlanPrompt(profile: UserProfile, allergies?: string[]): s
   return `Generate a complete daily meal plan for:
 
 - Weight: ${profile.weight}kg, Height: ${profile.height}cm, Age: ${profile.age}, Gender: ${profile.gender}
-- Goal: ${profile.fitnessGoal.replace('_', ' ')}
+- Goal: ${(profile.fitnessGoals || ['general_fitness']).map(g => g.replace('_', ' ')).join(', ')}
 - TDEE: ${tdee} calories
 - Target Macros: ${macros.protein}g protein, ${macros.carbs}g carbs, ${macros.fats}g fats, ${macros.calories} calories${allergyClause}
 

@@ -106,6 +106,52 @@ export default function WorkoutsPage() {
             <p className="text-sm text-red-400">{error}</p>
           </Card>
         )}
+
+        {/* Workout Style Selection Modal */}
+        <Modal isOpen={showStyleModal} onClose={() => setShowStyleModal(false)} title="Workout Style">
+          <p className="text-sm text-dark-400 mb-4">How would you like your workouts structured?</p>
+          <div className="space-y-3">
+            <button
+              onClick={() => setWorkoutStyle('single_muscle')}
+              className={`w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3 ${
+                workoutStyle === 'single_muscle'
+                  ? 'border-primary-500 bg-primary-500/10'
+                  : 'border-dark-700 bg-dark-800/60 hover:border-dark-600'
+              }`}
+            >
+              <div className={`p-2.5 rounded-lg ${workoutStyle === 'single_muscle' ? 'bg-primary-500/20' : 'bg-dark-700/50'}`}>
+                <User className={workoutStyle === 'single_muscle' ? 'text-primary-400' : 'text-dark-400'} size={20} />
+              </div>
+              <div className="flex-1">
+                <p className={`font-medium ${workoutStyle === 'single_muscle' ? 'text-primary-400' : 'text-dark-200'}`}>Single Muscle</p>
+                <p className="text-xs text-dark-500">Each day targets one specific muscle (e.g., Chest Day, Back Day)</p>
+              </div>
+              {workoutStyle === 'single_muscle' && <Check className="text-primary-400" size={18} />}
+            </button>
+
+            <button
+              onClick={() => setWorkoutStyle('muscle_group')}
+              className={`w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3 ${
+                workoutStyle === 'muscle_group'
+                  ? 'border-primary-500 bg-primary-500/10'
+                  : 'border-dark-700 bg-dark-800/60 hover:border-dark-600'
+              }`}
+            >
+              <div className={`p-2.5 rounded-lg ${workoutStyle === 'muscle_group' ? 'bg-primary-500/20' : 'bg-dark-700/50'}`}>
+                <Users className={workoutStyle === 'muscle_group' ? 'text-primary-400' : 'text-dark-400'} size={20} />
+              </div>
+              <div className="flex-1">
+                <p className={`font-medium ${workoutStyle === 'muscle_group' ? 'text-primary-400' : 'text-dark-200'}`}>Muscle Groups</p>
+                <p className="text-xs text-dark-500">Combine related muscles per day (e.g., Push/Pull/Legs, Upper/Lower)</p>
+              </div>
+              {workoutStyle === 'muscle_group' && <Check className="text-primary-400" size={18} />}
+            </button>
+
+            <Button className="w-full mt-2" onClick={() => handleGenerateNewPlan(workoutStyle)}>
+              Generate Plan
+            </Button>
+          </div>
+        </Modal>
       </div>
     );
   }

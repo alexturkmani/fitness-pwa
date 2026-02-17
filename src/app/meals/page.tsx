@@ -110,6 +110,60 @@ export default function MealsPage() {
             <p className="text-sm text-red-400">{error}</p>
           </Card>
         )}
+
+        {/* Allergy Selection Modal */}
+        <Modal isOpen={showAllergyModal} onClose={() => setShowAllergyModal(false)} title="Any Allergies?">
+          <p className="text-sm text-dark-400 mb-4">Select any food allergies or intolerances so the AI can avoid them in your meal plan.</p>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {COMMON_ALLERGIES.map((allergy) => (
+              <button
+                key={allergy}
+                onClick={() => toggleAllergy(allergy)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
+                  allergies.includes(allergy)
+                    ? 'border-primary-500 bg-primary-500/20 text-primary-400'
+                    : 'border-dark-700 bg-dark-800/60 text-dark-400 hover:border-dark-600'
+                }`}
+              >
+                {allergy}
+              </button>
+            ))}
+          </div>
+          {allergies.filter((a) => !COMMON_ALLERGIES.includes(a)).length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {allergies.filter((a) => !COMMON_ALLERGIES.includes(a)).map((a) => (
+                <span key={a} className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-primary-500/20 text-primary-400 border border-primary-500/30">
+                  {a}
+                  <button onClick={() => toggleAllergy(a)}><X size={12} /></button>
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2 mb-4">
+            <input
+              className="input-field flex-1"
+              placeholder="Add custom allergy..."
+              value={customAllergy}
+              onChange={(e) => setCustomAllergy(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addCustomAllergy()}
+            />
+            <Button variant="secondary" size="sm" onClick={addCustomAllergy} disabled={!customAllergy.trim()}>
+              Add
+            </Button>
+          </div>
+          {allergies.length > 0 && (
+            <div className="flex items-start gap-2 mb-4 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+              <AlertTriangle className="text-yellow-400 flex-shrink-0 mt-0.5" size={14} />
+              <p className="text-xs text-yellow-400">The meal plan will exclude: {allergies.join(', ')}</p>
+            </div>
+          )}
+          <Button className="w-full" onClick={() => handleGenerate(allergies)}>
+            Generate Meal Plan
+          </Button>
+          {allergies.length === 0 && (
+            <p className="text-xs text-dark-500 text-center mt-2">No allergies? Just tap Generate to proceed.</p>
+          )}
+        </Modal>
       </div>
     );
   }

@@ -30,7 +30,7 @@ export default function OnboardingPage() {
     age: '',
     gender: 'male' as 'male' | 'female' | 'other',
     activityLevel: '' as string,
-    fitnessGoal: '' as string,
+    fitnessGoals: [] as string[],
     targetWeight: '',
     intervalWeeks: 6 as 6 | 8,
   });
@@ -45,7 +45,7 @@ export default function OnboardingPage() {
     switch (step) {
       case 1: return formData.weight && formData.height && formData.age;
       case 2: return formData.activityLevel;
-      case 3: return formData.fitnessGoal;
+      case 3: return formData.fitnessGoals.length > 0;
       case 4: return formData.targetWeight;
       case 5: return true;
       default: return false;
@@ -63,7 +63,7 @@ export default function OnboardingPage() {
         age: parseInt(formData.age),
         gender: formData.gender,
         activityLevel: formData.activityLevel as UserProfile['activityLevel'],
-        fitnessGoal: formData.fitnessGoal as UserProfile['fitnessGoal'],
+        fitnessGoals: formData.fitnessGoals as UserProfile['fitnessGoals'],
         targetWeight: parseFloat(formData.targetWeight),
         intervalWeeks: formData.intervalWeeks,
         onboardingCompleted: true,
@@ -230,34 +230,42 @@ export default function OnboardingPage() {
               <Target className="text-primary-400" size={24} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-dark-100">Your Goal</h1>
-              <p className="text-dark-400">What do you want to achieve?</p>
+              <h1 className="text-2xl font-bold text-dark-100">Your Goals</h1>
+              <p className="text-dark-400">Select one or more goals</p>
             </div>
           </div>
 
           <div className="space-y-3">
             {FITNESS_GOALS.map((goal) => {
               const Icon = goalIcons[goal.icon] || Sparkles;
+              const isSelected = formData.fitnessGoals.includes(goal.value);
               return (
                 <Card
                   key={goal.value}
                   hover
-                  onClick={() => updateField('fitnessGoal', goal.value)}
+                  onClick={() => {
+                    const current = formData.fitnessGoals;
+                    if (current.includes(goal.value)) {
+                      updateField('fitnessGoals', current.filter((g: string) => g !== goal.value));
+                    } else {
+                      updateField('fitnessGoals', [...current, goal.value]);
+                    }
+                  }}
                   className={`${
-                    formData.fitnessGoal === goal.value
+                    isSelected
                       ? '!border-primary-500 bg-primary-500/10'
                       : ''
                   }`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`p-2.5 rounded-xl ${formData.fitnessGoal === goal.value ? 'bg-primary-500/20' : 'bg-dark-700/50'}`}>
-                      <Icon className={formData.fitnessGoal === goal.value ? 'text-primary-400' : 'text-dark-400'} size={22} />
+                    <div className={`p-2.5 rounded-xl ${isSelected ? 'bg-primary-500/20' : 'bg-dark-700/50'}`}>
+                      <Icon className={isSelected ? 'text-primary-400' : 'text-dark-400'} size={22} />
                     </div>
                     <div className="flex-1">
                       <h3 className="font-semibold text-dark-100">{goal.label}</h3>
                       <p className="text-sm text-dark-400 mt-0.5">{goal.description}</p>
                     </div>
-                    {formData.fitnessGoal === goal.value && (
+                    {isSelected && (
                       <Check className="text-primary-400" size={20} />
                     )}
                   </div>

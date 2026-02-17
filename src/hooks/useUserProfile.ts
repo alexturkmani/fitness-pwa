@@ -9,7 +9,7 @@ const defaultProfile: UserProfile = {
   age: 0,
   gender: 'male',
   activityLevel: 'moderately_active',
-  fitnessGoal: 'general_fitness',
+  fitnessGoals: ['general_fitness'],
   targetWeight: 0,
   intervalWeeks: 6,
   onboardingCompleted: false,

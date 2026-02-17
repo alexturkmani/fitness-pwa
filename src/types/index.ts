@@ -5,7 +5,7 @@ export interface UserProfile {
   age: number;
   gender: 'male' | 'female' | 'other';
   activityLevel: 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active';
-  fitnessGoal: 'weight_loss' | 'muscle_gain' | 'strength' | 'endurance' | 'general_fitness';
+  fitnessGoals: ('weight_loss' | 'muscle_gain' | 'strength' | 'endurance' | 'general_fitness')[];
   targetWeight: number;
   intervalWeeks: 6 | 8;
   onboardingCompleted: boolean;
