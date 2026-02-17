@@ -11,9 +11,16 @@ export function useMealPlan() {
     setPlans((prev) => [...prev, plan]);
   };
 
+  const updateCurrentPlan = (updatedPlan: MealPlan) => {
+    setPlans((prev) => {
+      if (prev.length === 0) return [updatedPlan];
+      return [...prev.slice(0, -1), updatedPlan];
+    });
+  };
+
   const deletePlan = () => {
     setPlans([]);
   };
 
-  return { plans, currentPlan, savePlan, deletePlan };
+  return { plans, currentPlan, savePlan, updateCurrentPlan, deletePlan };
 }

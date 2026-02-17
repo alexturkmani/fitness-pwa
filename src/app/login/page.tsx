@@ -83,7 +83,7 @@ function LoginContent() {
         <button
           onClick={handleGoogleLogin}
           disabled={googleLoading}
-          className="w-full flex items-center justify-center gap-3 p-3.5 rounded-xl border border-dark-700 bg-white hover:bg-dark-950 transition-all font-medium text-dark-100 disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-3 p-3.5 rounded-xl border border-dark-700 bg-surface hover:bg-dark-900 transition-all font-medium text-dark-100 disabled:opacity-50"
         >
           {googleLoading ? (
             <div className="w-5 h-5 border-2 border-dark-700 border-t-primary-500 rounded-full spinner" />

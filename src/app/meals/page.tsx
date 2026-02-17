@@ -22,7 +22,7 @@ const COMMON_ALLERGIES = [
 
 export default function MealsPage() {
   const { profile } = useUserProfile();
-  const { currentPlan, savePlan, deletePlan } = useMealPlan();
+  const { currentPlan, savePlan, updateCurrentPlan, deletePlan } = useMealPlan();
   const { addEntry } = useFoodLog();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,6 +133,48 @@ export default function MealsPage() {
     deletePlan();
     setShowDeleteConfirm(false);
     setToast('Meal plan deleted');
+  };
+
+  const handleReplaceFood = (sub: any) => {
+    if (!currentPlan || !selectedFood) return;
+
+    const updatedPlan = { ...currentPlan };
+    updatedPlan.meals = updatedPlan.meals.map((meal) => {
+      if (meal.name !== selectedFood.mealName) return meal;
+      const updatedFoods = meal.foods.map((food) => {
+        if (food.name !== selectedFood.foodName) return food;
+        return {
+          ...food,
+          name: sub.name,
+          servingSize: sub.servingSize || food.servingSize,
+          macros: sub.macros || food.macros,
+        };
+      });
+      const totalMacros = updatedFoods.reduce(
+        (acc, f) => ({
+          calories: acc.calories + (f.macros.calories || 0),
+          protein: acc.protein + (f.macros.protein || 0),
+          carbs: acc.carbs + (f.macros.carbs || 0),
+          fats: acc.fats + (f.macros.fats || 0),
+        }),
+        { calories: 0, protein: 0, carbs: 0, fats: 0 }
+      );
+      return { ...meal, foods: updatedFoods, totalMacros };
+    });
+
+    updatedPlan.dailyTotals = updatedPlan.meals.reduce(
+      (acc, m) => ({
+        calories: acc.calories + m.totalMacros.calories,
+        protein: acc.protein + m.totalMacros.protein,
+        carbs: acc.carbs + m.totalMacros.carbs,
+        fats: acc.fats + m.totalMacros.fats,
+      }),
+      { calories: 0, protein: 0, carbs: 0, fats: 0 }
+    );
+
+    updateCurrentPlan(updatedPlan);
+    setShowSubModal(false);
+    setToast(`Replaced ${selectedFood.foodName} with ${sub.name}`);
   };
 
   if (loading) {
@@ -433,9 +475,13 @@ export default function MealsPage() {
 
             {subResults && subResults.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs font-medium text-dark-400 uppercase tracking-wider">Suggestions</p>
+                <p className="text-xs font-medium text-dark-400 uppercase tracking-wider">Tap to replace</p>
                 {subResults.map((sub: any, i: number) => (
-                  <div key={i} className="p-3 rounded-xl bg-dark-800/40 border border-dark-700/50 space-y-1">
+                  <button
+                    key={i}
+                    onClick={() => handleReplaceFood(sub)}
+                    className="w-full text-left p-3 rounded-xl bg-dark-800/40 border border-dark-700/50 space-y-1 hover:border-primary-500/50 hover:bg-primary-500/5 transition-all active:scale-[0.98]"
+                  >
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-dark-200">{sub.name}</p>
                       <span className="text-xs text-primary-400 font-medium">{sub.macros?.calories || '–'} cal</span>
@@ -445,7 +491,7 @@ export default function MealsPage() {
                       <p className="text-xs text-dark-500">P:{sub.macros.protein}g C:{sub.macros.carbs}g F:{sub.macros.fats}g</p>
                     )}
                     {sub.reason && <p className="text-xs text-dark-400 italic mt-1">{sub.reason}</p>}
-                  </div>
+                  </button>
                 ))}
               </div>
             )}

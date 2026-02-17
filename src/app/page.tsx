@@ -82,7 +82,7 @@ function LandingContent() {
   return (
     <div className="min-h-screen overflow-x-hidden">
       {/* Nav */}
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-lg border-b border-dark-700/50">
+      <nav className="sticky top-0 z-50 bg-surface/90 backdrop-blur-lg border-b border-dark-700/50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
@@ -110,7 +110,7 @@ function LandingContent() {
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="sm:hidden border-t border-dark-700/50 bg-white px-4 py-4 space-y-3">
+          <div className="sm:hidden border-t border-dark-700/50 bg-surface px-4 py-4 space-y-3">
             <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-dark-400 py-2">Features</a>
             <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-dark-400 py-2">How It Works</a>
             <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-dark-400 py-2">Pricing</a>
@@ -173,7 +173,7 @@ function LandingContent() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((f) => (
-              <div key={f.title} className="bg-white rounded-2xl border border-dark-700/50 p-6 hover:shadow-lg hover:shadow-primary-500/5 transition-all duration-300">
+              <div key={f.title} className="bg-surface rounded-2xl border border-dark-700/50 p-6 hover:shadow-lg hover:shadow-primary-500/5 transition-all duration-300">
                 <div className="w-12 h-12 rounded-xl bg-primary-500/10 flex items-center justify-center mb-4">
                   <f.icon className="text-primary-500" size={24} />
                 </div>
@@ -203,7 +203,7 @@ function LandingContent() {
 
           <div className="grid sm:grid-cols-2 gap-6">
             {steps.map((step) => (
-              <div key={step.num} className="flex items-start gap-4 p-5 rounded-2xl bg-white border border-dark-700/50">
+              <div key={step.num} className="flex items-start gap-4 p-5 rounded-2xl bg-surface border border-dark-700/50">
                 <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                   <span className="text-sm font-bold text-primary-500">{step.num}</span>
                 </div>
@@ -224,7 +224,7 @@ function LandingContent() {
           <h2 className="text-3xl sm:text-4xl font-bold text-dark-100 mb-4">Simple, Affordable Pricing</h2>
           <p className="text-dark-400 mb-10">Start free, upgrade when you&#39;re ready.</p>
 
-          <div className="bg-white rounded-2xl border-2 border-primary-500/30 p-8 shadow-lg shadow-primary-500/5">
+          <div className="bg-surface rounded-2xl border-2 border-primary-500/30 p-8 shadow-lg shadow-primary-500/5">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-50 text-primary-600 text-xs font-medium mb-4">
               <Crown size={14} />
               FitMate Premium

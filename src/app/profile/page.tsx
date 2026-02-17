@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useTheme } from '@/components/ThemeProvider';
 import { ACTIVITY_LEVELS, FITNESS_GOALS } from '@/lib/constants';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -11,7 +12,7 @@ import Modal from '@/components/ui/Modal';
 import {
   ArrowLeft, User, Save, Check, Pencil,
   TrendingDown, Dumbbell, Zap, Heart, Activity, Sparkles,
-  Crown, ChevronRight, LogOut
+  Crown, ChevronRight, LogOut, Sun, Moon
 } from 'lucide-react';
 
 const goalIcons: Record<string, any> = {
@@ -21,6 +22,7 @@ const goalIcons: Record<string, any> = {
 export default function ProfilePage() {
   const router = useRouter();
   const { profile, updateProfile } = useUserProfile();
+  const { theme, toggleTheme } = useTheme();
 
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -364,6 +366,38 @@ export default function ProfilePage() {
         </div>
         <Button className="w-full mt-3" onClick={() => setShowGoalModal(false)}>Done</Button>
       </Modal>
+
+      {/* Appearance */}
+      <div>
+        <h3 className="text-lg font-semibold text-dark-200 mb-3">Appearance</h3>
+        <Card>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {theme === 'dark' ? (
+                <Moon className="text-accent-400" size={20} />
+              ) : (
+                <Sun className="text-yellow-500" size={20} />
+              )}
+              <div>
+                <p className="font-medium text-dark-100">Dark Mode</p>
+                <p className="text-sm text-dark-400">{theme === 'dark' ? 'On' : 'Off'}</p>
+              </div>
+            </div>
+            <button
+              onClick={toggleTheme}
+              className={`relative w-12 h-7 rounded-full transition-colors duration-200 ${
+                theme === 'dark' ? 'bg-primary-500' : 'bg-dark-700'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform duration-200 ${
+                  theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        </Card>
+      </div>
 
       {/* Subscription & Account */}
       <Link href="/subscription">

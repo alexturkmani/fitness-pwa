@@ -5,6 +5,73 @@
 :root {
   --background: #ffffff;
   --foreground: #0f172a;
+  --surface: 255 255 255;
+
+  /* dark palette – light mode (inverted: 50=darkest, 950=lightest) */
+  --dark-50: 2 6 23;
+  --dark-100: 15 23 42;
+  --dark-200: 30 41 59;
+  --dark-300: 51 65 85;
+  --dark-400: 71 85 105;
+  --dark-500: 100 116 139;
+  --dark-600: 148 163 184;
+  --dark-700: 203 213 225;
+  --dark-800: 226 232 240;
+  --dark-900: 241 245 249;
+  --dark-950: 248 250 252;
+
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(226, 232, 240, 0.8);
+  --input-bg: #f8fafc;
+  --input-border: #e2e8f0;
+  --input-text: #0f172a;
+  --input-focus-bg: #ffffff;
+  --input-placeholder: #94a3b8;
+  --btn-secondary-bg: #f1f5f9;
+  --btn-secondary-text: #1e293b;
+  --btn-secondary-border: #e2e8f0;
+  --btn-secondary-hover-bg: #e2e8f0;
+  --scrollbar-track: #f8fafc;
+  --scrollbar-thumb: #cbd5e1;
+  --stat-card-bg: rgba(255, 255, 255, 0.9);
+  --stat-card-border: rgba(226, 232, 240, 0.8);
+  --macro-bar-bg: rgba(226, 232, 240, 0.8);
+}
+
+html.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --surface: 30 41 59;
+
+  /* dark palette – dark mode (swap the scale) */
+  --dark-50: 248 250 252;
+  --dark-100: 241 245 249;
+  --dark-200: 226 232 240;
+  --dark-300: 203 213 225;
+  --dark-400: 148 163 184;
+  --dark-500: 100 116 139;
+  --dark-600: 71 85 105;
+  --dark-700: 51 65 85;
+  --dark-800: 30 41 59;
+  --dark-900: 15 23 42;
+  --dark-950: 2 6 23;
+
+  --glass-bg: rgba(30, 41, 59, 0.85);
+  --glass-border: rgba(51, 65, 85, 0.6);
+  --input-bg: #1e293b;
+  --input-border: #334155;
+  --input-text: #f1f5f9;
+  --input-focus-bg: #1e293b;
+  --input-placeholder: #64748b;
+  --btn-secondary-bg: #1e293b;
+  --btn-secondary-text: #e2e8f0;
+  --btn-secondary-border: #334155;
+  --btn-secondary-hover-bg: #334155;
+  --scrollbar-track: #0f172a;
+  --scrollbar-thumb: #334155;
+  --stat-card-bg: rgba(30, 41, 59, 0.85);
+  --stat-card-border: rgba(51, 65, 85, 0.6);
+  --macro-bar-bg: rgba(51, 65, 85, 0.8);
 }
 
 * {
@@ -26,27 +93,25 @@ body {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f8fafc;
+  background: var(--scrollbar-track);
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
 /* Glass Card */
 .glass {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 /* Animated Background */
 .animated-bg {
-  background: linear-gradient(-45deg, #ffffff, #f8fafc, #f1f5f9, #ffffff);
-  background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
+  background: var(--background);
 }
 
 @keyframes gradientShift {
@@ -77,10 +142,10 @@ body {
   .input-field {
     width: 100%;
     padding: 12px 16px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
     border-radius: 12px;
-    color: #0f172a;
+    color: var(--input-text);
     font-size: 16px;
     outline: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -88,20 +153,20 @@ body {
   .input-field:focus {
     border-color: #10b981;
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-    background: #ffffff;
+    background: var(--input-focus-bg);
   }
   .input-field::placeholder {
-    color: #94a3b8;
+    color: var(--input-placeholder);
   }
 }
 
 /* Generic Input (used in custom workouts) */
 .input {
   padding: 10px 14px;
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
+  background: var(--input-bg);
+  border: 1.5px solid var(--input-border);
   border-radius: 12px;
-  color: #0f172a;
+  color: var(--input-text);
   font-size: 15px;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -109,10 +174,10 @@ body {
 .input:focus {
   border-color: #10b981;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-  background: #ffffff;
+  background: var(--input-focus-bg);
 }
 .input::placeholder {
-  color: #94a3b8;
+  color: var(--input-placeholder);
 }
 select.input {
   appearance: none;
@@ -124,7 +189,7 @@ select.input {
 
 /* Fix number input text color on all browsers */
 input[type="number"] {
-  color: #0f172a;
+  color: var(--input-text);
   -moz-appearance: textfield;
 }
 input[type="number"]::-webkit-inner-spin-button,
@@ -166,25 +231,25 @@ input[type="number"]::-webkit-outer-spin-button {
   justify-content: center;
   gap: 8px;
   padding: 12px 24px;
-  background: #f1f5f9;
-  color: #1e293b;
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
   font-weight: 600;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--btn-secondary-border);
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 16px;
 }
 .btn-secondary:hover {
-  background: #e2e8f0;
+  background: var(--btn-secondary-hover-bg);
   border-color: #10b981;
 }
 
 /* Stat Card */
 .stat-card {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--stat-card-bg);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border: 1px solid var(--stat-card-border);
   border-radius: 16px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -194,7 +259,7 @@ input[type="number"]::-webkit-outer-spin-button {
 .macro-bar {
   height: 8px;
   border-radius: 4px;
-  background: rgba(226, 232, 240, 0.8);
+  background: var(--macro-bar-bg);
   overflow: hidden;
 }
 .macro-bar-fill {

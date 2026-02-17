@@ -71,7 +71,7 @@ export default function PaywallPage() {
       {/* Features */}
       <div className="w-full max-w-sm space-y-3 mb-8">
         {features.map((feature) => (
-          <div key={feature.title} className="flex items-center gap-3 p-3 rounded-xl bg-white border border-dark-700/50">
+          <div key={feature.title} className="flex items-center gap-3 p-3 rounded-xl bg-surface border border-dark-700/50">
             <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center flex-shrink-0">
               <feature.icon className="text-primary-500" size={20} />
             </div>

@@ -17,7 +17,7 @@ export default function BottomNav() {
   if (pathname === '/' || pathname === '/onboarding' || pathname === '/login' || pathname === '/register' || pathname === '/paywall') return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-dark-700/50 shadow-[0_-1px_3px_rgba(0,0,0,0.05)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-surface/95 backdrop-blur-lg border-t border-dark-700/50 shadow-[0_-1px_3px_rgba(0,0,0,0.05)]">
       <div className="flex items-center justify-around max-w-lg mx-auto px-2 py-2">
         {tabs.map((tab) => {
           const isActive = pathname === tab.href;
