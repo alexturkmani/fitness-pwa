@@ -7,5 +7,5 @@
     <rect x="-80" y="-16" width="16" height="32" rx="4" fill="#059669"/>
     <rect x="64" y="-16" width="16" height="32" rx="4" fill="#059669"/>
   </g>
-  <text x="96" y="155" text-anchor="middle" font-family="system-ui,sans-serif" font-size="22" font-weight="bold" fill="#10b981">FitForge</text>
+  <text x="96" y="155" text-anchor="middle" font-family="system-ui,sans-serif" font-size="22" font-weight="bold" fill="#10b981">FitMate</text>
 </svg>

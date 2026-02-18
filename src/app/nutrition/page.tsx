@@ -61,9 +61,9 @@ export default function NutritionPage() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const foodName = field === 'name' ? value : updated.name;
     const servingSize = field === 'servingSize' ? value : updated.servingSize;
-    if (foodName.trim().length >= 2 && servingSize.trim().length >= 1) {
+    if (foodName.trim().length >= 2) {
       debounceRef.current = setTimeout(() => {
-        fetchNutrition(foodName.trim(), servingSize.trim());
+        fetchNutrition(foodName.trim(), servingSize.trim() || 'standard serving');
       }, 800);
     }
   };
