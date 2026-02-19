@@ -4,12 +4,63 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Dumbbell icon for FitMate -->
-    <group
-        android:translateX="27"
-        android:translateY="27">
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M27,18 L27,13 C27,11.34 28.34,10 30,10 L32,10 C33.66,10 35,11.34 35,13 L35,18 L19,18 L19,13 C19,11.34 20.34,10 22,10 L24,10 C25.66,10 27,11.34 27,13 L27,18 Z M19,36 L19,41 C19,42.66 20.34,44 22,44 L24,44 C25.66,44 27,42.66 27,41 L27,36 L35,36 L35,41 C35,42.66 33.66,44 32,44 L30,44 C28.34,44 27,42.66 27,41 L27,36 L19,36 Z M16,18 L38,18 L38,36 L16,36 L16,18 Z"/>
-    </group>
+
+    <!--
+        FitMate App Icon
+        Combined dumbbell + fork — fitness meets nutrition
+        Designed within adaptive icon safe zone (center 66dp)
+    -->
+
+    <!-- ── Dumbbell ──────────────────────────────────────── -->
+    <!-- Left weight plate (rounded rect) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,42 L34,42 A2,2 0,0,1 36,44 L36,64 A2,2 0,0,1 34,66 L30,66 A2,2 0,0,1 28,64 L28,44 A2,2 0,0,1 30,42 Z"/>
+    <!-- Left end cap -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.7"
+        android:pathData="M25,46 L28,46 L28,62 L25,62 A2,2 0,0,1 23,60 L23,48 A2,2 0,0,1 25,46 Z"/>
+    <!-- Bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,51 L72,51 L72,57 L36,57 Z"/>
+    <!-- Right weight plate (rounded rect) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M74,42 L78,42 A2,2 0,0,1 80,44 L80,64 A2,2 0,0,1 78,66 L74,66 A2,2 0,0,1 72,64 L72,44 A2,2 0,0,1 74,42 Z"/>
+    <!-- Right end cap -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.7"
+        android:pathData="M80,46 L83,46 A2,2 0,0,1 85,48 L85,60 A2,2 0,0,1 83,62 L80,62 Z"/>
+
+    <!-- ── Fork (rising from center of bar) ──────────────── -->
+    <!-- Left prong -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.85"
+        android:pathData="M48,30 A1,1 0,0,1 50,30 L50,44 A1,1 0,0,1 48,44 Z"/>
+    <!-- Center prong -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.85"
+        android:pathData="M53,28 A1,1 0,0,1 55,28 L55,44 A1,1 0,0,1 53,44 Z"/>
+    <!-- Right prong -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.85"
+        android:pathData="M58,30 A1,1 0,0,1 60,30 L60,44 A1,1 0,0,1 58,44 Z"/>
+    <!-- Fork neck taper -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.85"
+        android:pathData="M48,44 L60,44 L57,51 L51,51 Z"/>
+
+    <!-- ── Leaf accent (nutrition/freshness) ──────────────── -->
+    <path
+        android:fillColor="#A7F3D0"
+        android:fillAlpha="0.65"
+        android:pathData="M68,32 C71,27 77,27 79,32 C81,37 76,40 72,38 C69,37 68,35 68,32 Z"/>
+
 </vector>
