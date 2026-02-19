@@ -50,6 +50,15 @@ model User {
   pendingEmail         String?
   accounts             Account[]
   sessions             Session[]
+  profile              UserProfile?
+  workoutPlans         WorkoutPlan[]
+  workoutLogs          WorkoutLog[]
+  customWorkoutLogs    CustomWorkoutLog[]
+  mealPlans            MealPlan[]
+  foodLogEntries       FoodLogEntry[]
+  weightEntries        WeightEntry[]
+  waterLogEntries      WaterLogEntry[]
+  cardioLogEntries     CardioLogEntry[]
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 }
@@ -60,4 +69,112 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// ─── Fitness Data Models (for mobile sync) ───
+
+model UserProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  name               String   @default("")
+  weight             Float    @default(0)
+  height             Float    @default(0)
+  age                Int      @default(0)
+  gender             String   @default("male")
+  activityLevel      String   @default("moderately_active")
+  fitnessGoals       Json     @default("[]")
+  targetWeight       Float    @default(0)
+  intervalWeeks      Int      @default(6)
+  gymDaysPerWeek     Int      @default(5)
+  workoutStyle       String   @default("gym")
+  liftingExperience  String   @default("beginner")
+  trainingLocation   String   @default("gym")
+  unitSystem         String   @default("metric")
+  onboardingDone     Boolean  @default(false)
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model WorkoutPlan {
+  id        String   @id @default(cuid())
+  userId    String
+  data      Json     // Full plan JSON (days, exercises, etc.)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WorkoutLog {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String
+  planId    String?
+  dayId     String?
+  data      Json     // exercises with sets
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model CustomWorkoutLog {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  date      String
+  data      Json     // exercises with sets
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model MealPlan {
+  id        String   @id @default(cuid())
+  userId    String
+  data      Json     // Full plan JSON (meals, foods, macros, notes)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FoodLogEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  date        String
+  foodName    String
+  servingSize String   @default("1 serving")
+  quantity    Int      @default(1)
+  macros      Json     // { calories, protein, carbs, fats }
+  source      String   @default("manual")
+  barcode     String?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model WeightEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String
+  weight    Float
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model WaterLogEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String
+  amount    Int      // amount in ml
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model CardioLogEntry {
+  id                     String   @id @default(cuid())
+  userId                 String
+  date                   String
+  type                   String   // e.g., 'Running', 'Cycling'
+  durationMinutes        Int
+  estimatedCaloriesBurnt Int
+  notes                  String?
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt              DateTime @default(now())
 }

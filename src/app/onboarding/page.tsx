@@ -5,16 +5,20 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { useWorkoutPlan } from '@/hooks/useWorkoutPlan';
 import { UserProfile } from '@/types';
 import { generateId } from '@/lib/utils';
-import { ACTIVITY_LEVELS, FITNESS_GOALS, ROTATION_EXPLANATION } from '@/lib/constants';
+import { ACTIVITY_LEVELS, FITNESS_GOALS, ROTATION_EXPLANATION, LIFTING_EXPERIENCE_LEVELS, TRAINING_LOCATIONS, GYM_DAYS_COMMITMENT } from '@/lib/constants';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import {
   User, Activity, Target, Calendar, RotateCcw, ChevronRight, ChevronLeft,
-  TrendingDown, Dumbbell, Zap, Heart, Sparkles, Check, Users
+  TrendingDown, Dumbbell, Zap, Heart, Sparkles, Check, Users, Home, Award, Ruler
 } from 'lucide-react';
 
 const goalIcons: Record<string, any> = {
   TrendingDown, Dumbbell, Zap, Heart, Activity,
+};
+
+const locationIcons: Record<string, any> = {
+  Dumbbell, Home,
 };
 
 export default function OnboardingPage() {
@@ -30,15 +34,18 @@ export default function OnboardingPage() {
     height: '',
     age: '',
     gender: 'male' as 'male' | 'female' | 'other',
+    unitSystem: 'metric' as 'metric' | 'imperial',
     activityLevel: '' as string,
     fitnessGoals: [] as string[],
     targetWeight: '',
     intervalWeeks: 6 as 6 | 8,
     gymDaysPerWeek: 5,
     workoutStyle: 'muscle_group' as 'single_muscle' | 'muscle_group',
+    liftingExperience: '' as string,
+    trainingLocation: 'gym' as 'home' | 'gym',
   });
 
-  const totalSteps = 6;
+  const totalSteps = 8;
 
   const updateField = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -47,11 +54,13 @@ export default function OnboardingPage() {
   const canProceed = () => {
     switch (step) {
       case 1: return formData.name && formData.weight && formData.height && formData.age;
-      case 2: return formData.activityLevel;
-      case 3: return formData.fitnessGoals.length > 0;
-      case 4: return formData.targetWeight;
-      case 5: return true;
-      case 6: return true;
+      case 2: return formData.liftingExperience;
+      case 3: return formData.activityLevel;
+      case 4: return formData.fitnessGoals.length > 0;
+      case 5: return formData.targetWeight;
+      case 6: return true; // training location
+      case 7: return true; // rotation explanation
+      case 8: return true; // workout style
       default: return false;
     }
   };
@@ -60,18 +69,32 @@ export default function OnboardingPage() {
     setLoading(true);
     setError(null);
     try {
+      // Convert imperial values to metric for storage
+      let weightKg = parseFloat(formData.weight);
+      let heightCm = parseFloat(formData.height);
+      let targetWeightKg = parseFloat(formData.targetWeight);
+
+      if (formData.unitSystem === 'imperial') {
+        weightKg = Math.round(weightKg / 2.20462 * 10) / 10;
+        heightCm = Math.round(heightCm * 2.54 * 10) / 10;
+        targetWeightKg = Math.round(targetWeightKg / 2.20462 * 10) / 10;
+      }
+
       const profile: UserProfile = {
         id: generateId(),
         name: formData.name.trim(),
-        weight: parseFloat(formData.weight),
-        height: parseFloat(formData.height),
+        weight: weightKg,
+        height: heightCm,
         age: parseInt(formData.age),
         gender: formData.gender,
         activityLevel: formData.activityLevel as UserProfile['activityLevel'],
         fitnessGoals: formData.fitnessGoals as UserProfile['fitnessGoals'],
-        targetWeight: parseFloat(formData.targetWeight),
+        targetWeight: targetWeightKg,
         intervalWeeks: formData.intervalWeeks,
         gymDaysPerWeek: formData.gymDaysPerWeek,
+        liftingExperience: formData.liftingExperience as UserProfile['liftingExperience'],
+        trainingLocation: formData.trainingLocation,
+        unitSystem: formData.unitSystem,
         onboardingCompleted: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -105,6 +128,15 @@ export default function OnboardingPage() {
       setLoading(false);
     }
   };
+
+  const weightLabel = formData.unitSystem === 'imperial' ? 'Weight (lbs)' : 'Weight (kg)';
+  const heightLabel = formData.unitSystem === 'imperial' ? 'Height (inches)' : 'Height (cm)';
+  const weightPlaceholder = formData.unitSystem === 'imperial' ? '165' : '75';
+  const heightPlaceholder = formData.unitSystem === 'imperial' ? '69' : '175';
+  const targetWeightLabel = formData.unitSystem === 'imperial' ? 'Target Weight (lbs)' : 'Target Weight (kg)';
+  const targetWeightPlaceholder = formData.unitSystem === 'imperial' ? '154' : '70';
+
+  const commitmentInfo = GYM_DAYS_COMMITMENT.find(c => c.days === formData.gymDaysPerWeek);
 
   return (
     <div className="min-h-screen flex flex-col py-8">
@@ -146,22 +178,51 @@ export default function OnboardingPage() {
                 onChange={(e) => updateField('name', e.target.value)}
               />
             </div>
+
+            {/* Unit System Toggle */}
             <div>
-              <label className="block text-sm font-medium text-dark-300 mb-2">Weight (kg)</label>
+              <label className="block text-sm font-medium text-dark-300 mb-2">
+                <Ruler className="inline mr-1" size={14} /> Measurement Units
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {(['metric', 'imperial'] as const).map((unit) => (
+                  <button
+                    key={unit}
+                    onClick={() => {
+                      updateField('unitSystem', unit);
+                      // Clear weight/height/target so user re-enters in new unit
+                      updateField('weight', '');
+                      updateField('height', '');
+                      updateField('targetWeight', '');
+                    }}
+                    className={`py-3 rounded-xl text-sm font-medium transition-all ${
+                      formData.unitSystem === unit
+                        ? 'bg-primary-500/20 border border-primary-500 text-primary-400'
+                        : 'bg-dark-800/60 border border-dark-700 text-dark-400 hover:border-dark-600'
+                    }`}
+                  >
+                    {unit === 'metric' ? 'Metric (kg/cm)' : 'Imperial (lbs/in)'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-dark-300 mb-2">{weightLabel}</label>
               <input
                 type="number"
                 className="input-field"
-                placeholder="75"
+                placeholder={weightPlaceholder}
                 value={formData.weight}
                 onChange={(e) => updateField('weight', e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-dark-300 mb-2">Height (cm)</label>
+              <label className="block text-sm font-medium text-dark-300 mb-2">{heightLabel}</label>
               <input
                 type="number"
                 className="input-field"
-                placeholder="175"
+                placeholder={heightPlaceholder}
                 value={formData.height}
                 onChange={(e) => updateField('height', e.target.value)}
               />
@@ -198,8 +259,48 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* Step 2: Activity Level */}
+      {/* Step 2: Lifting Experience */}
       {step === 2 && (
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-3 bg-yellow-500/20 rounded-xl">
+              <Award className="text-yellow-400" size={24} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-dark-100">Lifting Experience</h1>
+              <p className="text-dark-400">How long have you been training?</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {LIFTING_EXPERIENCE_LEVELS.map((level) => (
+              <Card
+                key={level.value}
+                hover
+                onClick={() => updateField('liftingExperience', level.value)}
+                className={`${
+                  formData.liftingExperience === level.value
+                    ? '!border-primary-500 bg-primary-500/10'
+                    : ''
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-dark-100">{level.label}</h3>
+                    <p className="text-sm text-dark-400 mt-1">{level.description}</p>
+                  </div>
+                  {formData.liftingExperience === level.value && (
+                    <Check className="text-primary-400" size={20} />
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Step 3: Activity Level */}
+      {step === 3 && (
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-3 bg-accent-500/20 rounded-xl">
@@ -238,8 +339,8 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* Step 3: Fitness Goals */}
-      {step === 3 && (
+      {/* Step 4: Fitness Goals */}
+      {step === 4 && (
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-3 bg-primary-500/20 rounded-xl">
@@ -292,8 +393,8 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* Step 4: Target Weight & Interval */}
-      {step === 4 && (
+      {/* Step 5: Target Weight, Interval & Gym Days with Commitment Meter */}
+      {step === 5 && (
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-3 bg-accent-500/20 rounded-xl">
@@ -307,11 +408,11 @@ export default function OnboardingPage() {
 
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-dark-300 mb-2">Target Weight (kg)</label>
+              <label className="block text-sm font-medium text-dark-300 mb-2">{targetWeightLabel}</label>
               <input
                 type="number"
                 className="input-field"
-                placeholder="70"
+                placeholder={targetWeightPlaceholder}
                 value={formData.targetWeight}
                 onChange={(e) => updateField('targetWeight', e.target.value)}
               />
@@ -363,13 +464,86 @@ export default function OnboardingPage() {
                   </button>
                 ))}
               </div>
+
+              {/* Commitment Meter */}
+              {commitmentInfo && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-dark-400">Commitment Level</span>
+                    <span className="text-sm font-semibold" style={{ color: commitmentInfo.color }}>
+                      {commitmentInfo.emoji} {commitmentInfo.label}
+                    </span>
+                  </div>
+                  <div className="h-3 bg-dark-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${((formData.gymDaysPerWeek - 2) / 5) * 100}%`,
+                        backgroundColor: commitmentInfo.color,
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-dark-500 mt-2">{commitmentInfo.description}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Step 5: Rotation Explanation */}
-      {step === 5 && (
+      {/* Step 6: Training Location */}
+      {step === 6 && (
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-3 bg-primary-500/20 rounded-xl">
+              <Home className="text-primary-400" size={24} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-dark-100">Where Do You Train?</h1>
+              <p className="text-dark-400">Your workouts will be tailored accordingly</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {TRAINING_LOCATIONS.map((loc) => {
+              const Icon = locationIcons[loc.icon] || Dumbbell;
+              const isSelected = formData.trainingLocation === loc.value;
+              return (
+                <button
+                  key={loc.value}
+                  onClick={() => updateField('trainingLocation', loc.value)}
+                  className={`w-full text-left p-5 rounded-xl border-2 transition-all flex items-center gap-4 ${
+                    isSelected
+                      ? 'border-primary-500 bg-primary-500/10'
+                      : 'border-dark-700 bg-dark-800/60 hover:border-dark-600'
+                  }`}
+                >
+                  <div className={`p-3 rounded-xl ${isSelected ? 'bg-primary-500/20' : 'bg-dark-700/50'}`}>
+                    <Icon className={isSelected ? 'text-primary-400' : 'text-dark-400'} size={28} />
+                  </div>
+                  <div className="flex-1">
+                    <p className={`text-lg font-semibold ${isSelected ? 'text-primary-400' : 'text-dark-200'}`}>{loc.label}</p>
+                    <p className="text-sm text-dark-500 mt-0.5">{loc.description}</p>
+                  </div>
+                  {isSelected && <Check className="text-primary-400" size={20} />}
+                </button>
+              );
+            })}
+          </div>
+
+          {formData.trainingLocation === 'home' && (
+            <Card className="mt-4 border-yellow-500/30 bg-yellow-500/5">
+              <p className="text-sm text-dark-300">
+                <span className="text-yellow-400 font-semibold">Home workouts</span> will use bodyweight exercises, 
+                dumbbells, and resistance bands. No gym equipment required!
+              </p>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Step 7: Rotation Explanation */}
+      {step === 7 && (
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-3 bg-primary-500/20 rounded-xl">
@@ -403,8 +577,8 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* Step 6: Workout Style */}
-      {step === 6 && (
+      {/* Step 8: Workout Style */}
+      {step === 8 && (
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-3 bg-accent-500/20 rounded-xl">

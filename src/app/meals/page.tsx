@@ -4,14 +4,14 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { useMealPlan } from '@/hooks/useMealPlan';
 import { useFoodLog } from '@/hooks/useFoodLog';
 import { FoodLogEntry, MacroNutrients } from '@/types';
-import { generateId, formatDate, calculateMacroTargets } from '@/lib/utils';
+import { generateId, formatDate, calculateMacroTargets, calculateDailyWaterIntake, formatWater } from '@/lib/utils';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Modal from '@/components/ui/Modal';
 import Toast from '@/components/ui/Toast';
-import { UtensilsCrossed, RefreshCw, Plus, Flame, Beef, Wheat, Droplets, AlertTriangle, X, Trash2, MessageCircle, Sparkles, Send } from 'lucide-react';
+import { UtensilsCrossed, RefreshCw, Plus, Flame, Beef, Wheat, Droplets, AlertTriangle, X, Trash2, MessageCircle, Sparkles, Send, GlassWater } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 const MACRO_COLORS = ['#10b981', '#06b6d4', '#f59e0b'];
@@ -337,6 +337,28 @@ export default function MealsPage() {
           <p className="text-sm text-dark-400 italic">{currentPlan.aiNotes}</p>
         </Card>
       )}
+
+      {/* Daily Water Intake Recommendation */}
+      {(() => {
+        const waterMl = currentPlan.dailyWaterIntakeMl || calculateDailyWaterIntake(profile);
+        const waterL = (waterMl / 1000).toFixed(1);
+        const unitSystem = profile.unitSystem || 'metric';
+        return (
+          <Card className="border-blue-500/20 bg-blue-500/5">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-blue-500/20 rounded-xl">
+                <GlassWater className="text-blue-400" size={20} />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-dark-100">Daily Water Intake</p>
+                <p className="text-sm text-dark-400">
+                  Recommended: <span className="text-blue-400 font-semibold">{formatWater(waterMl, unitSystem)}</span> ({waterL}L) per day
+                </p>
+              </div>
+            </div>
+          </Card>
+        );
+      })()}
 
       {/* Meals */}
       <div className="space-y-4">

@@ -1,3 +1,7 @@
+export type UnitSystem = 'metric' | 'imperial';
+export type LiftingExperience = 'beginner' | 'intermediate' | 'advanced' | 'expert';
+export type TrainingLocation = 'home' | 'gym';
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -10,6 +14,9 @@ export interface UserProfile {
   targetWeight: number;
   intervalWeeks: 6 | 8;
   gymDaysPerWeek: number;
+  liftingExperience: LiftingExperience;
+  trainingLocation: TrainingLocation;
+  unitSystem: UnitSystem;
   onboardingCompleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -97,6 +104,7 @@ export interface MealPlan {
   meals: Meal[];
   dailyTotals: MacroNutrients;
   dailyTargets: MacroNutrients;
+  dailyWaterIntakeMl?: number;
   aiNotes: string;
   createdAt: string;
 }
@@ -164,6 +172,23 @@ export interface CustomWorkoutLog {
   createdAt: string;
 }
 
+export interface WaterLogEntry {
+  id: string;
+  date: string;
+  amount: number; // in ml
+  createdAt: string;
+}
+
+export interface CardioLogEntry {
+  id: string;
+  date: string;
+  type: string; // e.g., 'running', 'cycling', 'swimming'
+  durationMinutes: number;
+  estimatedCaloriesBurnt: number;
+  notes?: string;
+  createdAt: string;
+}
+
 export interface ExerciseSuggestion {
   exerciseName: string;
   assessment: string;
@@ -181,4 +206,6 @@ export enum StorageKeys {
   WEIGHT_ENTRIES = 'fitpwa_weight_entries',
   OPENAI_KEY = 'fitpwa_openai_key',
   CUSTOM_WORKOUT_LOGS = 'fitpwa_custom_workout_logs',
+  WATER_LOGS = 'fitpwa_water_logs',
+  CARDIO_LOGS = 'fitpwa_cardio_logs',
 }

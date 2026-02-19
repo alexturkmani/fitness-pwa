@@ -2,24 +2,37 @@
 import { useState, useCallback, useRef } from 'react';
 import { useFoodLog } from '@/hooks/useFoodLog';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useWaterLog } from '@/hooks/useWaterLog';
+import { useCardioLog } from '@/hooks/useCardioLog';
 import { FoodLogEntry } from '@/types';
-import { generateId, formatDate, getDayName, calculateMacroTargets } from '@/lib/utils';
+import { generateId, formatDate, getDayName, calculateMacroTargets, calculateDailyWaterIntake, estimateCardioCalories, formatWater } from '@/lib/utils';
+import { CARDIO_TYPES } from '@/lib/constants';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Toast from '@/components/ui/Toast';
-import { Apple, Plus, Trash2, ScanLine, Flame, Beef, Wheat, Droplets, Loader2 } from 'lucide-react';
+import { Apple, Plus, Trash2, ScanLine, Flame, Beef, Wheat, Droplets, Loader2, GlassWater, Timer, Bike } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function NutritionPage() {
   const router = useRouter();
   const { profile } = useUserProfile();
   const { addEntry, removeEntry, getDayEntries, getDayTotals, getWeekEntries } = useFoodLog();
+  const { addEntry: addWater, getDayTotal: getWaterDayTotal, getDayEntries: getWaterDayEntries, removeEntry: removeWater } = useWaterLog();
+  const { addEntry: addCardio, getDayEntries: getCardioDayEntries, getDayCaloriesBurnt, removeEntry: removeCardio } = useCardioLog();
   const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showWaterModal, setShowWaterModal] = useState(false);
+  const [showCardioModal, setShowCardioModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [newFood, setNewFood] = useState({
     name: '', servingSize: '', calories: '', protein: '', carbs: '', fats: '',
+  });
+  const [waterAmount, setWaterAmount] = useState('250');
+  const [cardioForm, setCardioForm] = useState({
+    type: 'Running',
+    durationMinutes: '30',
+    estimatedCalories: '',
   });
   const [lookupLoading, setLookupLoading] = useState(false);
   const [autoFilled, setAutoFilled] = useState(false);
@@ -69,9 +82,18 @@ export default function NutritionPage() {
   };
 
   const targets = profile.onboardingCompleted ? calculateMacroTargets(profile) : { calories: 2000, protein: 150, carbs: 250, fats: 65 };
+  const waterTarget = profile.onboardingCompleted ? calculateDailyWaterIntake(profile) : 2500;
   const weekData = getWeekEntries();
   const dayEntries = getDayEntries(selectedDate);
   const dayTotals = getDayTotals(selectedDate);
+  const dayWaterTotal = getWaterDayTotal(selectedDate);
+  const dayWaterEntries = getWaterDayEntries(selectedDate);
+  const dayCardioEntries = getCardioDayEntries(selectedDate);
+  const dayCardioBurnt = getDayCaloriesBurnt(selectedDate);
+  const unitSystem = profile.unitSystem || 'metric';
+
+  // Net calories = food calories - cardio calories burnt
+  const netCalories = Math.round(dayTotals.calories - dayCardioBurnt);
 
   const handleAddFood = () => {
     if (!newFood.name || !newFood.calories) return;
@@ -187,7 +209,115 @@ export default function NutritionPage() {
               </div>
             );
           })}
+          {/* Net Calories (after cardio) */}
+          {dayCardioBurnt > 0 && (
+            <div className="pt-2 border-t border-dark-700/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bike size={14} className="text-orange-400" />
+                  <span className="text-sm text-dark-300">Net Calories (after cardio)</span>
+                </div>
+                <span className="text-sm font-semibold text-orange-400">{netCalories} cal</span>
+              </div>
+            </div>
+          )}
         </div>
+      </Card>
+
+      {/* Water Intake Tracker */}
+      <Card>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <GlassWater className="text-blue-400" size={18} />
+            <h3 className="font-semibold text-dark-100">Water Intake</h3>
+          </div>
+          <span className="text-sm text-dark-400">
+            {formatWater(dayWaterTotal, unitSystem)} / {formatWater(waterTarget, unitSystem)}
+          </span>
+        </div>
+        <div className="macro-bar mb-3">
+          <div
+            className="macro-bar-fill"
+            style={{
+              width: `${Math.min(100, (dayWaterTotal / waterTarget) * 100)}%`,
+              backgroundColor: dayWaterTotal >= waterTarget ? '#10b981' : '#3b82f6',
+            }}
+          />
+        </div>
+        <div className="flex gap-2">
+          {[250, 500, 750].map((ml) => (
+            <button
+              key={ml}
+              onClick={() => { addWater(ml); setToast(`+${formatWater(ml, unitSystem)} water added`); }}
+              className="flex-1 py-2 rounded-lg text-xs font-medium bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 transition-all"
+            >
+              +{formatWater(ml, unitSystem)}
+            </button>
+          ))}
+          <button
+            onClick={() => setShowWaterModal(true)}
+            className="px-3 py-2 rounded-lg text-xs font-medium bg-dark-800/60 border border-dark-700 text-dark-400 hover:border-dark-600 transition-all"
+          >
+            Custom
+          </button>
+        </div>
+        {dayWaterEntries.length > 0 && (
+          <div className="mt-3 space-y-1">
+            {dayWaterEntries.map((entry) => (
+              <div key={entry.id} className="flex items-center justify-between text-xs">
+                <span className="text-dark-500">{new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-dark-300">{formatWater(entry.amount, unitSystem)}</span>
+                  <button onClick={() => { removeWater(entry.id); setToast('Water entry removed'); }} className="text-dark-600 hover:text-red-400">
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Cardio Log */}
+      <Card>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Bike className="text-orange-400" size={18} />
+            <h3 className="font-semibold text-dark-100">Cardio</h3>
+          </div>
+          <button
+            onClick={() => {
+              // Auto-estimate calories when opening modal
+              const est = estimateCardioCalories(cardioForm.type, parseInt(cardioForm.durationMinutes) || 30, profile.weight || 70);
+              setCardioForm(prev => ({ ...prev, estimatedCalories: String(est) }));
+              setShowCardioModal(true);
+            }}
+            className="text-xs text-primary-400 font-medium hover:text-primary-300"
+          >
+            + Add Cardio
+          </button>
+        </div>
+        {dayCardioEntries.length === 0 ? (
+          <p className="text-sm text-dark-500">No cardio logged for this day</p>
+        ) : (
+          <div className="space-y-2">
+            {dayCardioEntries.map((entry) => (
+              <div key={entry.id} className="flex items-center justify-between p-2 bg-dark-800/40 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-dark-200">{entry.type}</p>
+                  <p className="text-xs text-dark-500">{entry.durationMinutes} min &bull; ~{entry.estimatedCaloriesBurnt} cal burnt</p>
+                </div>
+                <button onClick={() => { removeCardio(entry.id); setToast('Cardio entry removed'); }} className="p-1.5 text-dark-600 hover:text-red-400">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+            <div className="flex items-center justify-between pt-2 border-t border-dark-700/50">
+              <span className="text-sm text-dark-400">Total burnt</span>
+              <span className="text-sm font-semibold text-orange-400">{dayCardioBurnt} cal</span>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Food Log Entries */}
@@ -278,6 +408,112 @@ export default function NutritionPage() {
           </div>
           <Button onClick={handleAddFood} disabled={!newFood.name || !newFood.calories} className="w-full mt-2">
             Add Entry
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Water Custom Amount Modal */}
+      <Modal isOpen={showWaterModal} onClose={() => setShowWaterModal(false)} title="Add Water">
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs text-dark-400 mb-1">Amount ({unitSystem === 'imperial' ? 'oz' : 'ml'})</label>
+            <input
+              type="number"
+              className="input-field"
+              placeholder={unitSystem === 'imperial' ? '8' : '250'}
+              value={waterAmount}
+              onChange={(e) => setWaterAmount(e.target.value)}
+            />
+          </div>
+          <Button
+            onClick={() => {
+              const amount = parseInt(waterAmount) || 0;
+              if (amount > 0) {
+                const ml = unitSystem === 'imperial' ? Math.round(amount * 29.5735) : amount;
+                addWater(ml);
+                setShowWaterModal(false);
+                setToast(`+${formatWater(ml, unitSystem)} water added`);
+              }
+            }}
+            disabled={!waterAmount || parseInt(waterAmount) <= 0}
+            className="w-full"
+          >
+            Add Water
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Cardio Log Modal */}
+      <Modal isOpen={showCardioModal} onClose={() => setShowCardioModal(false)} title="Log Cardio">
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs text-dark-400 mb-1">Cardio Type</label>
+            <div className="grid grid-cols-3 gap-2">
+              {CARDIO_TYPES.map((type) => (
+                <button
+                  key={type}
+                  onClick={() => {
+                    setCardioForm(prev => {
+                      const est = estimateCardioCalories(type, parseInt(prev.durationMinutes) || 30, profile.weight || 70);
+                      return { ...prev, type, estimatedCalories: String(est) };
+                    });
+                  }}
+                  className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    cardioForm.type === type
+                      ? 'bg-orange-500/20 border border-orange-500 text-orange-400'
+                      : 'bg-dark-800/60 border border-dark-700 text-dark-400'
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-dark-400 mb-1">Duration (minutes)</label>
+            <input
+              type="number"
+              className="input-field"
+              placeholder="30"
+              value={cardioForm.durationMinutes}
+              onChange={(e) => {
+                const duration = e.target.value;
+                const est = estimateCardioCalories(cardioForm.type, parseInt(duration) || 0, profile.weight || 70);
+                setCardioForm(prev => ({ ...prev, durationMinutes: duration, estimatedCalories: String(est) }));
+              }}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-dark-400 mb-1">Estimated Calories Burnt (AI auto-filled)</label>
+            <input
+              type="number"
+              className="input-field"
+              placeholder="0"
+              value={cardioForm.estimatedCalories}
+              onChange={(e) => setCardioForm(prev => ({ ...prev, estimatedCalories: e.target.value }))}
+            />
+            <p className="text-xs text-dark-500 mt-1">Auto-estimated based on your weight and activity. Adjust if needed.</p>
+          </div>
+          <Button
+            onClick={() => {
+              const duration = parseInt(cardioForm.durationMinutes) || 0;
+              const calories = parseInt(cardioForm.estimatedCalories) || 0;
+              if (duration > 0) {
+                addCardio({
+                  date: selectedDate,
+                  type: cardioForm.type,
+                  durationMinutes: duration,
+                  estimatedCaloriesBurnt: calories,
+                });
+                setShowCardioModal(false);
+                setCardioForm({ type: 'Running', durationMinutes: '30', estimatedCalories: '' });
+                setToast(`${cardioForm.type} logged: ~${calories} cal burnt`);
+              }
+            }}
+            disabled={!cardioForm.durationMinutes || parseInt(cardioForm.durationMinutes) <= 0}
+            className="w-full"
+          >
+            Log Cardio
           </Button>
         </div>
       </Modal>

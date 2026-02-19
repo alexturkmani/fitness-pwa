@@ -6,7 +6,9 @@ import { useWorkoutPlan } from '@/hooks/useWorkoutPlan';
 import { useWorkoutLogs } from '@/hooks/useWorkoutLogs';
 import { useFoodLog } from '@/hooks/useFoodLog';
 import { useWeightLog } from '@/hooks/useWeightLog';
-import { formatDate } from '@/lib/utils';
+import { useWaterLog } from '@/hooks/useWaterLog';
+import { useCardioLog } from '@/hooks/useCardioLog';
+import { formatDate, calculateDailyWaterIntake, formatWater } from '@/lib/utils';
 import { FITNESS_GOALS } from '@/lib/constants';
 import { UserProfile } from '@/types';
 import Card from '@/components/ui/Card';
@@ -15,7 +17,7 @@ import Modal from '@/components/ui/Modal';
 import {
   Dumbbell, Flame, Target, Scale, ChevronRight, Calendar,
   UtensilsCrossed, BarChart3, ScanLine, Sparkles, Settings,
-  TrendingDown, Zap, Heart, Activity, Check, UserCircle
+  TrendingDown, Zap, Heart, Activity, Check, UserCircle, GlassWater, Bike
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -32,6 +34,8 @@ export default function DashboardPage() {
   const { getThisWeekCount } = useWorkoutLogs();
   const { getDayTotals } = useFoodLog();
   const { getLatestWeight } = useWeightLog();
+  const { getTodayTotal: getTodayWater } = useWaterLog();
+  const { getTodayCaloriesBurnt } = useCardioLog();
 
   useEffect(() => {
     if (!isOnboarded) {
@@ -61,6 +65,10 @@ export default function DashboardPage() {
   const todayTotals = getDayTotals(today);
   const todayDayNumber = new Date().getDay() || 7;
   const todayWorkout = currentPlan?.days.find((d) => d.dayNumber === todayDayNumber);
+  const todayWater = getTodayWater();
+  const waterTarget = profile.onboardingCompleted ? calculateDailyWaterIntake(profile) : 2500;
+  const todayCardioBurnt = getTodayCaloriesBurnt();
+  const unitSystem = profile.unitSystem || 'metric';
 
   const goalLabels: Record<string, string> = {
     weight_loss: 'Weight Loss',
@@ -111,7 +119,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-3">
         <div className="stat-card">
           <Scale className="text-accent-400 mb-1" size={18} />
-          <p className="text-xl font-bold text-dark-100">{getLatestWeight() || profile.weight} kg</p>
+          <p className="text-xl font-bold text-dark-100">{getLatestWeight() || profile.weight} {unitSystem === 'imperial' ? 'lbs' : 'kg'}</p>
           <p className="text-xs text-dark-500">Current Weight</p>
         </div>
         <div className="stat-card">
@@ -132,6 +140,16 @@ export default function DashboardPage() {
           <p className="text-xs text-dark-500">
             {currentPlan ? `Week ${getCurrentWeek()} of ${currentPlan.weeks}` : 'No Plan'}
           </p>
+        </div>
+        <div className="stat-card">
+          <GlassWater className="text-blue-400 mb-1" size={18} />
+          <p className="text-xl font-bold text-dark-100">{formatWater(todayWater, unitSystem)}</p>
+          <p className="text-xs text-dark-500">Water ({Math.round((todayWater / waterTarget) * 100)}%)</p>
+        </div>
+        <div className="stat-card">
+          <Bike className="text-orange-400 mb-1" size={18} />
+          <p className="text-xl font-bold text-dark-100">{todayCardioBurnt}</p>
+          <p className="text-xs text-dark-500">Cardio Cal Burnt</p>
         </div>
       </div>
 

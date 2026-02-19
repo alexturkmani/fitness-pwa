@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { callAI } from '@/lib/ai';
 import { getMealPlanPrompt, getMealSystemPrompt } from '@/lib/prompts';
 import { UserProfile, MealPlan } from '@/types';
-import { generateId, calculateMacroTargets, formatDate } from '@/lib/utils';
+import { generateId, calculateMacroTargets, calculateDailyWaterIntake, formatDate } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,6 +22,14 @@ export async function POST(request: NextRequest) {
 
     const targets = calculateMacroTargets(profile);
 
+    const roundMacros = (macros: any) => ({
+      calories: Math.round(macros?.calories || 0),
+      protein: Math.round(macros?.protein || 0),
+      carbs: Math.round(macros?.carbs || 0),
+      fats: Math.round(macros?.fats || 0),
+      ...(macros?.fiber != null ? { fiber: Math.round(macros.fiber) } : {}),
+    });
+
     const plan: MealPlan = {
       id: generateId(),
       date: formatDate(new Date()),
@@ -31,10 +39,13 @@ export async function POST(request: NextRequest) {
         foods: (meal.foods || []).map((food: any) => ({
           ...food,
           id: generateId(),
+          macros: roundMacros(food.macros),
         })),
+        totalMacros: roundMacros(meal.totalMacros),
       })),
-      dailyTotals: parsed.dailyTotals || targets,
+      dailyTotals: roundMacros(parsed.dailyTotals || targets),
       dailyTargets: targets,
+      dailyWaterIntakeMl: parsed.dailyWaterIntakeMl || calculateDailyWaterIntake(profile),
       aiNotes: parsed.aiNotes || '',
       createdAt: new Date().toISOString(),
     };

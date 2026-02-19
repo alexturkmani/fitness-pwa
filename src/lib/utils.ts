@@ -1,4 +1,4 @@
-import { UserProfile, MacroNutrients } from '@/types';
+import { UserProfile, MacroNutrients, UnitSystem } from '@/types';
 
 export function calculateTDEE(profile: UserProfile): number {
   const bmr = profile.gender === 'male'
@@ -78,4 +78,100 @@ export function generateId(): string {
 
 export function cn(...classes: (string | undefined | false)[]): string {
   return classes.filter(Boolean).join(' ');
+}
+
+// ─── Unit Conversion Utilities ───
+
+export function kgToLbs(kg: number): number {
+  return Math.round(kg * 2.20462 * 10) / 10;
+}
+
+export function lbsToKg(lbs: number): number {
+  return Math.round(lbs / 2.20462 * 10) / 10;
+}
+
+export function cmToFeetInches(cm: number): { feet: number; inches: number } {
+  const totalInches = cm / 2.54;
+  const feet = Math.floor(totalInches / 12);
+  const inches = Math.round(totalInches % 12);
+  return { feet, inches };
+}
+
+export function feetInchesToCm(feet: number, inches: number): number {
+  return Math.round((feet * 12 + inches) * 2.54 * 10) / 10;
+}
+
+export function mlToOz(ml: number): number {
+  return Math.round(ml / 29.5735 * 10) / 10;
+}
+
+export function ozToMl(oz: number): number {
+  return Math.round(oz * 29.5735);
+}
+
+export function formatWeight(kg: number, unit: UnitSystem): string {
+  return unit === 'imperial' ? `${kgToLbs(kg)} lbs` : `${kg} kg`;
+}
+
+export function formatHeight(cm: number, unit: UnitSystem): string {
+  if (unit === 'imperial') {
+    const { feet, inches } = cmToFeetInches(cm);
+    return `${feet}'${inches}"`;
+  }
+  return `${cm} cm`;
+}
+
+export function formatWater(ml: number, unit: UnitSystem): string {
+  return unit === 'imperial' ? `${mlToOz(ml)} oz` : `${ml} ml`;
+}
+
+// ─── Water Intake Recommendation ───
+
+export function calculateDailyWaterIntake(profile: UserProfile): number {
+  // Base: 30-35ml per kg of body weight
+  let waterMl = profile.weight * 33;
+
+  // Adjust for activity level
+  const activityMultipliers: Record<string, number> = {
+    sedentary: 1.0,
+    lightly_active: 1.1,
+    moderately_active: 1.2,
+    very_active: 1.35,
+    extremely_active: 1.5,
+  };
+  waterMl *= activityMultipliers[profile.activityLevel] || 1.2;
+
+  // Adjust for goals
+  if (profile.fitnessGoals?.includes('weight_loss')) {
+    waterMl *= 1.1; // extra hydration helps with weight loss
+  }
+  if (profile.fitnessGoals?.includes('muscle_gain')) {
+    waterMl *= 1.05; // muscle tissue needs more water
+  }
+
+  return Math.round(waterMl / 100) * 100; // round to nearest 100ml
+}
+
+// ─── Cardio Calorie Estimation ───
+
+export function estimateCardioCalories(type: string, durationMinutes: number, weightKg: number): number {
+  // MET values for common cardio activities
+  const metValues: Record<string, number> = {
+    'Running': 9.8,
+    'Walking': 3.8,
+    'Cycling': 7.5,
+    'Swimming': 8.0,
+    'Rowing': 7.0,
+    'Jump Rope': 12.3,
+    'Elliptical': 5.0,
+    'Stair Climbing': 9.0,
+    'HIIT': 10.0,
+    'Dancing': 5.5,
+    'Hiking': 6.0,
+    'Other': 5.0,
+  };
+
+  const met = metValues[type] || 5.0;
+  // Calories = MET * weight(kg) * duration(hours)
+  return Math.round(met * weightKg * (durationMinutes / 60));
 }

@@ -5,7 +5,8 @@ import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useTheme } from '@/components/ThemeProvider';
-import { ACTIVITY_LEVELS, FITNESS_GOALS } from '@/lib/constants';
+import { ACTIVITY_LEVELS, FITNESS_GOALS, LIFTING_EXPERIENCE_LEVELS, TRAINING_LOCATIONS, GYM_DAYS_COMMITMENT } from '@/lib/constants';
+import { formatWeight, formatHeight } from '@/lib/utils';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
@@ -13,7 +14,7 @@ import Toast from '@/components/ui/Toast';
 import {
   ArrowLeft, User, Save, Check, Pencil,
   TrendingDown, Dumbbell, Zap, Heart, Activity, Sparkles,
-  Crown, ChevronRight, LogOut, Sun, Moon, Lock, Mail, Eye, EyeOff
+  Crown, ChevronRight, LogOut, Sun, Moon, Lock, Mail, Eye, EyeOff, Ruler, Home, Award
 } from 'lucide-react';
 
 const goalIcons: Record<string, any> = {
@@ -50,6 +51,9 @@ function ProfileContent() {
     targetWeight: String(profile.targetWeight || ''),
     intervalWeeks: profile.intervalWeeks || 6,
     gymDaysPerWeek: profile.gymDaysPerWeek || 5,
+    liftingExperience: profile.liftingExperience || 'beginner',
+    trainingLocation: profile.trainingLocation || 'gym',
+    unitSystem: profile.unitSystem || 'metric',
   });
 
   const [showGoalModal, setShowGoalModal] = useState(false);
@@ -166,17 +170,31 @@ function ProfileContent() {
   };
 
   const handleSave = () => {
+    // Convert imperial to metric for storage if needed
+    let weightVal = parseFloat(formData.weight) || profile.weight;
+    let heightVal = parseFloat(formData.height) || profile.height;
+    let targetWeightVal = parseFloat(formData.targetWeight) || profile.targetWeight;
+
+    if (formData.unitSystem === 'imperial') {
+      weightVal = Math.round(weightVal / 2.20462 * 10) / 10;
+      heightVal = Math.round(heightVal * 2.54 * 10) / 10;
+      targetWeightVal = Math.round(targetWeightVal / 2.20462 * 10) / 10;
+    }
+
     updateProfile({
       name: formData.name.trim(),
-      weight: parseFloat(formData.weight) || profile.weight,
-      height: parseFloat(formData.height) || profile.height,
+      weight: weightVal,
+      height: heightVal,
       age: parseInt(formData.age) || profile.age,
       gender: formData.gender as any,
       activityLevel: formData.activityLevel as any,
       fitnessGoals: formData.fitnessGoals as any,
-      targetWeight: parseFloat(formData.targetWeight) || profile.targetWeight,
+      targetWeight: targetWeightVal,
       intervalWeeks: formData.intervalWeeks as 6 | 8,
       gymDaysPerWeek: formData.gymDaysPerWeek,
+      liftingExperience: formData.liftingExperience as any,
+      trainingLocation: formData.trainingLocation as any,
+      unitSystem: formData.unitSystem as any,
     });
     setEditing(false);
     setSaved(true);
@@ -271,7 +289,7 @@ function ProfileContent() {
                   onChange={(e) => updateField('weight', e.target.value)}
                 />
               ) : (
-                <span className="text-dark-100 font-medium">{profile.weight} kg</span>
+                <span className="text-dark-100 font-medium">{formatWeight(profile.weight, profile.unitSystem || 'metric')}</span>
               )}
             </div>
             <div className="border-t border-dark-700/50" />
@@ -285,7 +303,7 @@ function ProfileContent() {
                   onChange={(e) => updateField('height', e.target.value)}
                 />
               ) : (
-                <span className="text-dark-100 font-medium">{profile.height} cm</span>
+                <span className="text-dark-100 font-medium">{formatHeight(profile.height, profile.unitSystem || 'metric')}</span>
               )}
             </div>
             <div className="border-t border-dark-700/50" />
@@ -336,7 +354,7 @@ function ProfileContent() {
                   onChange={(e) => updateField('targetWeight', e.target.value)}
                 />
               ) : (
-                <span className="text-dark-100 font-medium">{profile.targetWeight} kg</span>
+                <span className="text-dark-100 font-medium">{formatWeight(profile.targetWeight, profile.unitSystem || 'metric')}</span>
               )}
             </div>
           </div>
@@ -426,6 +444,136 @@ function ProfileContent() {
                 <span className="text-dark-100 font-medium">{profile.gymDaysPerWeek || 5} days</span>
               )}
             </div>
+            {/* Commitment Meter */}
+            {(() => {
+              const days = editing ? formData.gymDaysPerWeek : (profile.gymDaysPerWeek || 5);
+              const info = GYM_DAYS_COMMITMENT.find(c => c.days === days);
+              if (!info) return null;
+              return (
+                <div className="pt-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-dark-500">Commitment</span>
+                    <span className="text-xs font-semibold" style={{ color: info.color }}>{info.emoji} {info.label}</span>
+                  </div>
+                  <div className="h-2 bg-dark-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${((days - 2) / 5) * 100}%`, backgroundColor: info.color }}
+                    />
+                  </div>
+                  <p className="text-xs text-dark-500 mt-1">{info.description}</p>
+                </div>
+              );
+            })()}
+          </div>
+        </Card>
+      </div>
+
+      {/* Measurement Units */}
+      <div>
+        <h3 className="text-lg font-semibold text-dark-200 mb-3">Measurement Units</h3>
+        <Card>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Ruler className="text-dark-500" size={18} />
+              <span className="text-dark-400">Unit System</span>
+            </div>
+            {editing ? (
+              <div className="flex gap-2">
+                {(['metric', 'imperial'] as const).map((u) => (
+                  <button
+                    key={u}
+                    onClick={() => updateField('unitSystem', u)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      formData.unitSystem === u
+                        ? 'bg-primary-500/20 border border-primary-500 text-primary-400'
+                        : 'bg-dark-800/60 border border-dark-700 text-dark-400'
+                    }`}
+                  >
+                    {u === 'metric' ? 'Metric' : 'Imperial'}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <span className="text-dark-100 font-medium capitalize">{profile.unitSystem || 'metric'}</span>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Lifting Experience */}
+      <div>
+        <h3 className="text-lg font-semibold text-dark-200 mb-3">Lifting Experience</h3>
+        <Card>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Award className="text-yellow-400" size={18} />
+              <div>
+                <p className="font-medium text-dark-100">
+                  {LIFTING_EXPERIENCE_LEVELS.find(l => l.value === (editing ? formData.liftingExperience : (profile.liftingExperience || 'beginner')))?.label || 'Beginner'}
+                </p>
+                <p className="text-sm text-dark-400 mt-0.5">
+                  {LIFTING_EXPERIENCE_LEVELS.find(l => l.value === (editing ? formData.liftingExperience : (profile.liftingExperience || 'beginner')))?.description}
+                </p>
+              </div>
+            </div>
+            {editing && (
+              <div className="flex flex-col gap-1">
+                {LIFTING_EXPERIENCE_LEVELS.map((level) => (
+                  <button
+                    key={level.value}
+                    onClick={() => updateField('liftingExperience', level.value)}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                      formData.liftingExperience === level.value
+                        ? 'bg-primary-500/20 border border-primary-500 text-primary-400'
+                        : 'bg-dark-800/60 border border-dark-700 text-dark-400'
+                    }`}
+                  >
+                    {level.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Training Location */}
+      <div>
+        <h3 className="text-lg font-semibold text-dark-200 mb-3">Training Location</h3>
+        <Card>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {(editing ? formData.trainingLocation : (profile.trainingLocation || 'gym')) === 'home'
+                ? <Home className="text-primary-400" size={18} />
+                : <Dumbbell className="text-primary-400" size={18} />
+              }
+              <div>
+                <p className="font-medium text-dark-100">
+                  {TRAINING_LOCATIONS.find(l => l.value === (editing ? formData.trainingLocation : (profile.trainingLocation || 'gym')))?.label || 'Gym'}
+                </p>
+                <p className="text-sm text-dark-400 mt-0.5">
+                  {TRAINING_LOCATIONS.find(l => l.value === (editing ? formData.trainingLocation : (profile.trainingLocation || 'gym')))?.description}
+                </p>
+              </div>
+            </div>
+            {editing && (
+              <div className="flex gap-2">
+                {TRAINING_LOCATIONS.map((loc) => (
+                  <button
+                    key={loc.value}
+                    onClick={() => updateField('trainingLocation', loc.value)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      formData.trainingLocation === loc.value
+                        ? 'bg-primary-500/20 border border-primary-500 text-primary-400'
+                        : 'bg-dark-800/60 border border-dark-700 text-dark-400'
+                    }`}
+                  >
+                    {loc.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </Card>
       </div>

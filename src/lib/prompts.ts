@@ -1,11 +1,13 @@
 import { UserProfile, WorkoutLog, CustomExerciseLog } from '@/types';
-import { calculateTDEE, calculateMacroTargets } from './utils';
+import { calculateTDEE, calculateMacroTargets, calculateDailyWaterIntake } from './utils';
 
 export function getWorkoutPlanPrompt(profile: UserProfile, previousLogs?: WorkoutLog[], assessment?: string, workoutStyle?: 'single_muscle' | 'muscle_group'): string {
   const isFirstPlan = !previousLogs || previousLogs.length === 0;
   const isSingleMuscle = workoutStyle === 'single_muscle';
   const gymDays = profile.gymDaysPerWeek || 5;
   const restDays = 7 - gymDays;
+  const trainingLocation = profile.trainingLocation || 'gym';
+  const liftingExperience = profile.liftingExperience || 'beginner';
 
   let prompt = `Generate a structured ${profile.intervalWeeks}-week workout plan for the following user:
 
@@ -17,6 +19,8 @@ export function getWorkoutPlanPrompt(profile: UserProfile, previousLogs?: Workou
 - Goal: ${(profile.fitnessGoals || ['general_fitness']).map(g => g.replace('_', ' ')).join(', ')}
 - Target Weight: ${profile.targetWeight}kg
 - Training days per week: ${gymDays} (${restDays} rest day${restDays !== 1 ? 's' : ''})
+- Lifting Experience: ${liftingExperience}
+- Training Location: ${trainingLocation === 'home' ? 'HOME (limited equipment — bodyweight, dumbbells, resistance bands only)' : 'Full Gym (machines, barbells, dumbbells, cables, etc.)'}
 `;
 
   if (!isFirstPlan && assessment) {
@@ -34,6 +38,9 @@ The user has explicitly chosen a SINGLE MUSCLE isolation split. You MUST follow 
 - NEVER create separate "Bicep Day" and "Tricep Day" — always combine them into "Arm Day"
 - ALL exercises on a given day must target that day's muscle(s) exclusively
 - Include ${restDays} rest day${restDays !== 1 ? 's' : ''}
+${trainingLocation === 'home' ? '- IMPORTANT: Only use exercises doable at HOME with bodyweight, dumbbells, or resistance bands. NO gym machines, NO barbells, NO cable machines.' : ''}
+${liftingExperience === 'beginner' ? '- IMPORTANT: User is a BEGINNER. Use simpler exercises, lighter rep schemes (3 sets, 10-15 reps), and include form notes.' : ''}
+${liftingExperience === 'expert' ? '- User is EXPERT level. Include advanced techniques like drop sets, supersets, and periodization.' : ''}
 
 Requirements:
 - Plan for 7 days (Monday to Sunday, include exactly ${restDays} rest day${restDays !== 1 ? 's' : ''} and ${gymDays} training days)
@@ -70,6 +77,9 @@ Return JSON with this exact structure:
 WORKOUT STYLE: Muscle Group Split
 - Combine related muscle groups per day (e.g., Push/Pull/Legs, Upper/Lower, or similar grouping)
 - Each day can target multiple related muscles
+${trainingLocation === 'home' ? '- IMPORTANT: Only use exercises doable at HOME with bodyweight, dumbbells, or resistance bands. NO gym machines, NO barbells, NO cable machines.' : ''}
+${liftingExperience === 'beginner' ? '- IMPORTANT: User is a BEGINNER. Use simpler exercises, lighter rep schemes (3 sets, 10-15 reps), and include form notes.' : ''}
+${liftingExperience === 'expert' ? '- User is EXPERT level. Include advanced techniques like drop sets, supersets, and periodization.' : ''}
 
 Requirements:
 - Plan for 7 days (Monday to Sunday, include exactly ${restDays} rest day${restDays !== 1 ? 's' : ''} and ${gymDays} training days)
@@ -104,6 +114,8 @@ export function getWorkoutSystemPrompt(): string {
 export function getMealPlanPrompt(profile: UserProfile, allergies?: string[]): string {
   const tdee = calculateTDEE(profile);
   const macros = calculateMacroTargets(profile);
+  const dailyWaterMl = calculateDailyWaterIntake(profile);
+  const dailyWaterLiters = (dailyWaterMl / 1000).toFixed(1);
 
   let allergyClause = '';
   if (allergies && allergies.length > 0) {
@@ -122,6 +134,7 @@ Requirements:
 - Use common, accessible foods with specific portion sizes
 - Calculate accurate macros for each food item
 - Daily totals should be within 5% of the targets
+- Include a recommended daily water intake of ${dailyWaterLiters}L (${dailyWaterMl}ml) based on the user's weight and activity level
 
 Return JSON with this structure:
 {
@@ -135,7 +148,8 @@ Return JSON with this structure:
     }
   ],
   "dailyTotals": { "calories": ${macros.calories}, "protein": ${macros.protein}, "carbs": ${macros.carbs}, "fats": ${macros.fats} },
-  "aiNotes": "Explanation of the meal plan"
+  "dailyWaterIntakeMl": ${dailyWaterMl},
+  "aiNotes": "Explanation of the meal plan including hydration advice"
 }`;
 }
 

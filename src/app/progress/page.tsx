@@ -4,11 +4,13 @@ import { useWorkoutLogs } from '@/hooks/useWorkoutLogs';
 import { useFoodLog } from '@/hooks/useFoodLog';
 import { useWeightLog } from '@/hooks/useWeightLog';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { formatDate } from '@/lib/utils';
+import { useWaterLog } from '@/hooks/useWaterLog';
+import { useCardioLog } from '@/hooks/useCardioLog';
+import { formatDate, formatWeight, formatWater, calculateDailyWaterIntake, kgToLbs } from '@/lib/utils';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
-import { BarChart3, TrendingUp, TrendingDown, Scale, Flame, Dumbbell, Minus } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Scale, Flame, Dumbbell, Minus, GlassWater, Bike } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart,
@@ -45,12 +47,16 @@ export default function ProgressPage() {
   const { logs } = useWorkoutLogs();
   const { getWeekEntries } = useFoodLog();
   const { entries: weightEntries, addEntry: addWeightEntry, getLatestWeight, getWeightChange } = useWeightLog();
+  const { getWeekData: getWaterWeekData, getTodayTotal: getTodayWater } = useWaterLog();
+  const { getWeekData: getCardioWeekData, getTodayCaloriesBurnt } = useCardioLog();
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [newWeight, setNewWeight] = useState('');
+  const isImperial = profile.unitSystem === 'imperial';
 
   const handleAddWeight = () => {
     if (!newWeight) return;
-    addWeightEntry(parseFloat(newWeight));
+    const weightKg = isImperial ? parseFloat(newWeight) / 2.205 : parseFloat(newWeight);
+    addWeightEntry(weightKg);
     setNewWeight('');
     setShowWeightModal(false);
   };
@@ -58,7 +64,21 @@ export default function ProgressPage() {
   // Weight chart data
   const weightData = weightEntries.slice(-30).map((e) => ({
     date: new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    weight: e.weight,
+    weight: isImperial ? Math.round(kgToLbs(e.weight) * 10) / 10 : e.weight,
+  }));
+
+  // Water intake weekly data
+  const waterWeekData = getWaterWeekData().map((d) => ({
+    date: new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }),
+    amount: isImperial ? Math.round(d.total * 0.0338) : Math.round(d.total / 1000 * 10) / 10,
+  }));
+  const waterTarget = calculateDailyWaterIntake(profile);
+
+  // Cardio weekly data
+  const cardioWeekData = getCardioWeekData().map((d) => ({
+    date: new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }),
+    calories: d.totalCalories,
+    sessions: d.entries.length,
   }));
 
   // Workout volume per week (last 8 weeks)
@@ -158,7 +178,7 @@ export default function ProgressPage() {
             <Scale className="text-accent-400" size={16} />
             <span className="text-xs text-dark-500">Current Weight</span>
           </div>
-          <p className="text-2xl font-bold text-dark-100">{getLatestWeight() || profile.weight || '--'} kg</p>
+          <p className="text-2xl font-bold text-dark-100">{formatWeight(getLatestWeight() || profile.weight || 0, profile.unitSystem)}</p>
         </div>
         <div className="stat-card">
           <div className="flex items-center gap-2 mb-1">
@@ -166,8 +186,24 @@ export default function ProgressPage() {
             <span className="text-xs text-dark-500">Weight Change</span>
           </div>
           <p className={`text-2xl font-bold ${weightChange < 0 ? 'text-primary-400' : weightChange > 0 ? 'text-yellow-400' : 'text-dark-400'}`}>
-            {weightChange > 0 ? '+' : ''}{weightChange ? weightChange.toFixed(1) : '0'} kg
+            {weightChange > 0 ? '+' : ''}{weightChange ? (isImperial ? (weightChange * 2.205).toFixed(1) : weightChange.toFixed(1)) : '0'} {isImperial ? 'lbs' : 'kg'}
           </p>
+        </div>
+        <div className="stat-card">
+          <div className="flex items-center gap-2 mb-1">
+            <GlassWater className="text-blue-400" size={16} />
+            <span className="text-xs text-dark-500">Today&apos;s Water</span>
+          </div>
+          <p className="text-2xl font-bold text-dark-100">{formatWater(getTodayWater(), profile.unitSystem)}</p>
+          <p className="text-xs text-dark-500">{Math.round((getTodayWater() / waterTarget) * 100)}% of target</p>
+        </div>
+        <div className="stat-card">
+          <div className="flex items-center gap-2 mb-1">
+            <Bike className="text-orange-400" size={16} />
+            <span className="text-xs text-dark-500">Cardio Burnt Today</span>
+          </div>
+          <p className="text-2xl font-bold text-dark-100">{getTodayCaloriesBurnt()}</p>
+          <p className="text-xs text-dark-500">kcal</p>
         </div>
       </div>
 
@@ -187,15 +223,43 @@ export default function ProgressPage() {
               <XAxis dataKey="date" tick={{ fill: CHART_COLORS.text, fontSize: 11 }} />
               <YAxis domain={['auto', 'auto']} tick={{ fill: CHART_COLORS.text, fontSize: 11 }} />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="weight" stroke={CHART_COLORS.primary} fill="url(#weightGrad)" strokeWidth={2} name="Weight (kg)" />
+              <Area type="monotone" dataKey="weight" stroke={CHART_COLORS.primary} fill="url(#weightGrad)" strokeWidth={2} name={`Weight (${isImperial ? 'lbs' : 'kg'})`} />
               {profile.targetWeight > 0 && (
-                <Line type="monotone" dataKey={() => profile.targetWeight} stroke={CHART_COLORS.accent} strokeDasharray="5 5" strokeWidth={1} name="Target" dot={false} />
+                <Line type="monotone" dataKey={() => isImperial ? kgToLbs(profile.targetWeight) : profile.targetWeight} stroke={CHART_COLORS.accent} strokeDasharray="5 5" strokeWidth={1} name="Target" dot={false} />
               )}
             </AreaChart>
           </ResponsiveContainer>
         ) : (
           <p className="text-dark-500 text-sm text-center py-8">Log your weight to see trends</p>
         )}
+      </Card>
+
+      {/* Water Intake Chart */}
+      <Card>
+        <h3 className="font-semibold text-dark-200 mb-4">Daily Water Intake</h3>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={waterWeekData}>
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.border} />
+            <XAxis dataKey="date" tick={{ fill: CHART_COLORS.text, fontSize: 11 }} />
+            <YAxis tick={{ fill: CHART_COLORS.text, fontSize: 11 }} />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} name={isImperial ? 'Water (oz)' : 'Water (L)'} />
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+
+      {/* Cardio Calories Chart */}
+      <Card>
+        <h3 className="font-semibold text-dark-200 mb-4">Cardio Calories Burnt</h3>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={cardioWeekData}>
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.border} />
+            <XAxis dataKey="date" tick={{ fill: CHART_COLORS.text, fontSize: 11 }} />
+            <YAxis tick={{ fill: CHART_COLORS.text, fontSize: 11 }} />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="calories" fill="#f97316" radius={[4, 4, 0, 0]} name="Calories Burnt" />
+          </BarChart>
+        </ResponsiveContainer>
       </Card>
 
       {/* Workout Volume Chart */}
@@ -258,12 +322,12 @@ export default function ProgressPage() {
       <Modal isOpen={showWeightModal} onClose={() => setShowWeightModal(false)} title="Log Weight">
         <div className="space-y-4">
           <div>
-            <label className="block text-xs text-dark-400 mb-1">Weight (kg)</label>
+            <label className="block text-xs text-dark-400 mb-1">Weight ({isImperial ? 'lbs' : 'kg'})</label>
             <input
               type="number"
               step="0.1"
               className="input-field"
-              placeholder={String(getLatestWeight() || profile.weight || '75')}
+              placeholder={String(isImperial ? Math.round(kgToLbs(getLatestWeight() || profile.weight || 75)) : (getLatestWeight() || profile.weight || 75))}
               value={newWeight}
               onChange={(e) => setNewWeight(e.target.value)}
             />
