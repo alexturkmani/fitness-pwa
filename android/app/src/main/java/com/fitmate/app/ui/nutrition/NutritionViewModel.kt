@@ -211,6 +211,7 @@ class NutritionViewModel @Inject constructor(
         }
 
         lookupJob?.cancel()
+        _uiState.update { it.copy(autoFillState = AutoFillState()) }
         if (currentFoodName.length >= 2) {
             lookupJob = viewModelScope.launch {
                 delay(800)
@@ -231,7 +232,7 @@ class NutritionViewModel @Inject constructor(
                         }
                     }
                     is Resource.Error -> {
-                        _uiState.update { it.copy(autoFillState = AutoFillState()) }
+                        _uiState.update { it.copy(autoFillState = AutoFillState(), toast = "Could not estimate nutrition") }
                     }
                     is Resource.Loading -> {}
                 }

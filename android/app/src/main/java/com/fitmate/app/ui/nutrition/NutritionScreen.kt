@@ -26,6 +26,7 @@ import com.fitmate.app.ui.components.*
 import com.fitmate.app.ui.theme.Cyan500
 import com.fitmate.app.ui.theme.Emerald500
 import com.fitmate.app.util.formatWater
+import kotlinx.coroutines.flow.filter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -427,13 +428,17 @@ private fun AddFoodModal(
     var fats by remember { mutableStateOf("") }
 
     // Update fields when AI auto-fill completes
-    LaunchedEffect(autoFillState.autoFilled, autoFillState.calories, autoFillState.protein, autoFillState.carbs, autoFillState.fats) {
-        if (autoFillState.autoFilled) {
-            calories = autoFillState.calories
-            protein = autoFillState.protein
-            carbs = autoFillState.carbs
-            fats = autoFillState.fats
-        }
+    // Use rememberUpdatedState + snapshotFlow to reliably observe parameter changes inside Dialog composition
+    val currentAutoFillState by rememberUpdatedState(autoFillState)
+    LaunchedEffect(Unit) {
+        snapshotFlow { currentAutoFillState }
+            .filter { it.autoFilled }
+            .collect { state ->
+                calories = state.calories
+                protein = state.protein
+                carbs = state.carbs
+                fats = state.fats
+            }
     }
 
     FitModal(
