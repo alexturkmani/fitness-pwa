@@ -113,6 +113,16 @@ class AuthRepository @Inject constructor(
         }
     }
 
+    suspend fun resetPassword(token: String, newPassword: String): Resource<Unit> {
+        return try {
+            val response = authApi.resetPassword(ResetPasswordRequestDto(token, newPassword))
+            if (response.isSuccessful) Resource.Success(Unit)
+            else Resource.Error("Failed to reset password. Link may have expired.")
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Network error")
+        }
+    }
+
     suspend fun changePassword(currentPassword: String, newPassword: String): Resource<Unit> {
         return try {
             val response = authApi.changePassword(

@@ -1,5 +1,6 @@
 package com.fitmate.app.ui.subscription
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -213,7 +214,7 @@ fun SubscriptionScreen(
                 } else {
                     GradientButton(
                         text = "Subscribe Now",
-                        onClick = { viewModel.purchase() },
+                        onClick = { viewModel.purchase(context as Activity) },
                         modifier = Modifier.fillMaxWidth(),
                         loading = uiState.isLoading
                     )

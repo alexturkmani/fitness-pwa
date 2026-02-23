@@ -1,5 +1,6 @@
 package com.fitmate.app.ui.paywall
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -34,6 +36,7 @@ fun PaywallScreen(
     viewModel: SubscriptionViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     // Navigate when access is granted (trial started or subscription)
     LaunchedEffect(uiState.isActive, uiState.trialStarted) {
@@ -182,8 +185,8 @@ fun PaywallScreen(
                 } else {
                     // Subscribe button (trial already used)
                     GradientButton(
-                        text = "Subscribe — \$4.99/month",
-                        onClick = { viewModel.purchase() },
+                        text = "Subscribe — ${uiState.priceText}",
+                        onClick = { viewModel.purchase(context as Activity) },
                         modifier = Modifier.fillMaxWidth(),
                         loading = uiState.isLoading
                     )

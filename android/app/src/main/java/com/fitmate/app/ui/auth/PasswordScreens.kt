@@ -5,12 +5,16 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -108,6 +112,7 @@ fun ResetPasswordScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.resetPasswordSuccess) {
         if (uiState.resetPasswordSuccess) onSuccess()
@@ -134,6 +139,15 @@ fun ResetPasswordScreen(
                 onValueChange = { password = it },
                 label = { Text("New Password") },
                 modifier = Modifier.fillMaxWidth(),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = "Toggle password visibility"
+                        )
+                    }
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium
@@ -144,6 +158,7 @@ fun ResetPasswordScreen(
                 onValueChange = { confirmPassword = it },
                 label = { Text("Confirm Password") },
                 modifier = Modifier.fillMaxWidth(),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium,
@@ -158,7 +173,7 @@ fun ResetPasswordScreen(
 
             GradientButton(
                 text = "Reset Password",
-                onClick = { /* viewModel.resetPassword(token, password) */ },
+                onClick = { viewModel.resetPassword(token, password) },
                 modifier = Modifier.fillMaxWidth(),
                 loading = uiState.isLoading,
                 enabled = password.length >= 8 && password == confirmPassword

@@ -1,10 +1,18 @@
 package com.fitmate.app.ui.subscription
 
+import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fitmate.app.data.repository.AuthRepository
 import com.fitmate.app.domain.model.AuthState
 import com.fitmate.app.util.Resource
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchaseParams
+import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.interfaces.PurchaseCallback
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.getOfferingsWith
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -23,7 +31,8 @@ data class SubscriptionUiState(
     val expirationDate: String = "",
     val error: String? = null,
     val isLoading: Boolean = false,
-    val trialStarted: Boolean = false
+    val trialStarted: Boolean = false,
+    val priceText: String = "\$4.99/month"
 )
 
 @HiltViewModel
@@ -42,12 +51,41 @@ class SubscriptionViewModel @Inject constructor(
             authRepository.authState.collect { state ->
                 if (state is AuthState.Authenticated) {
                     updateFromAuthState(state)
+                    // Identify user to RevenueCat
+                    try {
+                        Purchases.sharedInstance.logIn(state.userId)
+                    } catch (_: Exception) { /* RevenueCat not configured */ }
                 }
             }
         }
         viewModelScope.launch {
             authRepository.refreshUserInfo()
         }
+        // Fetch price from RevenueCat offerings
+        fetchPrice()
+    }
+
+    private fun fetchPrice() {
+        try {
+            Purchases.sharedInstance.getOfferingsWith(
+                onError = { /* Use default price text */ },
+                onSuccess = { offerings ->
+                    val pkg = offerings.current?.availablePackages?.firstOrNull()
+                    if (pkg != null) {
+                        val price = pkg.product.price.formatted
+                        val period = pkg.product.period?.let { p ->
+                            when (p.unit) {
+                                com.revenuecat.purchases.models.Period.Unit.MONTH -> if (p.value == 1) "/month" else "/${p.value} months"
+                                com.revenuecat.purchases.models.Period.Unit.YEAR -> if (p.value == 1) "/year" else "/${p.value} years"
+                                com.revenuecat.purchases.models.Period.Unit.WEEK -> if (p.value == 1) "/week" else "/${p.value} weeks"
+                                else -> ""
+                            }
+                        } ?: "/month"
+                        _uiState.update { it.copy(priceText = "$price$period") }
+                    }
+                }
+            )
+        } catch (_: Exception) { /* RevenueCat not configured */ }
     }
 
     private fun updateFromAuthState(state: AuthState.Authenticated) {
@@ -92,9 +130,46 @@ class SubscriptionViewModel @Inject constructor(
         }
     }
 
-    fun purchase() {
-        // Placeholder for RevenueCat integration when API key is configured
-        startTrial()
+    fun purchase(activity: Activity) {
+        _uiState.update { it.copy(isLoading = true, error = null) }
+        try {
+            Purchases.sharedInstance.getOfferingsWith(
+                onError = { error ->
+                    _uiState.update { it.copy(isLoading = false, error = error.message) }
+                },
+                onSuccess = { offerings ->
+                    val pkg = offerings.current?.availablePackages?.firstOrNull()
+                    if (pkg == null) {
+                        _uiState.update { it.copy(isLoading = false, error = "No subscription packages available") }
+                        return@getOfferingsWith
+                    }
+
+                    Purchases.sharedInstance.purchase(
+                        PurchaseParams.Builder(activity, pkg).build(),
+                        object : PurchaseCallback {
+                            override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                                // Purchase successful — refresh user info from server
+                                // (RevenueCat webhook will update the server-side subscription status)
+                                viewModelScope.launch {
+                                    authRepository.refreshUserInfo()
+                                    _uiState.update { it.copy(isLoading = false, trialStarted = true) }
+                                }
+                            }
+
+                            override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                                if (userCancelled) {
+                                    _uiState.update { it.copy(isLoading = false) }
+                                } else {
+                                    _uiState.update { it.copy(isLoading = false, error = error.message) }
+                                }
+                            }
+                        }
+                    )
+                }
+            )
+        } catch (e: Exception) {
+            _uiState.update { it.copy(isLoading = false, error = "Subscription service not available. Please try again later.") }
+        }
     }
 
     fun clearError() {

@@ -20,6 +20,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
+import com.fitmate.app.MainActivity
 import com.fitmate.app.data.repository.ProfileRepository
 import com.fitmate.app.domain.model.AuthState
 import com.fitmate.app.ui.auth.*
@@ -54,7 +56,7 @@ fun FitMateNavHost(
             if (!state.hasAccess) {
                 GatedFlowHost(profileRepository = profileRepository)
             } else {
-                MainScaffold(navController = navController)
+                MainScaffold()
             }
         }
     }
@@ -103,6 +105,17 @@ private fun GatedFlowHost(
 
 @Composable
 private fun AuthNavHost(navController: NavHostController) {
+    // Listen for deep links from MainActivity
+    LaunchedEffect(Unit) {
+        MainActivity.deepLinkFlow.collect { route ->
+            try {
+                navController.navigate(route) {
+                    launchSingleTop = true
+                }
+            } catch (_: Exception) { /* route not found */ }
+        }
+    }
+
     NavHost(navController = navController, startDestination = Screen.Login.route) {
         composable(Screen.Login.route) {
             LoginScreen(
@@ -124,7 +137,10 @@ private fun AuthNavHost(navController: NavHostController) {
         }
         composable(
             route = Screen.ResetPassword.route,
-            arguments = listOf(navArgument("token") { type = NavType.StringType })
+            arguments = listOf(navArgument("token") { type = NavType.StringType }),
+            deepLinks = listOf(
+                navDeepLink { uriPattern = "fitmate://app/reset-password/{token}" }
+            )
         ) { backStackEntry ->
             ResetPasswordScreen(
                 token = backStackEntry.arguments?.getString("token") ?: "",
@@ -135,7 +151,7 @@ private fun AuthNavHost(navController: NavHostController) {
 }
 
 @Composable
-private fun MainScaffold(navController: NavHostController) {
+private fun MainScaffold() {
     val mainNavController = rememberNavController()
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route

@@ -48,6 +48,7 @@ data class ProfileUiState(
     val saved: Boolean = false,
     val passwordLoading: Boolean = false,
     val passwordError: String? = null,
+    val passwordChanged: Boolean = false,
     val emailLoading: Boolean = false,
     val emailError: String? = null,
     val emailSent: Boolean = false
@@ -194,7 +195,9 @@ class ProfileViewModel @Inject constructor(
             _uiState.update { it.copy(passwordLoading = true, passwordError = null) }
             when (val result = authRepo.changePassword(currentPassword, newPassword)) {
                 is Resource.Success -> {
-                    _uiState.update { it.copy(passwordLoading = false) }
+                    _uiState.update { it.copy(passwordLoading = false, passwordChanged = true) }
+                    kotlinx.coroutines.delay(3000)
+                    _uiState.update { it.copy(passwordChanged = false) }
                 }
                 is Resource.Error -> {
                     _uiState.update { it.copy(passwordLoading = false, passwordError = result.message) }

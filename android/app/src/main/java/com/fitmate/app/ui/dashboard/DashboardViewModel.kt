@@ -10,7 +10,6 @@ import com.fitmate.app.domain.model.AuthState
 import com.fitmate.app.domain.model.UnitSystem
 import com.fitmate.app.util.formatDate
 import com.fitmate.app.util.calculateDailyWaterIntakeMl
-import com.fitmate.app.util.formatWater
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

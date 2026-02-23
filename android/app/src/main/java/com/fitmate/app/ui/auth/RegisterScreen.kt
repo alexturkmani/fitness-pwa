@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -32,6 +33,7 @@ fun RegisterScreen(
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -216,7 +218,7 @@ fun RegisterScreen(
 
         FitButton(
             text = "Continue with Google",
-            onClick = { viewModel.signInWithGoogle() },
+            onClick = { viewModel.signInWithGoogle(context) },
             variant = ButtonVariant.SECONDARY,
             modifier = Modifier.fillMaxWidth()
         )
