@@ -61,9 +61,9 @@ function renderConfirmPage(token: string) {
       </div>
       <h1>Verify Your Email</h1>
       <p>Tap the button below to confirm your email address and activate your Nexal account.</p>
-      <form method="POST" action="/api/auth/verify">
+      <form method="POST" action="/api/auth/verify" onsubmit="var b=document.getElementById('verifyBtn');b.disabled=true;b.textContent='Verifying…';">
         <input type="hidden" name="token" value="${token}" />
-        <button type="submit" class="btn" id="verifyBtn" onclick="this.disabled=true;this.textContent='Verifying...';">Verify My Email</button>
+        <button type="submit" class="btn" id="verifyBtn">Verify My Email</button>
       </form>
       <p class="brand">Nexal</p>
     </div></body></html>`,
