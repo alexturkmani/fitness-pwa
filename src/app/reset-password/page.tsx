@@ -103,7 +103,7 @@ function ResetPasswordContent() {
           <Dumbbell className="text-white" size={24} />
         </div>
         <h1 className="text-3xl font-bold">
-          <span className="gradient-text">FitMate</span>
+          <span className="gradient-text">Nexal</span>
         </h1>
       </div>
 

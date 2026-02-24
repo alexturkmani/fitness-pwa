@@ -88,7 +88,7 @@ function LandingContent() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
               <Dumbbell className="text-white" size={18} />
             </div>
-            <span className="text-xl font-bold text-dark-100">FitMate</span>
+            <span className="text-xl font-bold text-dark-100">Nexal</span>
           </div>
 
           {/* Desktop nav */}
@@ -227,7 +227,7 @@ function LandingContent() {
           <div className="bg-surface rounded-2xl border-2 border-primary-500/30 p-8 shadow-lg shadow-primary-500/5">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-50 text-primary-600 text-xs font-medium mb-4">
               <Crown size={14} />
-              FitMate Premium
+              Nexal Premium
             </div>
 
             <div className="flex items-baseline justify-center gap-1 mb-2">
@@ -287,13 +287,13 @@ function LandingContent() {
             <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
               <Dumbbell className="text-white" size={12} />
             </div>
-            <span className="text-sm font-semibold text-dark-300">FitMate</span>
+            <span className="text-sm font-semibold text-dark-300">Nexal</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-dark-500">
             <Link href="/login" className="hover:text-dark-300 transition-colors">Sign In</Link>
             <Link href="/register" className="hover:text-dark-300 transition-colors">Register</Link>
           </div>
-          <p className="text-xs text-dark-600">&copy; {new Date().getFullYear()} FitMate. All rights reserved.</p>
+          <p className="text-xs text-dark-600">&copy; {new Date().getFullYear()} Nexal. All rights reserved.</p>
         </div>
       </footer>
     </div>

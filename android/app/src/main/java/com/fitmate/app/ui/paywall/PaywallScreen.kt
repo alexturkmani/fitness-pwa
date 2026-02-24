@@ -88,7 +88,7 @@ fun PaywallScreen(
                     Spacer(Modifier.height(24.dp))
 
                     Text(
-                        "Welcome to FitMate",
+                        "Welcome to Nexal",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center

@@ -104,7 +104,7 @@ fun ProfileScreen(
                         } else {
                             Column {
                                 Text(uiState.name.ifBlank { "No name set" }, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                                Text("FitMate Member", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Nexal Member", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }

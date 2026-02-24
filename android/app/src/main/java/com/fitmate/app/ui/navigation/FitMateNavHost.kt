@@ -48,7 +48,7 @@ fun FitMateNavHost(
     val navController = rememberNavController()
 
     when (val state = authState) {
-        is AuthState.Loading -> LoadingScreen("Starting FitMate...")
+        is AuthState.Loading -> LoadingScreen("Starting Nexal...")
         is AuthState.Unauthenticated -> {
             AuthNavHost(navController = navController)
         }
@@ -139,7 +139,7 @@ private fun AuthNavHost(navController: NavHostController) {
             route = Screen.ResetPassword.route,
             arguments = listOf(navArgument("token") { type = NavType.StringType }),
             deepLinks = listOf(
-                navDeepLink { uriPattern = "fitmate://app/reset-password/{token}" }
+                navDeepLink { uriPattern = "nexal://app/reset-password/{token}" }
             )
         ) { backStackEntry ->
             ResetPasswordScreen(

@@ -37,7 +37,7 @@ fun DashboardScreen(
     if (!uiState.onboardingCompleted) {
         EmptyState(
             icon = Icons.Default.FitnessCenter,
-            title = "Welcome to FitMate!",
+            title = "Welcome to Nexal!",
             description = "Let's set up your profile so we can create your personalized fitness plan.",
             actionLabel = "Get Started",
             onAction = onNavigateToOnboarding

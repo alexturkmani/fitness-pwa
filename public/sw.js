@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fitmate-v2';
+const CACHE_NAME = 'Nexal-v2';
 const STATIC_ASSETS = ['/dashboard', '/workouts', '/meals', '/scanner', '/nutrition', '/progress'];
 
 self.addEventListener('install', (event) => {

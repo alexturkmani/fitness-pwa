@@ -1,6 +1,6 @@
 {
-  "name": "FitMate - AI Fitness Coach",
-  "short_name": "FitMate",
+  "name": "Nexal - AI Fitness Coach",
+  "short_name": "Nexal",
   "description": "AI-powered fitness and nutrition tracking",
   "start_url": "/",
   "display": "standalone",

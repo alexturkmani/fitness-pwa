@@ -6,13 +6,13 @@ import AppShell from '@/components/layout/AppShell';
 import ThemeProvider from '@/components/ThemeProvider';
 
 export const metadata: Metadata = {
-  title: 'FitMate - AI Fitness Coach',
+  title: 'Nexal - AI Fitness Coach',
   description: 'AI-powered fitness and nutrition tracking',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'FitMate',
+    title: 'Nexal',
   },
 };
 

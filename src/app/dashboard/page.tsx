@@ -90,7 +90,7 @@ export default function DashboardPage() {
             {profile.name ? (
               <>Hi, <span className="gradient-text">{profile.name}</span></>
             ) : (
-              <span className="gradient-text">FitMate</span>
+              <span className="gradient-text">Nexal</span>
             )}
           </h1>
           <p className="text-dark-400 mt-1">

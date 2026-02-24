@@ -61,7 +61,7 @@ export default function PaywallPage() {
       {/* Header */}
       <div className="flex items-center gap-2 mb-2">
         <Crown className="text-yellow-500" size={28} />
-        <h1 className="text-2xl font-bold text-dark-100">FitMate Premium</h1>
+        <h1 className="text-2xl font-bold text-dark-100">Nexal Premium</h1>
       </div>
       <p className="text-dark-400 text-center mb-8">
         {canStartTrial

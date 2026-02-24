@@ -61,7 +61,7 @@ fun LoginScreen(
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            "Welcome to FitMate",
+            "Welcome to Nexal",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )

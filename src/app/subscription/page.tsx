@@ -222,7 +222,7 @@ export default function SubscriptionPage() {
 
       {/* Footer info */}
       <p className="text-xs text-dark-500 text-center">
-        Need help? Contact us at support@fitmate.app
+        Need help? Contact us at support@Nexal.app
       </p>
     </div>
   );

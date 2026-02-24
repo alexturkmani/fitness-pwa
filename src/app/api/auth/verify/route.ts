@@ -12,7 +12,7 @@ function renderPage(title: string, heading: string, message: string, success: bo
   return new NextResponse(
     `<!DOCTYPE html>
     <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>${title} — FitMate</title>
+    <title>${title} — Nexal</title>
     <style>
       *{margin:0;padding:0;box-sizing:border-box}
       body{font-family:system-ui,-apple-system,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8fafc;padding:24px}
@@ -28,7 +28,7 @@ function renderPage(title: string, heading: string, message: string, success: bo
       <h1>${heading}</h1>
       <p>${message}</p>
       <span class="badge">${success ? '✓ Verified' : '✗ Failed'}</span>
-      <p class="brand">FitMate</p>
+      <p class="brand">Nexal</p>
     </div></body></html>`,
     { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
   );
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       where: { token },
     });
 
-    return renderPage('Email Verified', 'Email Verified Successfully!', 'Your email has been verified. You can now open the FitMate app and sign in to your account.', true);
+    return renderPage('Email Verified', 'Email Verified Successfully!', 'Your email has been verified. You can now open the Nexal app and sign in to your account.', true);
   } catch (error) {
     console.error('Email verification error:', error);
     return renderPage('Error', 'Verification Failed', 'Something went wrong verifying your email. Please try again or contact support.', false);

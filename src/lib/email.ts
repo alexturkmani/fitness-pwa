@@ -12,7 +12,7 @@ function getResend() {
   return resend;
 }
 
-const FROM_EMAIL = process.env.FROM_EMAIL || 'FitMate <onboarding@resend.dev>';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'Nexal <onboarding@resend.dev>';
 const APP_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
 export async function sendVerificationEmail(email: string, token: string) {
@@ -22,11 +22,11 @@ export async function sendVerificationEmail(email: string, token: string) {
     await getResend().emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: 'Verify your FitMate account',
+      subject: 'Verify your Nexal account',
       html: `
         <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="color: #10b981; font-size: 28px; margin: 0;">FitMate</h1>
+            <h1 style="color: #10b981; font-size: 28px; margin: 0;">Nexal</h1>
           </div>
           <div style="background: #f8fafc; border-radius: 16px; padding: 32px; border: 1px solid #e2e8f0;">
             <h2 style="color: #0f172a; font-size: 20px; margin: 0 0 12px;">Verify your email</h2>
@@ -41,7 +41,7 @@ export async function sendVerificationEmail(email: string, token: string) {
             </p>
           </div>
           <p style="color: #cbd5e1; font-size: 12px; text-align: center; margin-top: 24px;">
-            &copy; ${new Date().getFullYear()} FitMate. All rights reserved.
+            &copy; ${new Date().getFullYear()} Nexal. All rights reserved.
           </p>
         </div>
       `,
@@ -60,11 +60,11 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     await getResend().emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: 'Reset your FitMate password',
+      subject: 'Reset your Nexal password',
       html: `
         <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="color: #10b981; font-size: 28px; margin: 0;">FitMate</h1>
+            <h1 style="color: #10b981; font-size: 28px; margin: 0;">Nexal</h1>
           </div>
           <div style="background: #f8fafc; border-radius: 16px; padding: 32px; border: 1px solid #e2e8f0;">
             <h2 style="color: #0f172a; font-size: 20px; margin: 0 0 12px;">Reset your password</h2>
@@ -79,7 +79,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
             </p>
           </div>
           <p style="color: #cbd5e1; font-size: 12px; text-align: center; margin-top: 24px;">
-            &copy; ${new Date().getFullYear()} FitMate. All rights reserved.
+            &copy; ${new Date().getFullYear()} Nexal. All rights reserved.
           </p>
         </div>
       `,
@@ -98,11 +98,11 @@ export async function sendEmailChangeVerification(email: string, token: string) 
     await getResend().emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: 'Verify your new email - FitMate',
+      subject: 'Verify your new email - Nexal',
       html: `
         <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="color: #10b981; font-size: 28px; margin: 0;">FitMate</h1>
+            <h1 style="color: #10b981; font-size: 28px; margin: 0;">Nexal</h1>
           </div>
           <div style="background: #f8fafc; border-radius: 16px; padding: 32px; border: 1px solid #e2e8f0;">
             <h2 style="color: #0f172a; font-size: 20px; margin: 0 0 12px;">Verify your new email</h2>
@@ -117,7 +117,7 @@ export async function sendEmailChangeVerification(email: string, token: string) 
             </p>
           </div>
           <p style="color: #cbd5e1; font-size: 12px; text-align: center; margin-top: 24px;">
-            &copy; ${new Date().getFullYear()} FitMate. All rights reserved.
+            &copy; ${new Date().getFullYear()} Nexal. All rights reserved.
           </p>
         </div>
       `,
