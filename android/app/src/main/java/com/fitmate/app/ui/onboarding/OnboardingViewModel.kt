@@ -42,7 +42,7 @@ class OnboardingViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
-    fun nextStep() { _uiState.update { it.copy(currentStep = (it.currentStep + 1).coerceAtMost(7)) } }
+    fun nextStep() { _uiState.update { it.copy(currentStep = (it.currentStep + 1).coerceAtMost(2)) } }
     fun previousStep() { _uiState.update { it.copy(currentStep = (it.currentStep - 1).coerceAtLeast(0)) } }
     fun updateName(name: String) { _uiState.update { it.copy(name = name) } }
     fun updateWeight(weight: Double) { _uiState.update { it.copy(weight = weight) } }
