@@ -3,6 +3,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Dumbbell, Apple, ScanLine, BarChart3, Zap, Shield,
   ArrowRight, CheckCircle, Crown, Sparkles, Menu, X
@@ -85,9 +86,13 @@ function LandingContent() {
       <nav className="sticky top-0 z-50 bg-surface/90 backdrop-blur-lg border-b border-dark-700/50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
-              <Dumbbell className="text-white" size={18} />
-            </div>
+            <Image
+              src="/icons/nexal-logo.png"
+              alt="Nexal"
+              width={32}
+              height={32}
+              className="rounded-lg"
+            />
             <span className="text-xl font-bold text-dark-100">Nexal</span>
           </div>
 
@@ -284,9 +289,13 @@ function LandingContent() {
       <footer className="px-4 sm:px-6 py-10 border-t border-dark-700/50">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
-              <Dumbbell className="text-white" size={12} />
-            </div>
+            <Image
+              src="/icons/nexal-logo.png"
+              alt="Nexal"
+              width={24}
+              height={24}
+              className="rounded-md"
+            />
             <span className="text-sm font-semibold text-dark-300">Nexal</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-dark-500">
