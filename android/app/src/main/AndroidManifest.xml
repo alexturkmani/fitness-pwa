@@ -33,7 +33,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep links for email verification and password reset -->
+            <!-- Deep link for password reset only (verify links open in browser) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -41,15 +41,7 @@
                 <data
                     android:scheme="https"
                     android:host="${deepLinkHost}"
-                    android:pathPrefix="/api/auth/verify" />
-                <data
-                    android:scheme="https"
-                    android:host="${deepLinkHost}"
                     android:pathPrefix="/reset-password" />
-                <data
-                    android:scheme="https"
-                    android:host="${deepLinkHost}"
-                    android:pathPrefix="/api/auth/verify-email-change" />
             </intent-filter>
 
             <!-- Custom scheme deep link -->
