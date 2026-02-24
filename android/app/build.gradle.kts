@@ -17,11 +17,11 @@ if (localFile.exists()) {
 }
 
 android {
-    namespace = "com.fitmate.app"
+    namespace = "com.nexal.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.fitmate.app"
+        applicationId = "com.nexal.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
@@ -46,7 +46,7 @@ android {
             if (storeFilePath.isNotBlank()) {
                 storeFile = file(storeFilePath)
                 storePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD", "")
-                keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS", "fitmate")
+                keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS", "Nexal")
                 keyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD", "")
             }
         }

@@ -1,11 +1,98 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="100" fill="#0f172a"/>
-  <g transform="translate(256,220)">
-    <rect x="-120" y="-16" width="240" height="32" rx="16" fill="#10b981"/>
-    <rect x="-140" y="-48" width="40" height="96" rx="12" fill="#10b981"/>
-    <rect x="100" y="-48" width="40" height="96" rx="12" fill="#10b981"/>
-    <rect x="-160" y="-32" width="32" height="64" rx="8" fill="#059669"/>
-    <rect x="128" y="-32" width="32" height="64" rx="8" fill="#059669"/>
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <!-- Primary accent gradient -->
+    <linearGradient id="accentGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="50%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <!-- Glow gradient for the pulse ring -->
+    <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="60%" stop-color="#10b981" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Drop shadow for the N -->
+    <filter id="nShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#10b981" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#bgGrad)"/>
+
+  <!-- Subtle radial glow behind center -->
+  <circle cx="256" cy="240" r="200" fill="url(#glowGrad)"/>
+
+  <!-- Decorative arc rings - fitness/motion feel -->
+  <g opacity="0.08" fill="none" stroke="#10b981" stroke-width="2">
+    <circle cx="256" cy="256" r="220"/>
+    <circle cx="256" cy="256" r="200"/>
   </g>
-  <text x="256" y="390" text-anchor="middle" font-family="system-ui,sans-serif" font-size="52" font-weight="bold" fill="#10b981">FitMate</text>
+
+  <!-- Dynamic pulse line (heartbeat / activity) -->
+  <polyline
+    points="80,310 160,310 190,310 210,270 230,350 256,230 280,340 300,280 320,310 340,310 432,310"
+    fill="none"
+    stroke="#10b981"
+    stroke-width="3.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    opacity="0.12"
+  />
+
+  <!-- The "N" lettermark -->
+  <g filter="url(#nShadow)">
+    <path
+      d="
+        M 148,360
+        L 148,152
+        C 148,144 152,138 160,138
+        L 184,138
+        C 192,138 196,142 200,148
+        L 312,312
+        L 312,152
+        C 312,144 318,138 326,138
+        L 354,138
+        C 362,138 368,144 368,152
+        L 368,360
+        C 368,368 364,374 356,374
+        L 330,374
+        C 322,374 318,370 314,364
+        L 200,198
+        L 200,360
+        C 200,368 194,374 186,374
+        L 158,374
+        C 150,374 148,368 148,360
+        Z
+      "
+      fill="url(#accentGrad)"
+    />
+  </g>
+
+  <!-- Small decorative dots - AI / tech feel -->
+  <g fill="#10b981" opacity="0.25">
+    <circle cx="100" cy="150" r="4"/>
+    <circle cx="420" cy="150" r="4"/>
+    <circle cx="100" cy="400" r="4"/>
+    <circle cx="420" cy="400" r="4"/>
+    <circle cx="80" cy="256" r="3"/>
+    <circle cx="432" cy="256" r="3"/>
+  </g>
+
+  <!-- "NEXAL" text below the N -->
+  <text
+    x="256" y="440"
+    text-anchor="middle"
+    font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+    font-size="36"
+    font-weight="700"
+    letter-spacing="12"
+    fill="#34d399"
+    opacity="0.9"
+  >NEXAL</text>
 </svg>

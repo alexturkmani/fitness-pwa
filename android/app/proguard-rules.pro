@@ -17,9 +17,9 @@
 -dontnote kotlinx.serialization.AnnotationsKt
 -keepclassmembers class kotlinx.serialization.json.** { *** Companion; }
 -keepclasseswithmembers class kotlinx.serialization.json.** { kotlinx.serialization.KSerializer serializer(...); }
--keep,includedescriptorclasses class com.fitmate.app.**$$serializer { *; }
--keepclassmembers class com.fitmate.app.** { *** Companion; }
--keepclasseswithmembers class com.fitmate.app.** { kotlinx.serialization.KSerializer serializer(...); }
+-keep,includedescriptorclasses class com.nexal.app.**$$serializer { *; }
+-keepclassmembers class com.nexal.app.** { *** Companion; }
+-keepclasseswithmembers class com.nexal.app.** { kotlinx.serialization.KSerializer serializer(...); }
 
 # Room
 -keep class * extends androidx.room.RoomDatabase
@@ -66,7 +66,7 @@
 -keep class okhttp3.** { *; }
 
 # Keep enums used in serialization
--keepclassmembers enum com.fitmate.app.** {
+-keepclassmembers enum com.nexal.app.** {
     **[] $VALUES;
     public *;
 }

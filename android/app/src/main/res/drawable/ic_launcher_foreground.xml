@@ -5,33 +5,30 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- FitMate Icon — Clean horizontal dumbbell, centered -->
-
-    <!-- Left end cap -->
+    <!-- Nexal Icon — Bold "N" lettermark -->
     <path
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.7"
-        android:pathData="M22,49 L25,49 A0,0 0,0,1 25,49 L25,59 L22,59 A3,3 0,0,1 19,56 L19,52 A3,3 0,0,1 22,49 Z"/>
-
-    <!-- Left plate -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M25,43 L32,43 A3,3 0,0,1 35,46 L35,62 A3,3 0,0,1 32,65 L25,65 A3,3 0,0,1 22,62 L22,46 A3,3 0,0,1 25,43 Z"/>
-
-    <!-- Bar -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M35,51 L73,51 L73,57 L35,57 Z"/>
-
-    <!-- Right plate -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M76,43 L83,43 A3,3 0,0,1 86,46 L86,62 A3,3 0,0,1 83,65 L76,65 A3,3 0,0,1 73,62 L73,46 A3,3 0,0,1 76,43 Z"/>
-
-    <!-- Right end cap -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.7"
-        android:pathData="M83,49 L86,49 A3,3 0,0,1 89,52 L89,56 A3,3 0,0,1 86,59 L83,59 Z"/>
+        android:fillColor="#10b981"
+        android:pathData="
+            M 31,76
+            L 31,32
+            C 31,30.5 31.8,29 33.5,29
+            L 38.5,29
+            C 40,29 40.8,29.8 41.5,31
+            L 66.5,64
+            L 66.5,32
+            C 66.5,30.5 67.5,29 69.5,29
+            L 74.5,29
+            C 76.2,29 77,30.5 77,32
+            L 77,76
+            C 77,77.5 76.2,79 74.5,79
+            L 69.5,79
+            C 68,79 67.2,78.2 66.5,77
+            L 41.5,43
+            L 41.5,76
+            C 41.5,77.5 40.5,79 38.5,79
+            L 33.5,79
+            C 31.8,79 31,77.5 31,76
+            Z
+        "/>
 
 </vector>

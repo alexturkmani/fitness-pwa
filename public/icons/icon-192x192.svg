@@ -1,11 +1,92 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="40" fill="#0f172a"/>
-  <g transform="translate(96,86)">
-    <rect x="-60" y="-8" width="120" height="16" rx="8" fill="#10b981"/>
-    <rect x="-70" y="-24" width="20" height="48" rx="6" fill="#10b981"/>
-    <rect x="50" y="-24" width="20" height="48" rx="6" fill="#10b981"/>
-    <rect x="-80" y="-16" width="16" height="32" rx="4" fill="#059669"/>
-    <rect x="64" y="-16" width="16" height="32" rx="4" fill="#059669"/>
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="50%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="60%" stop-color="#10b981" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="nShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#10b981" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect width="192" height="192" rx="42" ry="42" fill="url(#bgGrad)"/>
+
+  <!-- Subtle radial glow -->
+  <circle cx="96" cy="90" r="75" fill="url(#glowGrad)"/>
+
+  <!-- Decorative arc rings -->
+  <g opacity="0.08" fill="none" stroke="#10b981" stroke-width="1">
+    <circle cx="96" cy="96" r="82"/>
+    <circle cx="96" cy="96" r="74"/>
   </g>
-  <text x="96" y="155" text-anchor="middle" font-family="system-ui,sans-serif" font-size="22" font-weight="bold" fill="#10b981">FitMate</text>
+
+  <!-- Pulse line -->
+  <polyline
+    points="30,118 60,118 72,118 80,102 88,132 96,86 106,128 112,106 120,118 130,118 162,118"
+    fill="none"
+    stroke="#10b981"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    opacity="0.12"
+  />
+
+  <!-- The "N" lettermark -->
+  <g filter="url(#nShadow)">
+    <path
+      d="
+        M 55,138
+        L 55,57
+        C 55,54 56.5,52 59,52
+        L 69,52
+        C 72,52 73.5,53.5 75,56
+        L 117,118
+        L 117,57
+        C 117,54 119,52 122,52
+        L 133,52
+        C 136,52 138,54 138,57
+        L 138,138
+        C 138,141 136.5,143 134,143
+        L 124,143
+        C 121,143 119.5,141.5 118,139
+        L 75,76
+        L 75,138
+        C 75,141 73,143 70,143
+        L 59,143
+        C 56,143 55,141 55,138
+        Z
+      "
+      fill="url(#accentGrad)"
+    />
+  </g>
+
+  <!-- Decorative dots -->
+  <g fill="#10b981" opacity="0.25">
+    <circle cx="38" cy="56" r="1.5"/>
+    <circle cx="158" cy="56" r="1.5"/>
+    <circle cx="38" cy="150" r="1.5"/>
+    <circle cx="158" cy="150" r="1.5"/>
+  </g>
+
+  <!-- "NEXAL" text -->
+  <text
+    x="96" y="168"
+    text-anchor="middle"
+    font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+    font-size="13"
+    font-weight="700"
+    letter-spacing="4.5"
+    fill="#34d399"
+    opacity="0.9"
+  >NEXAL</text>
 </svg>

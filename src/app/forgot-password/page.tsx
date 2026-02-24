@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { Dumbbell, Mail, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
+import Image from 'next/image';
+import { Mail, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -58,9 +59,13 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 -mt-20">
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-12 h-12 rounded-2xl bg-primary-500 flex items-center justify-center">
-          <Dumbbell className="text-white" size={24} />
-        </div>
+        <Image
+          src="/icons/nexal-logo.png"
+          alt="Nexal"
+          width={48}
+          height={48}
+          className="rounded-2xl"
+        />
         <h1 className="text-3xl font-bold">
           <span className="gradient-text">Nexal</span>
         </h1>

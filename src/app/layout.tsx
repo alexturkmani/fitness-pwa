@@ -31,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/icon-192x192.svg" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('fitmate_theme');if(t==='dark')document.documentElement.classList.add('dark')}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('nexal_theme');if(t==='dark')document.documentElement.classList.add('dark')}catch(e){}})();`,
           }}
         />
       </head>

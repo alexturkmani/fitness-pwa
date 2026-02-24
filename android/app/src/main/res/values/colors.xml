@@ -39,7 +39,4 @@
     <color name="error">#ef4444</color>
     <color name="warning">#f59e0b</color>
     <color name="success">#10b981</color>
-
-    <!-- Launcher -->
-    <color name="ic_launcher_background">#10b981</color>
 </resources>

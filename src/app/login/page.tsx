@@ -3,7 +3,8 @@ import { useState, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Dumbbell, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
+import Image from 'next/image';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
 
 export default function LoginPage() {
   return (
@@ -58,9 +59,13 @@ function LoginContent() {
     <div className="min-h-screen flex flex-col items-center justify-center px-6 -mt-20">
       {/* Logo */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-12 h-12 rounded-2xl bg-primary-500 flex items-center justify-center">
-          <Dumbbell className="text-white" size={24} />
-        </div>
+        <Image
+          src="/icons/nexal-logo.png"
+          alt="Nexal"
+          width={48}
+          height={48}
+          className="rounded-2xl"
+        />
         <h1 className="text-3xl font-bold">
           <span className="gradient-text">Nexal</span>
         </h1>

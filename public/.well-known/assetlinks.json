@@ -3,7 +3,7 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.fitmate.app",
+      "package_name": "com.nexal.app",
       "sha256_cert_fingerprints": [
         "09:83:20:A7:9F:93:BA:CC:6E:DB:74:81:8E:7C:C6:FA:AF:B8:56:43:C2:9F:1C:84:27:54:5C:4E:AA:D0:54:09",
         "C9:65:9F:21:1D:C6:54:3A:09:2D:A6:5E:43:C9:BD:39:A1:C6:08:B6:74:CB:C5:1E:39:A2:90:83:A5:9E:49:9D"

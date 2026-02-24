@@ -22,7 +22,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem('fitmate_theme') as Theme | null;
+    const stored = localStorage.getItem('nexal_theme') as Theme | null;
     const initial = stored || 'light';
     setTheme(initial);
     document.documentElement.classList.toggle('dark', initial === 'dark');
@@ -32,7 +32,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   const toggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light';
     setTheme(next);
-    localStorage.setItem('fitmate_theme', next);
+    localStorage.setItem('nexal_theme', next);
     document.documentElement.classList.toggle('dark', next === 'dark');
   };
 

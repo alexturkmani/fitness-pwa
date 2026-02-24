@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "FitMate"
+rootProject.name = "Nexal"
 include(":app")
