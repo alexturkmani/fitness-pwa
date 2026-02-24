@@ -1,6 +1,7 @@
 package com.fitmate.app.data.repository
 
 import android.content.SharedPreferences
+import com.fitmate.app.data.local.FitMateDatabase
 import com.fitmate.app.data.remote.api.AuthApi
 import com.fitmate.app.data.remote.dto.*
 import com.fitmate.app.domain.model.AuthState
@@ -15,7 +16,8 @@ import javax.inject.Singleton
 @Singleton
 class AuthRepository @Inject constructor(
     private val authApi: AuthApi,
-    @Named("tokenStore") private val prefs: SharedPreferences
+    @Named("tokenStore") private val prefs: SharedPreferences,
+    private val database: FitMateDatabase
 ) {
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
@@ -180,8 +182,9 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    fun logout() {
+    suspend fun logout() {
         prefs.edit().clear().apply()
+        database.clearAllTables()
         _authState.value = AuthState.Unauthenticated
     }
 

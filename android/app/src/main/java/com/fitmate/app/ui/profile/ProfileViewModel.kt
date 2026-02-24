@@ -223,6 +223,8 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun signOut() {
-        authRepo.logout()
+        viewModelScope.launch {
+            authRepo.logout()
+        }
     }
 }

@@ -38,7 +38,7 @@ fun PaywallScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    // Navigate when access is granted (trial started or subscription)
+    // Navigate when subscription is active
     LaunchedEffect(uiState.isActive, uiState.trialStarted) {
         if (uiState.isActive || uiState.trialStarted) onSubscribed()
     }
@@ -95,10 +95,7 @@ fun PaywallScreen(
                     )
 
                     Text(
-                        if (uiState.hasUsedTrial)
-                            "Subscribe to unlock all AI-powered features"
-                        else
-                            "Start your fitness journey with a free trial",
+                        "Start your 7-day free trial, then just ${uiState.priceText}",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -141,72 +138,47 @@ fun PaywallScreen(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                "\$4.99",
+                                uiState.priceText.substringBefore("/"),
                                 style = MaterialTheme.typography.headlineLarge.copy(fontSize = 42.sp),
                                 fontWeight = FontWeight.Bold,
                                 color = Emerald500
                             )
                             Text(
-                                "/month",
+                                "/" + uiState.priceText.substringAfter("/", "month"),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 8.dp, start = 2.dp)
                             )
                         }
-                        if (!uiState.hasUsedTrial) {
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                "First 7 days completely free",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Emerald500,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "7-day free trial included",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Emerald500,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
 
                 Spacer(Modifier.height(20.dp))
 
-                if (!uiState.hasUsedTrial) {
-                    // Trial button
-                    GradientButton(
-                        text = "Start 7-Day Free Trial",
-                        onClick = { viewModel.startTrial() },
-                        modifier = Modifier.fillMaxWidth(),
-                        loading = uiState.isLoading
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "No payment required. Full access for 7 days.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                } else {
-                    // Subscribe button (trial already used)
-                    GradientButton(
-                        text = "Subscribe — ${uiState.priceText}",
-                        onClick = { viewModel.purchase(context as Activity) },
-                        modifier = Modifier.fillMaxWidth(),
-                        loading = uiState.isLoading
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Cancel anytime. Billed monthly.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                TextButton(onClick = onBack) {
-                    Text("Maybe Later", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                // Subscribe button — RevenueCat handles the 7-day free trial
+                GradientButton(
+                    text = "Start Free Trial & Subscribe",
+                    onClick = { viewModel.purchase(context as Activity) },
+                    modifier = Modifier.fillMaxWidth(),
+                    loading = uiState.isLoading
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "7 days free, then ${uiState.priceText}. Cancel anytime.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
 
                 uiState.error?.let { error ->
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(12.dp))
                     Surface(
                         color = MaterialTheme.colorScheme.errorContainer,
                         shape = RoundedCornerShape(8.dp)

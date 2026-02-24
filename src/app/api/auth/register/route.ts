@@ -44,7 +44,10 @@ export async function POST(request: NextRequest) {
     });
 
     // Send verification email
-    await sendVerificationEmail(email, token);
+    const emailResult = await sendVerificationEmail(email, token);
+    if (!emailResult.success) {
+      console.error('Failed to send verification email to', email);
+    }
 
     return NextResponse.json({ id: user.id, email: user.email, requiresVerification: true });
   } catch (error: any) {
