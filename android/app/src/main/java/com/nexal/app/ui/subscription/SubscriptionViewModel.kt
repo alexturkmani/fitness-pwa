@@ -122,6 +122,10 @@ class SubscriptionViewModel @Inject constructor(
         }
     }
 
+    fun skipForDev() {
+        authRepository.grantDevAccess()
+    }
+
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }

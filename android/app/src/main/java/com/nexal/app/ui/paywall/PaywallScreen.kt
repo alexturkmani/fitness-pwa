@@ -168,6 +168,15 @@ fun PaywallScreen(
                     textAlign = TextAlign.Center
                 )
 
+                Spacer(Modifier.height(8.dp))
+                TextButton(onClick = { viewModel.skipForDev() }) {
+                    Text(
+                        "Skip (Dev Testing)",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
                 uiState.error?.let { error ->
                     Spacer(Modifier.height(12.dp))
                     Surface(

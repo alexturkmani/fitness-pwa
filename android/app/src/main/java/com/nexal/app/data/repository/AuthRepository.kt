@@ -156,6 +156,13 @@ class AuthRepository @Inject constructor(
         }
     }
 
+    fun grantDevAccess() {
+        val current = _authState.value
+        if (current is AuthState.Authenticated) {
+            _authState.value = current.copy(subscriptionActive = true)
+        }
+    }
+
     suspend fun refreshUserInfo(): Resource<Unit> {
         return try {
             val user = auth.currentUserOrNull() ?: return Resource.Error("Not authenticated")
