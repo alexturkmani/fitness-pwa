@@ -32,6 +32,7 @@ import com.nexal.app.R
 import com.nexal.app.ui.components.*
 import com.nexal.app.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
