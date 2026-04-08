@@ -1,5 +1,6 @@
 // Shared Gemini AI helper for all AI Edge Functions
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
+const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
 
 function cleanJsonResponse(text: string): string {
   let cleaned = text.trim();
@@ -9,17 +10,18 @@ function cleanJsonResponse(text: string): string {
   return cleaned.trim();
 }
 
-export async function callGemini(
+async function tryModel(
+  model: string,
   prompt: string,
   systemPrompt: string,
-  maxRetries = 3,
+  maxRetries: number,
 ): Promise<string> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 60000);
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -34,13 +36,13 @@ export async function callGemini(
       );
       clearTimeout(timeout);
 
-      if (response.status === 429 && attempt < maxRetries) {
-        await new Promise((r) => setTimeout(r, 10000 * (attempt + 1)));
+      if ((response.status === 429 || response.status === 503) && attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, 5000 * (attempt + 1)));
         continue;
       }
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+        throw new Error(`Gemini API error (${model}): ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
@@ -53,7 +55,24 @@ export async function callGemini(
       if (attempt === maxRetries) throw error;
     }
   }
-  throw new Error("Failed after retries");
+  throw new Error(`Failed after retries with ${model}`);
+}
+
+export async function callGemini(
+  prompt: string,
+  systemPrompt: string,
+  maxRetries = 3,
+): Promise<string> {
+  let lastError: Error | null = null;
+  for (const model of MODELS) {
+    try {
+      return await tryModel(model, prompt, systemPrompt, maxRetries);
+    } catch (error: any) {
+      console.warn(`Model ${model} failed: ${error.message}`);
+      lastError = error;
+    }
+  }
+  throw new Error("AI is temporarily unavailable. Please try again in a minute.");
 }
 
 export function generateId(): string {
