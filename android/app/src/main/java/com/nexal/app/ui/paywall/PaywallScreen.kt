@@ -1,7 +1,9 @@
 package com.nexal.app.ui.paywall
 
 import android.app.Activity
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -24,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nexal.app.ui.components.*
+import com.nexal.app.data.repository.PlanType
 import com.nexal.app.ui.subscription.SubscriptionViewModel
 import com.nexal.app.ui.theme.Cyan500
 import com.nexal.app.ui.theme.Emerald500
@@ -39,8 +42,8 @@ fun PaywallScreen(
     val context = LocalContext.current
 
     // Navigate when subscription is active
-    LaunchedEffect(uiState.isActive, uiState.trialStarted) {
-        if (uiState.isActive || uiState.trialStarted) onSubscribed()
+    LaunchedEffect(uiState.isActive, uiState.purchaseCompleted) {
+        if (uiState.isActive || uiState.purchaseCompleted) onSubscribed()
     }
 
     Scaffold { padding ->
@@ -95,8 +98,8 @@ fun PaywallScreen(
                     )
 
                     Text(
-                        "Start your 7-day free trial, then just ${uiState.priceText}",
-                        style = MaterialTheme.typography.bodyLarge,
+                        "Your AI-Powered Fitness Partner",
+                        style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp)
@@ -123,55 +126,43 @@ fun PaywallScreen(
                 modifier = Modifier.padding(horizontal = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Price badge
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
+                // Plan selector
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                uiState.priceText.substringBefore("/"),
-                                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 42.sp),
-                                fontWeight = FontWeight.Bold,
-                                color = Emerald500
-                            )
-                            Text(
-                                "/" + uiState.priceText.substringAfter("/", "month"),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 8.dp, start = 2.dp)
-                            )
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "7-day free trial included",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Emerald500,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                    PlanCard(
+                        label = "Monthly",
+                        price = "\$12.99",
+                        period = "/month",
+                        selected = uiState.selectedPlan == PlanType.MONTHLY,
+                        badge = null,
+                        onClick = { viewModel.selectPlan(PlanType.MONTHLY) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    PlanCard(
+                        label = "Yearly",
+                        price = "\$110",
+                        period = "/year",
+                        selected = uiState.selectedPlan == PlanType.YEARLY,
+                        badge = "Save 29%",
+                        onClick = { viewModel.selectPlan(PlanType.YEARLY) },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
 
                 Spacer(Modifier.height(20.dp))
 
-                // Subscribe button — RevenueCat handles the 7-day free trial
                 GradientButton(
-                    text = "Start Free Trial & Subscribe",
+                    text = "Start 14-Day Free Trial",
                     onClick = { viewModel.purchase(context as Activity) },
                     modifier = Modifier.fillMaxWidth(),
                     loading = uiState.isLoading
                 )
                 Spacer(Modifier.height(8.dp))
+                val selectedPriceText = if (uiState.selectedPlan == PlanType.MONTHLY) uiState.monthlyPriceText else uiState.yearlyPriceText
                 Text(
-                    "7 days free, then ${uiState.priceText}. Cancel anytime.",
+                    "14 days free, then $selectedPriceText. Cancel anytime.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -194,6 +185,68 @@ fun PaywallScreen(
             }
 
             Spacer(Modifier.height(32.dp))
+        }
+    }
+}
+
+@Composable
+private fun PlanCard(
+    label: String,
+    price: String,
+    period: String,
+    selected: Boolean,
+    badge: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val borderColor = if (selected) Emerald500 else MaterialTheme.colorScheme.outlineVariant
+    val bgColor = if (selected) Emerald500.copy(alpha = 0.08f) else Color.Transparent
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(if (selected) 2.dp else 1.dp, borderColor),
+        color = bgColor,
+        modifier = modifier.clickable { onClick() }
+    ) {
+        Box {
+            Column(
+                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    price,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (selected) Emerald500 else MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    period,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (badge != null) {
+                Surface(
+                    color = Emerald500,
+                    shape = RoundedCornerShape(bottomStart = 8.dp, topEnd = 16.dp),
+                    modifier = Modifier.align(Alignment.TopEnd)
+                ) {
+                    Text(
+                        badge,
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
         }
     }
 }

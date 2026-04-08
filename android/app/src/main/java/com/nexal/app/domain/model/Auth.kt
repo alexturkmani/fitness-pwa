@@ -10,23 +10,9 @@ sealed class AuthState {
         val userId: String,
         val email: String,
         val name: String?,
-        val token: String,
-        val trialEndsAt: String?,
-        val subscriptionActive: Boolean,
-        val isFreeAccount: Boolean,
-        val hasUsedTrial: Boolean
+        val subscriptionActive: Boolean
     ) : AuthState() {
-        val hasAccess: Boolean
-            get() {
-                if (isFreeAccount) return true
-                if (subscriptionActive) return true
-                val trialEnd = trialEndsAt ?: return false
-                return try {
-                    java.time.Instant.parse(trialEnd).isAfter(java.time.Instant.now())
-                } catch (_: Exception) {
-                    false
-                }
-            }
+        val hasAccess: Boolean get() = subscriptionActive
     }
 }
 

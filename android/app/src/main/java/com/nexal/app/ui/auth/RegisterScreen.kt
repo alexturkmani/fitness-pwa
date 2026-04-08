@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -48,9 +49,11 @@ fun RegisterScreen(
 
     // Show verification success screen instead of navigating immediately
     if (uiState.registerSuccess) {
+        Scaffold { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(innerPadding)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -96,12 +99,26 @@ fun RegisterScreen(
                 modifier = Modifier.fillMaxWidth()
             )
         }
+        }
         return
     }
 
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Create Account") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateToLogin) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { scaffoldPadding ->
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .padding(scaffoldPadding)
             .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
@@ -237,5 +254,6 @@ fun RegisterScreen(
                 Text("Sign In", color = Emerald500, fontWeight = FontWeight.Bold)
             }
         }
+    }
     }
 }

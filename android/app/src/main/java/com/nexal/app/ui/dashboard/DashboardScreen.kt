@@ -71,25 +71,6 @@ fun DashboardScreen(
                 }
             }
             Spacer(Modifier.height(12.dp))
-        } else if (uiState.trialDaysLeft in 1..3) {
-            Surface(
-                color = Color(0xFFF59E0B).copy(alpha = 0.1f),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.AccessTime, null, tint = Color(0xFFF59E0B), modifier = Modifier.size(24.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Trial ending soon", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
-                        Text("${uiState.trialDaysLeft} day${if (uiState.trialDaysLeft != 1) "s" else ""} left — subscribe to keep access", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-            Spacer(Modifier.height(12.dp))
         }
 
         // Greeting

@@ -72,14 +72,6 @@ private fun GatedFlowHost(
 ) {
     val profile by profileRepository.observeProfile().collectAsStateWithLifecycle(initialValue = null)
     val onboardingDone = profile?.onboardingCompleted == true
-    // null means still loading from DB — wait briefly
-    val profileLoaded = profile != null
-
-    if (!profileLoaded) {
-        // Profile loading from local Room DB — show a brief loading
-        LoadingScreen("Loading...")
-        return
-    }
 
     val gatedNavController = rememberNavController()
     val startDest = if (onboardingDone) Screen.Paywall.route else Screen.Onboarding.route

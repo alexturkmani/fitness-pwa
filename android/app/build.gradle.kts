@@ -29,14 +29,16 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Base API URL — override per build type / local.properties
-        val apiBaseUrl = localProperties.getProperty("API_BASE_URL", "https://your-domain.com")
-        val rcApiKey = localProperties.getProperty("REVENUECAT_API_KEY", "your_rc_android_key")
-        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
-        buildConfigField("String", "REVENUECAT_API_KEY", "\"$rcApiKey\"")
+        // Supabase configuration — set in local.properties
+        val supabaseUrl = localProperties.getProperty("SUPABASE_URL", "https://your-project.supabase.co")
+        val supabaseAnonKey = localProperties.getProperty("SUPABASE_ANON_KEY", "your_anon_key")
+        val googleWebClientId = localProperties.getProperty("GOOGLE_WEB_CLIENT_ID", "your_google_web_client_id")
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
 
-        // Deep link domain for AndroidManifest — set in local.properties
-        val deepLinkHost = localProperties.getProperty("DEEP_LINK_HOST", "your-domain.com")
+        // Deep link host for password reset
+        val deepLinkHost = supabaseUrl.removePrefix("https://").removePrefix("http://")
         manifestPlaceholders["deepLinkHost"] = deepLinkHost
     }
 
@@ -121,12 +123,18 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
 
-    // Retrofit + OkHttp + Serialization
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
+
+    // Supabase Kotlin SDK
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.1.1"))
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    implementation("io.github.jan-tennert.supabase:auth-kt")
+    implementation("io.github.jan-tennert.supabase:functions-kt")
+    implementation("io.ktor:ktor-client-okhttp:3.0.3")
+
+    // Google Play Billing
+    implementation("com.android.billingclient:billing-ktx:7.1.1")
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")
@@ -144,9 +152,7 @@ dependencies {
     // Charts (Vico)
     implementation("com.patrykandpatrick.vico:compose-m3:2.0.1")
 
-    // RevenueCat
-    implementation("com.revenuecat.purchases:purchases:8.10.7")
-    implementation("com.revenuecat.purchases:purchases-ui:8.10.7")
+
 
     // Google Sign-In (Credential Manager)
     implementation("androidx.credentials:credentials:1.5.0-beta01")
@@ -159,8 +165,7 @@ dependencies {
     // Splash screen
     implementation("androidx.core:core-splashscreen:1.0.1")
 
-    // Security (EncryptedSharedPreferences)
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
 
     // WorkManager (for background sync)
     implementation("androidx.work:work-runtime-ktx:2.10.0")

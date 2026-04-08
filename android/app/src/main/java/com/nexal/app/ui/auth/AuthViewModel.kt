@@ -106,7 +106,8 @@ class AuthViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            when (val result = authRepository.resetPassword(token, newPassword)) {
+            // With Supabase, the reset link signs the user in, so we just update the password
+            when (val result = authRepository.changePassword(newPassword)) {
                 is Resource.Success -> {
                     _uiState.update { it.copy(isLoading = false, resetPasswordSuccess = true) }
                 }

@@ -1,22 +1,29 @@
 package com.nexal.app.data.repository
 
-import com.nexal.app.data.remote.api.AiApi
-import com.nexal.app.data.remote.api.NutritionApi
 import com.nexal.app.data.remote.dto.*
 import com.nexal.app.domain.model.*
 import com.nexal.app.util.Resource
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import io.github.jan.supabase.functions.Functions
+import io.ktor.client.call.body
+import kotlinx.serialization.json.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private val json = Json {
+    ignoreUnknownKeys = true
+    encodeDefaults = true
+    coerceInputValues = true
+}
+
 @Singleton
 class AiRepository @Inject constructor(
-    private val aiApi: AiApi,
-    private val nutritionApi: NutritionApi
+    private val functions: Functions
 ) {
+    private suspend fun callFunction(name: String, bodyObj: JsonObject): String {
+        val response = functions.invoke(name, body = bodyObj)
+        return response.body<String>()
+    }
+
     suspend fun generateWorkoutPlan(
         profile: UserProfile,
         previousLogs: List<WorkoutLog>? = null,
@@ -25,20 +32,15 @@ class AiRepository @Inject constructor(
         workoutStyle: WorkoutStyle = WorkoutStyle.MUSCLE_GROUP
     ): Resource<WorkoutPlan> {
         return try {
-            val response = aiApi.generateWorkoutPlan(
-                GenerateWorkoutRequestDto(
-                    profile = profile,
-                    previousLogs = previousLogs,
-                    assessment = assessment,
-                    currentInterval = currentInterval,
-                    workoutStyle = workoutStyle.name.lowercase()
-                )
-            )
-            if (response.isSuccessful && response.body() != null) {
-                Resource.Success(response.body()!!)
-            } else {
-                Resource.Error("Failed to generate workout plan. Please try again.")
+            val bodyObj = buildJsonObject {
+                put("profile", json.encodeToJsonElement(profile))
+                if (previousLogs != null) put("previousLogs", json.encodeToJsonElement(previousLogs))
+                if (assessment != null) put("assessment", JsonPrimitive(assessment))
+                put("currentInterval", JsonPrimitive(currentInterval))
+                put("workoutStyle", JsonPrimitive(workoutStyle.name.lowercase()))
             }
+            val text = callFunction("ai-workout", bodyObj)
+            Resource.Success(json.decodeFromString<WorkoutPlan>(text))
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Network error")
         }
@@ -49,14 +51,12 @@ class AiRepository @Inject constructor(
         allergies: List<String>? = null
     ): Resource<MealPlan> {
         return try {
-            val response = aiApi.generateMealPlan(
-                GenerateMealRequestDto(profile = profile, allergies = allergies)
-            )
-            if (response.isSuccessful && response.body() != null) {
-                Resource.Success(response.body()!!)
-            } else {
-                Resource.Error("Failed to generate meal plan. Please try again.")
+            val bodyObj = buildJsonObject {
+                put("profile", json.encodeToJsonElement(profile))
+                if (allergies != null) put("allergies", json.encodeToJsonElement(allergies))
             }
+            val text = callFunction("ai-meal", bodyObj)
+            Resource.Success(json.decodeFromString<MealPlan>(text))
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Network error")
         }
@@ -69,14 +69,15 @@ class AiRepository @Inject constructor(
         currentMacros: MacroNutrients
     ): Resource<List<MealSubstitution>> {
         return try {
-            val response = aiApi.getMealSubstitutions(
-                MealSubstituteRequestDto(mealName, foodName, reason, currentMacros)
-            )
-            if (response.isSuccessful && response.body() != null) {
-                Resource.Success(response.body()!!.substitutions)
-            } else {
-                Resource.Error("Failed to get substitutions")
+            val bodyObj = buildJsonObject {
+                put("mealName", JsonPrimitive(mealName))
+                put("foodName", JsonPrimitive(foodName))
+                put("reason", JsonPrimitive(reason))
+                put("currentMacros", json.encodeToJsonElement(currentMacros))
             }
+            val text = callFunction("ai-meal-substitute", bodyObj)
+            val result = json.decodeFromString<MealSubstituteResponseDto>(text)
+            Resource.Success(result.substitutions)
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Network error")
         }
@@ -87,14 +88,12 @@ class AiRepository @Inject constructor(
         servingSize: String
     ): Resource<MacroNutrients> {
         return try {
-            val response = aiApi.lookupFoodMacros(
-                FoodLookupRequestDto(foodName, servingSize)
-            )
-            if (response.isSuccessful && response.body() != null) {
-                Resource.Success(response.body()!!)
-            } else {
-                Resource.Error("Failed to look up food")
+            val bodyObj = buildJsonObject {
+                put("foodName", JsonPrimitive(foodName))
+                put("servingSize", JsonPrimitive(servingSize))
             }
+            val text = callFunction("ai-food-lookup", bodyObj)
+            Resource.Success(json.decodeFromString<MacroNutrients>(text))
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Network error")
         }
@@ -105,23 +104,21 @@ class AiRepository @Inject constructor(
         goals: List<String>
     ): Resource<List<ExerciseSuggestion>> {
         return try {
-            val response = aiApi.getExerciseSuggestions(
-                ExerciseSuggestionsRequestDto(
-                    exercises = exercises.map { ex ->
+            val bodyObj = buildJsonObject {
+                put("exercises", json.encodeToJsonElement(
+                    exercises.map { ex ->
                         ExerciseInputDto(
                             name = ex.name,
                             muscleGroup = ex.muscleGroup,
                             sets = ex.sets.map { ExerciseSetInputDto(it.weight, it.reps) }
                         )
-                    },
-                    goals = goals
-                )
-            )
-            if (response.isSuccessful && response.body() != null) {
-                Resource.Success(response.body()!!.suggestions)
-            } else {
-                Resource.Error("Failed to get suggestions")
+                    }
+                ))
+                put("goals", json.encodeToJsonElement(goals))
             }
+            val text = callFunction("ai-exercise-suggestions", bodyObj)
+            val result = json.decodeFromString<ExerciseSuggestionsResponseDto>(text)
+            Resource.Success(result.suggestions)
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Network error")
         }
@@ -129,12 +126,11 @@ class AiRepository @Inject constructor(
 
     suspend fun lookupBarcode(barcode: String): Resource<ScannedProduct> {
         return try {
-            val response = nutritionApi.lookupBarcode(barcode)
-            if (response.isSuccessful && response.body() != null) {
-                Resource.Success(response.body()!!)
-            } else {
-                Resource.Error("Product not found")
+            val bodyObj = buildJsonObject {
+                put("barcode", JsonPrimitive(barcode))
             }
+            val text = callFunction("nutrition-lookup", bodyObj)
+            Resource.Success(json.decodeFromString<ScannedProduct>(text))
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Network error")
         }
@@ -146,23 +142,23 @@ class AiRepository @Inject constructor(
         ratio: Double
     ): Resource<FoodAssessment> {
         return try {
-            val response = aiApi.assessFood(
-                AssessFoodRequestDto(productName = productName, macros = macros, ratio = ratio)
-            )
-            if (response.isSuccessful && response.body() != null) {
-                val body = response.body()!!
-                val assessment = body["assessment"]?.jsonPrimitive?.content ?: ""
-                val alternatives = body["alternatives"]?.jsonArray?.map { elem ->
-                    val obj = elem.jsonObject
-                    FoodAlternative(
-                        name = obj["name"]?.jsonPrimitive?.content ?: "",
-                        reason = obj["reason"]?.jsonPrimitive?.content ?: ""
-                    )
-                } ?: emptyList()
-                Resource.Success(FoodAssessment(assessment, alternatives))
-            } else {
-                Resource.Error("Failed to assess food")
+            val bodyObj = buildJsonObject {
+                put("type", JsonPrimitive("food"))
+                put("productName", JsonPrimitive(productName))
+                put("macros", json.encodeToJsonElement(macros))
+                put("ratio", JsonPrimitive(ratio))
             }
+            val text = callFunction("ai-assess", bodyObj)
+            val body = json.parseToJsonElement(text).jsonObject
+            val assessment = body["assessment"]?.jsonPrimitive?.content ?: ""
+            val alternatives = body["alternatives"]?.jsonArray?.map { elem ->
+                val obj = elem.jsonObject
+                FoodAlternative(
+                    name = obj["name"]?.jsonPrimitive?.content ?: "",
+                    reason = obj["reason"]?.jsonPrimitive?.content ?: ""
+                )
+            } ?: emptyList()
+            Resource.Success(FoodAssessment(assessment, alternatives))
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Network error")
         }

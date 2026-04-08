@@ -14,9 +14,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
-import java.time.Instant
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 data class DashboardUiState(
@@ -27,7 +25,6 @@ data class DashboardUiState(
     val currentWeight: Double = 0.0,
     val weightChange: Double = 0.0,
     val todayWorkout: String? = null,
-    val trialDaysLeft: Int = -1,   // -1 = no trial / not applicable, 0 = expired
     val showTrialExpiredBanner: Boolean = false,
     // Water
     val waterTotalMl: Int = 0,
@@ -54,23 +51,14 @@ class DashboardViewModel @Inject constructor(
     }
 
     private fun loadDashboard() {
-        // Check trial status
+        // Check subscription status
         viewModelScope.launch {
             authRepo.authState.collect { state ->
                 if (state is AuthState.Authenticated) {
-                    val now = Instant.now()
-                    val trialEnd = state.trialEndsAt?.let {
-                        try { Instant.parse(it) } catch (_: Exception) { null }
-                    }
-                    val daysLeft = if (trialEnd != null && trialEnd.isAfter(now)) {
-                        ChronoUnit.DAYS.between(now, trialEnd).toInt() + 1
-                    } else if (trialEnd != null) 0 else -1
-
-                    val showExpired = !state.subscriptionActive && state.hasUsedTrial &&
-                            (trialEnd == null || !trialEnd.isAfter(now))
+                    val showExpired = !state.subscriptionActive
 
                     _uiState.update {
-                        it.copy(trialDaysLeft = daysLeft, showTrialExpiredBanner = showExpired)
+                        it.copy(showTrialExpiredBanner = showExpired)
                     }
                 }
             }

@@ -3,7 +3,9 @@ package com.nexal.app.ui.subscription
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -26,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.nexal.app.data.repository.PlanType
 import com.nexal.app.ui.components.*
 import com.nexal.app.ui.theme.*
 
@@ -104,35 +107,13 @@ fun SubscriptionScreen(
                     Spacer(Modifier.height(16.dp))
 
                     Text(
-                        if (uiState.isActive) {
-                            if (uiState.isTrial) "Free Trial Active" else "Premium Active"
-                        } else "No Active Subscription",
+                        if (uiState.isActive) "Premium Active" else "No Active Subscription",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
 
-                    if (uiState.isActive && uiState.isTrial) {
-                        Spacer(Modifier.height(8.dp))
-                        Surface(
-                            color = Emerald500,
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text(
-                                "${uiState.trialDaysLeft} days remaining",
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                                color = Color.White,
-                                fontWeight = FontWeight.SemiBold,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                        Text(
-                            "Ends ${uiState.expirationDate}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    } else if (!uiState.isActive) {
+                    if (!uiState.isActive) {
                         Spacer(Modifier.height(4.dp))
                         Text(
                             "Unlock all premium features",
@@ -175,58 +156,48 @@ fun SubscriptionScreen(
 
             // CTA section
             if (!uiState.isActive) {
-                // Price display
+                // Plan selector
                 Row(
-                    verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.Center
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        "\$4.99",
-                        style = MaterialTheme.typography.headlineLarge.copy(fontSize = 40.sp),
-                        fontWeight = FontWeight.Bold,
-                        color = Emerald500
+                    PlanOption(
+                        label = "Monthly",
+                        price = "\$12.99",
+                        period = "/month",
+                        selected = uiState.selectedPlan == PlanType.MONTHLY,
+                        badge = null,
+                        onClick = { viewModel.selectPlan(PlanType.MONTHLY) },
+                        modifier = Modifier.weight(1f)
                     )
-                    Text(
-                        "/month",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 6.dp, start = 2.dp)
+                    PlanOption(
+                        label = "Yearly",
+                        price = "\$110",
+                        period = "/year",
+                        selected = uiState.selectedPlan == PlanType.YEARLY,
+                        badge = "Save 29%",
+                        onClick = { viewModel.selectPlan(PlanType.YEARLY) },
+                        modifier = Modifier.weight(1f)
                     )
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(20.dp))
 
-                if (!uiState.hasUsedTrial) {
-                    GradientButton(
-                        text = "Start 7-Day Free Trial",
-                        onClick = { viewModel.startTrial() },
-                        modifier = Modifier.fillMaxWidth(),
-                        loading = uiState.isLoading
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        "No charge during trial. Cancel anytime.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                } else {
-                    GradientButton(
-                        text = "Subscribe Now",
-                        onClick = { viewModel.purchase(context as Activity) },
-                        modifier = Modifier.fillMaxWidth(),
-                        loading = uiState.isLoading
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        "Billed monthly. Cancel anytime.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                GradientButton(
+                    text = if (uiState.hasFreeTrial) "Start Free Trial" else "Subscribe Now",
+                    onClick = { viewModel.purchase(context as Activity) },
+                    modifier = Modifier.fillMaxWidth(),
+                    loading = uiState.isLoading
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    if (uiState.hasFreeTrial) "Free trial included. Cancel anytime."
+                    else "${if (uiState.selectedPlan == PlanType.MONTHLY) uiState.monthlyPriceText else uiState.yearlyPriceText}. Cancel anytime.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             } else {
                 OutlinedButton(
                     onClick = { viewModel.manageSubscription() },
@@ -289,6 +260,68 @@ private fun FeatureCard(
             Spacer(Modifier.height(10.dp))
             Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
             Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun PlanOption(
+    label: String,
+    price: String,
+    period: String,
+    selected: Boolean,
+    badge: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val borderColor = if (selected) Emerald500 else MaterialTheme.colorScheme.outlineVariant
+    val bgColor = if (selected) Emerald500.copy(alpha = 0.08f) else Color.Transparent
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(if (selected) 2.dp else 1.dp, borderColor),
+        color = bgColor,
+        modifier = modifier.clickable { onClick() }
+    ) {
+        Box {
+            Column(
+                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    price,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (selected) Emerald500 else MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    period,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (badge != null) {
+                Surface(
+                    color = Emerald500,
+                    shape = RoundedCornerShape(bottomStart = 8.dp, topEnd = 16.dp),
+                    modifier = Modifier.align(Alignment.TopEnd)
+                ) {
+                    Text(
+                        badge,
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
         }
     }
 }

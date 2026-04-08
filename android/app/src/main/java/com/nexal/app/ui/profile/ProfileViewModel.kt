@@ -193,7 +193,7 @@ class ProfileViewModel @Inject constructor(
     fun changePassword(currentPassword: String, newPassword: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(passwordLoading = true, passwordError = null) }
-            when (val result = authRepo.changePassword(currentPassword, newPassword)) {
+            when (val result = authRepo.changePassword(newPassword)) {
                 is Resource.Success -> {
                     _uiState.update { it.copy(passwordLoading = false, passwordChanged = true) }
                     kotlinx.coroutines.delay(3000)

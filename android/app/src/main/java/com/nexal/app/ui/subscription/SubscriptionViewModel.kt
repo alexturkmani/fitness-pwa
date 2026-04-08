@@ -4,40 +4,36 @@ import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nexal.app.data.repository.AuthRepository
+import com.nexal.app.data.repository.BillingRepository
+import com.nexal.app.data.repository.PlanType
+import com.nexal.app.data.repository.PurchaseResult
 import com.nexal.app.domain.model.AuthState
-import com.nexal.app.util.Resource
-import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchaseParams
-import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.interfaces.PurchaseCallback
-import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.getOfferingsWith
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.jan.supabase.functions.Functions
+import io.ktor.client.call.body
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import javax.inject.Inject
 
 data class SubscriptionUiState(
     val isActive: Boolean = false,
-    val isTrial: Boolean = false,
-    val hasUsedTrial: Boolean = false,
-    val trialDaysLeft: Int = 0,
-    val expirationDate: String = "",
+    val hasFreeTrial: Boolean = false,
     val error: String? = null,
     val isLoading: Boolean = false,
-    val trialStarted: Boolean = false,
-    val priceText: String = "\$4.99/month"
+    val purchaseCompleted: Boolean = false,
+    val selectedPlan: PlanType = PlanType.MONTHLY,
+    val monthlyPriceText: String = "$12.99/month",
+    val yearlyPriceText: String = "$110.00/year"
 )
 
 @HiltViewModel
 class SubscriptionViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val billingRepository: BillingRepository,
+    private val functions: Functions
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SubscriptionUiState())
@@ -50,125 +46,79 @@ class SubscriptionViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.authState.collect { state ->
                 if (state is AuthState.Authenticated) {
-                    updateFromAuthState(state)
-                    // Identify user to RevenueCat
-                    try {
-                        Purchases.sharedInstance.logIn(state.userId)
-                    } catch (_: Exception) { /* RevenueCat not configured */ }
+                    _uiState.update { it.copy(isActive = state.subscriptionActive) }
                 }
             }
         }
         viewModelScope.launch {
             authRepository.refreshUserInfo()
         }
-        // Fetch price from RevenueCat offerings
-        fetchPrice()
-    }
-
-    private fun fetchPrice() {
-        try {
-            Purchases.sharedInstance.getOfferingsWith(
-                onError = { /* Use default price text */ },
-                onSuccess = { offerings ->
-                    val pkg = offerings.current?.availablePackages?.firstOrNull()
-                    if (pkg != null) {
-                        val price = pkg.product.price.formatted
-                        val period = pkg.product.period?.let { p ->
-                            when (p.unit) {
-                                com.revenuecat.purchases.models.Period.Unit.MONTH -> if (p.value == 1) "/month" else "/${p.value} months"
-                                com.revenuecat.purchases.models.Period.Unit.YEAR -> if (p.value == 1) "/year" else "/${p.value} years"
-                                com.revenuecat.purchases.models.Period.Unit.WEEK -> if (p.value == 1) "/week" else "/${p.value} weeks"
-                                else -> ""
-                            }
-                        } ?: "/month"
-                        _uiState.update { it.copy(priceText = "$price$period") }
+        // Fetch price and trial info from Play Billing
+        viewModelScope.launch {
+            billingRepository.queryProductDetails()
+            _uiState.update {
+                it.copy(
+                    monthlyPriceText = billingRepository.getPriceText(PlanType.MONTHLY),
+                    yearlyPriceText = billingRepository.getPriceText(PlanType.YEARLY),
+                    hasFreeTrial = billingRepository.hasFreeTrial(it.selectedPlan)
+                )
+            }
+        }
+        // Collect purchase results
+        viewModelScope.launch {
+            billingRepository.purchaseEvents.collect { result ->
+                when (result) {
+                    is PurchaseResult.Success -> {
+                        verifyAndAcknowledge(result.purchase.purchaseToken)
+                    }
+                    is PurchaseResult.Cancelled -> {
+                        _uiState.update { it.copy(isLoading = false) }
+                    }
+                    is PurchaseResult.Error -> {
+                        _uiState.update { it.copy(isLoading = false, error = result.message) }
                     }
                 }
-            )
-        } catch (_: Exception) { /* RevenueCat not configured */ }
-    }
-
-    private fun updateFromAuthState(state: AuthState.Authenticated) {
-        val now = Instant.now()
-        val trialEnd = state.trialEndsAt?.let {
-            try { Instant.parse(it) } catch (_: Exception) { null }
-        }
-        val isTrialActive = trialEnd != null && trialEnd.isAfter(now)
-        val daysLeft = if (trialEnd != null && trialEnd.isAfter(now)) {
-            ChronoUnit.DAYS.between(now, trialEnd).toInt() + 1
-        } else 0
-
-        val expirationFormatted = trialEnd?.let {
-            DateTimeFormatter.ofPattern("MMM d, yyyy")
-                .withZone(ZoneId.systemDefault())
-                .format(it)
-        } ?: ""
-
-        _uiState.update {
-            it.copy(
-                isActive = state.hasAccess,
-                isTrial = isTrialActive,
-                hasUsedTrial = state.hasUsedTrial,
-                trialDaysLeft = daysLeft,
-                expirationDate = expirationFormatted
-            )
-        }
-    }
-
-    fun startTrial() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-            when (val result = authRepository.startTrial()) {
-                is Resource.Success -> {
-                    _uiState.update { it.copy(isLoading = false, trialStarted = true) }
-                }
-                is Resource.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = result.message) }
-                }
-                is Resource.Loading -> {}
             }
         }
     }
 
-    fun purchase(activity: Activity) {
-        _uiState.update { it.copy(isLoading = true, error = null) }
-        try {
-            Purchases.sharedInstance.getOfferingsWith(
-                onError = { error ->
-                    _uiState.update { it.copy(isLoading = false, error = error.message) }
-                },
-                onSuccess = { offerings ->
-                    val pkg = offerings.current?.availablePackages?.firstOrNull()
-                    if (pkg == null) {
-                        _uiState.update { it.copy(isLoading = false, error = "No subscription packages available") }
-                        return@getOfferingsWith
-                    }
+    private fun verifyAndAcknowledge(purchaseToken: String) {
+        viewModelScope.launch {
+            try {
+                // Call verify-purchase Edge Function
+                functions.invoke("verify-purchase", body = buildJsonObject {
+                    put("purchaseToken", purchaseToken)
+                    put("productId", BillingRepository.PRODUCT_ID)
+                })
+                // Acknowledge the purchase
+                billingRepository.acknowledgePurchase(purchaseToken)
+                // Refresh auth state
+                authRepository.refreshUserInfo()
+                _uiState.update { it.copy(isLoading = false, purchaseCompleted = true) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = "Verification failed: ${e.message}") }
+            }
+        }
+    }
 
-                    Purchases.sharedInstance.purchase(
-                        PurchaseParams.Builder(activity, pkg).build(),
-                        object : PurchaseCallback {
-                            override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
-                                // Purchase successful — refresh user info from server
-                                // (RevenueCat webhook will update the server-side subscription status)
-                                viewModelScope.launch {
-                                    authRepository.refreshUserInfo()
-                                    _uiState.update { it.copy(isLoading = false, trialStarted = true) }
-                                }
-                            }
-
-                            override fun onError(error: PurchasesError, userCancelled: Boolean) {
-                                if (userCancelled) {
-                                    _uiState.update { it.copy(isLoading = false) }
-                                } else {
-                                    _uiState.update { it.copy(isLoading = false, error = error.message) }
-                                }
-                            }
-                        }
-                    )
-                }
+    fun selectPlan(planType: PlanType) {
+        _uiState.update {
+            it.copy(
+                selectedPlan = planType,
+                hasFreeTrial = billingRepository.hasFreeTrial(planType)
             )
-        } catch (e: Exception) {
-            _uiState.update { it.copy(isLoading = false, error = "Subscription service not available. Please try again later.") }
+        }
+    }
+
+    fun purchase(activity: Activity) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                billingRepository.queryProductDetails()
+                billingRepository.launchPurchaseFlow(activity, _uiState.value.selectedPlan)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
         }
     }
 
