@@ -181,11 +181,11 @@ class AuthRepository @Inject constructor(
         val current = _authState.value
         if (current is AuthState.Authenticated) return current
 
-        // Wait up to 10 seconds for the session status to transition
-        return withTimeoutOrNull(10_000L) {
+        // Wait up to 15 seconds for the session to become Authenticated
+        // Only filter for Authenticated — ignore Unauthenticated/Loading replays
+        return withTimeoutOrNull(15_000L) {
             _authState
-                .filter { it is AuthState.Authenticated || it is AuthState.Unauthenticated }
-                .map { it as? AuthState.Authenticated }
+                .filterIsInstance<AuthState.Authenticated>()
                 .first()
         }
     }
