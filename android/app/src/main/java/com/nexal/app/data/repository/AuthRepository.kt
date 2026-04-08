@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -84,7 +85,7 @@ class AuthRepository @Inject constructor(
             // Wait for session to update
             val state = waitForAuthenticatedState()
             if (state != null) Resource.Success(state)
-            else Resource.Error("Login failed")
+            else Resource.Error("Login timed out. Please check your connection and try again.")
         } catch (e: Exception) {
             val msg = when {
                 e.message?.contains("Invalid login credentials") == true -> "Invalid email or password"
@@ -122,7 +123,7 @@ class AuthRepository @Inject constructor(
             }
             val state = waitForAuthenticatedState()
             if (state != null) Resource.Success(state)
-            else Resource.Error("Google sign-in failed")
+            else Resource.Error("Google sign-in timed out. Please try again.")
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Google sign-in failed. Please try again.")
         }
@@ -176,9 +177,16 @@ class AuthRepository @Inject constructor(
     }
 
     private suspend fun waitForAuthenticatedState(): AuthState.Authenticated? {
-        return _authState
-            .filter { it is AuthState.Authenticated || it is AuthState.Unauthenticated }
-            .map { it as? AuthState.Authenticated }
-            .first()
+        // Check if already authenticated
+        val current = _authState.value
+        if (current is AuthState.Authenticated) return current
+
+        // Wait up to 10 seconds for the session status to transition
+        return withTimeoutOrNull(10_000L) {
+            _authState
+                .filter { it is AuthState.Authenticated || it is AuthState.Unauthenticated }
+                .map { it as? AuthState.Authenticated }
+                .first()
+        }
     }
 }
