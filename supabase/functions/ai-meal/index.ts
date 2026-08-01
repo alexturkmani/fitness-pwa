@@ -2,13 +2,16 @@ import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import {
   callGemini, generateId, jsonResponse, errorResponse, corsHeaders,
   calculateMacroTargets, calculateDailyWaterIntake, calculateTDEE,
+  normalizeProfile,
 } from "../_shared/helpers.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders() });
 
   try {
-    const { profile, allergies } = await req.json();
+    const body = await req.json();
+    const profile = normalizeProfile(body.profile);
+    const allergies = body.allergies;
     const tdee = calculateTDEE(profile);
     const macros = calculateMacroTargets(profile);
     const dailyWaterMl = calculateDailyWaterIntake(profile);
@@ -22,7 +25,7 @@ serve(async (req) => {
     const prompt = `Generate a complete daily meal plan for:
 
 - Weight: ${profile.weight}kg, Height: ${profile.height}cm, Age: ${profile.age}, Gender: ${profile.gender}
-- Goal: ${(profile.fitnessGoals || ["general_fitness"]).map((g: string) => g.replace("_", " ")).join(", ")}
+- Goal: ${(profile.fitnessGoals || ["general_fitness"]).map((g: string) => g.replace(/_/g, " ")).join(", ")}
 - TDEE: ${tdee} calories
 - Target Macros: ${macros.protein}g protein, ${macros.carbs}g carbs, ${macros.fats}g fats, ${macros.calories} calories${allergyClause}
 

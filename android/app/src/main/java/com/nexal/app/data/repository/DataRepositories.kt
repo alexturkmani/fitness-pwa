@@ -365,6 +365,12 @@ class NutritionRepository @Inject constructor(
         runCatching { postgrest.from("meal_plans").delete { filter { eq("id", id) } } }
     }
 
+    suspend fun getFoodLogByDate(date: String): List<FoodLogEntry> =
+        foodLogDao.getByDate(date).map { it.toDomain() }
+
+    suspend fun getRecentFoods(limit: Int = 40): List<FoodLogEntry> =
+        foodLogDao.getRecent(limit).map { it.toDomain() }
+
     suspend fun addFoodLogEntry(entry: FoodLogEntry) {
         foodLogDao.upsert(entry.toEntity())
         runCatching {
@@ -372,7 +378,8 @@ class NutritionRepository @Inject constructor(
             if (uid.isNotBlank()) {
                 postgrest.from("food_log_entries").upsert(FoodLogRow(
                     id = entry.id, user_id = uid, date = entry.date, food_name = entry.foodName,
-                    serving_size = entry.servingSize, quantity = entry.quantity,
+                    serving_size = encodeServingWithSlot(entry.mealSlot, entry.servingSize),
+                    quantity = entry.quantity,
                     macros = json.parseToJsonElement(json.encodeToString(entry.macros)),
                     source = entry.source.name, barcode = entry.barcode
                 ))
@@ -462,11 +469,14 @@ class NutritionRepository @Inject constructor(
 
             val foods = postgrest.from("food_log_entries").select { filter { eq("user_id", uid) } }.decodeList<FoodLogRow>()
             foodLogDao.deleteAll()
-            foodLogDao.insertAll(foods.map { r -> FoodLogEntryEntity(
-                id = r.id, date = r.date, foodName = r.food_name, servingSize = r.serving_size,
-                quantity = r.quantity, macrosJson = r.macros.toString(),
-                source = r.source, barcode = r.barcode, createdAt = ""
-            )})
+            foodLogDao.insertAll(foods.map { r ->
+                val (slot, serving) = decodeServingWithSlot(r.serving_size)
+                FoodLogEntryEntity(
+                    id = r.id, date = r.date, foodName = r.food_name, servingSize = serving,
+                    quantity = r.quantity, macrosJson = r.macros.toString(),
+                    source = r.source, barcode = r.barcode, mealSlot = slot.name, createdAt = ""
+                )
+            })
 
             val weights = postgrest.from("weight_entries").select { filter { eq("user_id", uid) } }.decodeList<WeightEntryRow>()
             weightDao.deleteAll()
@@ -507,13 +517,30 @@ class NutritionRepository @Inject constructor(
     private fun FoodLogEntry.toEntity() = FoodLogEntryEntity(
         id = id, date = date, foodName = foodName, servingSize = servingSize,
         quantity = quantity, macrosJson = json.encodeToString(macros),
-        source = source.name, barcode = barcode, createdAt = createdAt
+        source = source.name, barcode = barcode, mealSlot = mealSlot.name, createdAt = createdAt
     )
     private fun FoodLogEntryEntity.toDomain() = FoodLogEntry(
         id = id, date = date, foodName = foodName, servingSize = servingSize,
         quantity = quantity, macros = json.decodeFromString(macrosJson),
-        source = FoodSource.valueOf(source), barcode = barcode, createdAt = createdAt
+        source = runCatching { FoodSource.valueOf(source) }.getOrDefault(FoodSource.MANUAL),
+        barcode = barcode,
+        mealSlot = runCatching { MealSlot.valueOf(mealSlot) }.getOrDefault(MealSlot.SNACK),
+        createdAt = createdAt
     )
+
+    companion object {
+        private fun encodeServingWithSlot(slot: MealSlot, serving: String): String =
+            "[${slot.name}]$serving"
+
+        private fun decodeServingWithSlot(raw: String): Pair<MealSlot, String> {
+            val match = Regex("^\\[([A-Z_]+)\\](.*)").find(raw)
+            if (match != null) {
+                val slot = runCatching { MealSlot.valueOf(match.groupValues[1]) }.getOrDefault(MealSlot.SNACK)
+                return slot to match.groupValues[2]
+            }
+            return MealSlot.SNACK to raw
+        }
+    }
     private fun WeightEntryEntity.toDomain() = WeightEntry(date = date, weight = weight)
     private fun WaterLogEntry.toEntity() = WaterLogEntryEntity(id = id, date = date, amount = amount, createdAt = createdAt)
     private fun WaterLogEntryEntity.toDomain() = WaterLogEntry(id = id, date = date, amount = amount, createdAt = createdAt)

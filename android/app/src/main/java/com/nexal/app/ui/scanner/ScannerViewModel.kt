@@ -9,8 +9,8 @@ import com.nexal.app.domain.model.FoodAssessment
 import com.nexal.app.domain.model.FoodLogEntry
 import com.nexal.app.domain.model.FoodSource
 import com.nexal.app.domain.model.ScannedProduct
-import com.nexal.app.ui.theme.Cyan500
-import com.nexal.app.ui.theme.Emerald500
+import com.nexal.app.ui.theme.SuccessGreen
+import com.nexal.app.ui.theme.WarningAmber
 import com.nexal.app.util.Resource
 import com.nexal.app.util.generateId
 import com.nexal.app.util.getProteinCalorieRatio
@@ -29,6 +29,7 @@ data class ScannerUiState(
     val ratingLabel: String = "",
     val ratingColor: Color = Color.Gray,
     val aiAssessment: FoodAssessment? = null,
+    val assessmentError: String? = null,
     val error: String? = null,
     val toast: String? = null
 )
@@ -43,7 +44,7 @@ class ScannerViewModel @Inject constructor(
     val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
 
     fun startScanning() {
-        _uiState.update { it.copy(scanning = true, error = null, product = null, aiAssessment = null) }
+        _uiState.update { it.copy(scanning = true, error = null, product = null, aiAssessment = null, assessmentError = null) }
     }
 
     fun stopScanning() {
@@ -59,8 +60,8 @@ class ScannerViewModel @Inject constructor(
                     val ratio = getProteinCalorieRatio(product.macros)
                     val rating = getRatioRating(ratio)
                     val ratingColor = when {
-                        ratio >= 10 -> Emerald500
-                        ratio >= 5 -> Color(0xFFF59E0B)
+                        ratio >= 10 -> SuccessGreen
+                        ratio >= 5 -> WarningAmber
                         else -> Color(0xFFEF4444)
                     }
 
@@ -91,9 +92,11 @@ class ScannerViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = aiRepo.assessFood(product.name, product.macros, ratio)) {
                 is Resource.Success -> {
-                    _uiState.update { it.copy(aiAssessment = result.data) }
+                    _uiState.update { it.copy(aiAssessment = result.data, assessmentError = null) }
                 }
-                is Resource.Error -> { /* ignore assessment errors */ }
+                is Resource.Error -> {
+                    _uiState.update { it.copy(assessmentError = result.message ?: "Could not load AI assessment") }
+                }
                 is Resource.Loading -> {}
             }
         }

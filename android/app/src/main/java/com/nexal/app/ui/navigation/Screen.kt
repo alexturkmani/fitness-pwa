@@ -44,6 +44,6 @@ val bottomNavItems = listOf(
     BottomNavItem(Screen.Dashboard, "Home", Icons.Filled.Home, Icons.Outlined.Home),
     BottomNavItem(Screen.Meals, "Meals", Icons.Filled.RestaurantMenu, Icons.Outlined.RestaurantMenu),
     BottomNavItem(Screen.Workouts, "Workouts", Icons.Filled.FitnessCenter, Icons.Outlined.FitnessCenter, isCenter = true),
-    BottomNavItem(Screen.Nutrition, "Nutrition", Icons.Filled.Spa, Icons.Outlined.Spa),
+    BottomNavItem(Screen.Nutrition, "Diary", Icons.Filled.Spa, Icons.Outlined.Spa),
     BottomNavItem(Screen.Progress, "Progress", Icons.Filled.TrendingUp, Icons.Outlined.TrendingUp),
 )

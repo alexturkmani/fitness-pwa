@@ -8,6 +8,7 @@ import com.nexal.app.data.repository.ProfileRepository
 import com.nexal.app.domain.model.FoodLogEntry
 import com.nexal.app.domain.model.FoodSource
 import com.nexal.app.domain.model.MacroNutrients
+import com.nexal.app.domain.model.MealSlot
 import com.nexal.app.domain.model.WaterLogEntry
 import com.nexal.app.domain.model.CardioLogEntry
 import com.nexal.app.domain.model.UnitSystem
@@ -24,6 +25,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.*
 import javax.inject.Inject
 
@@ -33,6 +35,13 @@ data class DayData(
     val dayNumber: String,
     val calories: Int,
     val isToday: Boolean
+)
+
+data class RecentFood(
+    val foodName: String,
+    val servingSize: String,
+    val macros: MacroNutrients,
+    val mealSlot: MealSlot
 )
 
 data class NutritionUiState(
@@ -46,16 +55,16 @@ data class NutritionUiState(
     val fatsTarget: Int = 65,
     val autoFillState: AutoFillState = AutoFillState(),
     val toast: String? = null,
-    // Water tracking
     val waterEntries: List<WaterLogEntry> = emptyList(),
     val waterTotalMl: Int = 0,
     val waterGoalMl: Int = 2500,
     val unitSystem: UnitSystem = UnitSystem.METRIC,
-    // Cardio tracking
     val cardioEntries: List<CardioLogEntry> = emptyList(),
     val cardioCaloriesToday: Int = 0,
     val cardioTypes: List<String> = getCardioTypes(),
-    val userWeightKg: Double = 70.0
+    val userWeightKg: Double = 70.0,
+    val recentFoods: List<RecentFood> = emptyList(),
+    val addSlot: MealSlot = MealSlot.BREAKFAST
 )
 
 @HiltViewModel
@@ -78,7 +87,14 @@ class NutritionViewModel @Inject constructor(
         observeSelectedDateLogs()
         observeWaterLogs()
         observeCardioLogs()
+        refreshRecentFoods()
     }
+
+    fun entriesFor(slot: MealSlot): List<FoodLogEntry> =
+        _uiState.value.dayEntries.filter { it.mealSlot == slot }
+
+    fun slotCalories(slot: MealSlot): Int =
+        entriesFor(slot).sumOf { it.macros.calories * it.quantity }
 
     private fun loadTargets() {
         viewModelScope.launch {
@@ -136,10 +152,9 @@ class NutritionViewModel @Inject constructor(
             }
             _uiState.update { it.copy(weekData = days) }
 
-            // Observe the whole week's food logs for calendar calorie rings
             nutritionRepo.observeFoodLogByDateRange(weekStart, weekEnd).collect { weekLogs ->
                 val updatedDays = days.map { day ->
-                    val dayCals = weekLogs.filter { it.date == day.date }.sumOf { it.macros.calories }
+                    val dayCals = weekLogs.filter { it.date == day.date }.sumOf { it.macros.calories * it.quantity }
                     day.copy(calories = dayCals)
                 }
                 _uiState.update { it.copy(weekData = updatedDays) }
@@ -149,19 +164,16 @@ class NutritionViewModel @Inject constructor(
 
     private fun observeSelectedDateLogs() {
         viewModelScope.launch {
-            // React to selectedDate changes and observe that date's food logs
             _uiState.map { it.selectedDate }
                 .distinctUntilChanged()
-                .flatMapLatest { date ->
-                    nutritionRepo.observeFoodLogByDate(date)
-                }
+                .flatMapLatest { date -> nutritionRepo.observeFoodLogByDate(date) }
                 .collect { dayEntries ->
                     val totals = dayEntries.fold(MacroNutrients(0, 0, 0, 0)) { acc, e ->
                         MacroNutrients(
-                            calories = acc.calories + e.macros.calories,
-                            protein = acc.protein + e.macros.protein,
-                            carbs = acc.carbs + e.macros.carbs,
-                            fats = acc.fats + e.macros.fats
+                            calories = acc.calories + e.macros.calories * e.quantity,
+                            protein = acc.protein + e.macros.protein * e.quantity,
+                            carbs = acc.carbs + e.macros.carbs * e.quantity,
+                            fats = acc.fats + e.macros.fats * e.quantity
                         )
                     }
                     _uiState.update { it.copy(dayEntries = dayEntries, dayTotals = totals) }
@@ -169,8 +181,30 @@ class NutritionViewModel @Inject constructor(
         }
     }
 
+    private fun refreshRecentFoods() {
+        viewModelScope.launch {
+            val recent = nutritionRepo.getRecentFoods(50)
+                .distinctBy { it.foodName.lowercase() to it.servingSize.lowercase() }
+                .take(12)
+                .map {
+                    RecentFood(
+                        foodName = it.foodName,
+                        servingSize = it.servingSize,
+                        macros = it.macros,
+                        mealSlot = it.mealSlot
+                    )
+                }
+            _uiState.update { it.copy(recentFoods = recent) }
+        }
+    }
+
     fun selectDate(date: String) {
         _uiState.update { it.copy(selectedDate = date) }
+    }
+
+    fun prepareAdd(slot: MealSlot) {
+        _uiState.update { it.copy(addSlot = slot) }
+        resetAutoFillState()
     }
 
     fun resetAutoFillState() {
@@ -180,7 +214,15 @@ class NutritionViewModel @Inject constructor(
         _uiState.update { it.copy(autoFillState = AutoFillState()) }
     }
 
-    fun addManualEntry(name: String, serving: String, cal: Int, protein: Int, carbs: Int, fats: Int) {
+    fun addManualEntry(
+        name: String,
+        serving: String,
+        cal: Int,
+        protein: Int,
+        carbs: Int,
+        fats: Int,
+        slot: MealSlot = _uiState.value.addSlot
+    ) {
         viewModelScope.launch {
             val entry = FoodLogEntry(
                 id = generateId(),
@@ -190,10 +232,52 @@ class NutritionViewModel @Inject constructor(
                 quantity = 1,
                 macros = MacroNutrients(calories = cal, protein = protein, carbs = carbs, fats = fats),
                 source = FoodSource.MANUAL,
+                mealSlot = slot,
                 createdAt = todayFormatted()
             )
             nutritionRepo.addFoodLogEntry(entry)
-            _uiState.update { it.copy(toast = "$name added") }
+            _uiState.update { it.copy(toast = "$name added to ${slot.label}") }
+            refreshRecentFoods()
+        }
+    }
+
+    fun quickAddRecent(food: RecentFood, slot: MealSlot = _uiState.value.addSlot) {
+        addManualEntry(
+            name = food.foodName,
+            serving = food.servingSize,
+            cal = food.macros.calories,
+            protein = food.macros.protein,
+            carbs = food.macros.carbs,
+            fats = food.macros.fats,
+            slot = slot
+        )
+    }
+
+    fun copyYesterday() {
+        viewModelScope.launch {
+            val selected = _uiState.value.selectedDate
+            val yesterday = try {
+                LocalDate.parse(selected).minusDays(1).toString()
+            } catch (_: Exception) {
+                _uiState.update { it.copy(toast = "Couldn't copy previous day") }
+                return@launch
+            }
+            val previous = nutritionRepo.getFoodLogByDate(yesterday)
+            if (previous.isEmpty()) {
+                _uiState.update { it.copy(toast = "Nothing to copy from yesterday") }
+                return@launch
+            }
+            previous.forEach { src ->
+                nutritionRepo.addFoodLogEntry(
+                    src.copy(
+                        id = generateId(),
+                        date = selected,
+                        createdAt = todayFormatted()
+                    )
+                )
+            }
+            _uiState.update { it.copy(toast = "Copied ${previous.size} foods from yesterday") }
+            refreshRecentFoods()
         }
     }
 
@@ -201,6 +285,7 @@ class NutritionViewModel @Inject constructor(
         viewModelScope.launch {
             nutritionRepo.deleteFoodLogEntry(id)
             _uiState.update { it.copy(toast = "Entry removed") }
+            refreshRecentFoods()
         }
     }
 
@@ -244,76 +329,70 @@ class NutritionViewModel @Inject constructor(
         _uiState.update { it.copy(toast = null) }
     }
 
-    // ─── Water Tracking ──────────────────────────────────────────────────────
     private fun observeWaterLogs() {
         viewModelScope.launch {
             _uiState.map { it.selectedDate }
                 .distinctUntilChanged()
-                .flatMapLatest { date ->
-                    nutritionRepo.observeWaterLogByDate(date)
-                }
+                .flatMapLatest { date -> nutritionRepo.observeWaterLogByDate(date) }
                 .collect { entries ->
-                    val total = entries.sumOf { it.amount }
-                    _uiState.update { it.copy(waterEntries = entries, waterTotalMl = total) }
+                    _uiState.update { it.copy(waterEntries = entries, waterTotalMl = entries.sumOf { e -> e.amount }) }
                 }
         }
     }
 
     fun addWater(amountMl: Int) {
         viewModelScope.launch {
-            val entry = WaterLogEntry(
-                id = generateId(),
-                date = _uiState.value.selectedDate,
-                amount = amountMl,
-                createdAt = todayFormatted()
+            nutritionRepo.addWaterLogEntry(
+                WaterLogEntry(
+                    id = generateId(),
+                    date = _uiState.value.selectedDate,
+                    amount = amountMl,
+                    createdAt = todayFormatted()
+                )
             )
-            nutritionRepo.addWaterLogEntry(entry)
             _uiState.update { it.copy(toast = "Water logged") }
         }
     }
 
     fun removeWaterEntry(id: String) {
-        viewModelScope.launch {
-            nutritionRepo.deleteWaterLogEntry(id)
-        }
+        viewModelScope.launch { nutritionRepo.deleteWaterLogEntry(id) }
     }
 
-    // ─── Cardio Tracking ─────────────────────────────────────────────────────
     private fun observeCardioLogs() {
         viewModelScope.launch {
             _uiState.map { it.selectedDate }
                 .distinctUntilChanged()
-                .flatMapLatest { date ->
-                    nutritionRepo.observeCardioLogByDate(date)
-                }
+                .flatMapLatest { date -> nutritionRepo.observeCardioLogByDate(date) }
                 .collect { entries ->
-                    val totalCalories = entries.sumOf { it.estimatedCaloriesBurnt }
-                    _uiState.update { it.copy(cardioEntries = entries, cardioCaloriesToday = totalCalories) }
+                    _uiState.update {
+                        it.copy(
+                            cardioEntries = entries,
+                            cardioCaloriesToday = entries.sumOf { e -> e.estimatedCaloriesBurnt }
+                        )
+                    }
                 }
         }
     }
 
     fun addCardioEntry(type: String, durationMinutes: Int, notes: String = "") {
         viewModelScope.launch {
-            val weight = _uiState.value.userWeightKg
-            val calories = estimateCardioCalories(type, durationMinutes, weight)
-            val entry = CardioLogEntry(
-                id = generateId(),
-                date = _uiState.value.selectedDate,
-                type = type,
-                durationMinutes = durationMinutes,
-                estimatedCaloriesBurnt = calories,
-                notes = notes,
-                createdAt = todayFormatted()
+            val calories = estimateCardioCalories(type, durationMinutes, _uiState.value.userWeightKg)
+            nutritionRepo.addCardioLogEntry(
+                CardioLogEntry(
+                    id = generateId(),
+                    date = _uiState.value.selectedDate,
+                    type = type,
+                    durationMinutes = durationMinutes,
+                    estimatedCaloriesBurnt = calories,
+                    notes = notes,
+                    createdAt = todayFormatted()
+                )
             )
-            nutritionRepo.addCardioLogEntry(entry)
-            _uiState.update { it.copy(toast = "$type logged - $calories cal burnt") }
+            _uiState.update { it.copy(toast = "$type logged · $calories cal") }
         }
     }
 
     fun removeCardioEntry(id: String) {
-        viewModelScope.launch {
-            nutritionRepo.deleteCardioLogEntry(id)
-        }
+        viewModelScope.launch { nutritionRepo.deleteCardioLogEntry(id) }
     }
 }

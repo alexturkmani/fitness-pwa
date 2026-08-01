@@ -40,11 +40,25 @@ data class FoodLogEntry(
     val macros: MacroNutrients = MacroNutrients(),
     val source: FoodSource = FoodSource.MANUAL,
     val barcode: String? = null,
+    val mealSlot: MealSlot = MealSlot.SNACK,
     val createdAt: String = ""
 )
 
 @Serializable
 enum class FoodSource { MANUAL, SCANNER, MEAL_PLAN }
+
+@Serializable
+enum class MealSlot {
+    BREAKFAST, LUNCH, DINNER, SNACK;
+
+    val label: String
+        get() = when (this) {
+            BREAKFAST -> "Breakfast"
+            LUNCH -> "Lunch"
+            DINNER -> "Dinner"
+            SNACK -> "Snacks"
+        }
+}
 
 @Serializable
 data class ScannedProduct(

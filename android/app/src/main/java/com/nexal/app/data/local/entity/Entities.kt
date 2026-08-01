@@ -85,6 +85,7 @@ data class FoodLogEntryEntity(
     val macrosJson: String, // JSON MacroNutrients
     val source: String,
     val barcode: String?,
+    val mealSlot: String = "SNACK",
     val createdAt: String
 )
 

@@ -1,5 +1,10 @@
 package com.nexal.app.ui.navigation
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -8,8 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -108,7 +111,14 @@ private fun AuthNavHost(navController: NavHostController) {
         }
     }
 
-    NavHost(navController = navController, startDestination = Screen.Login.route) {
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Login.route,
+        enterTransition = { pushEnter() },
+        exitTransition = { pushExit() },
+        popEnterTransition = { popEnter() },
+        popExitTransition = { popExit() }
+    ) {
         composable(Screen.Login.route) {
             LoginScreen(
                 onNavigateToRegister = { navController.navigate(Screen.Register.route) },
@@ -151,14 +161,18 @@ private fun MainScaffold() {
     val showBottomBar = currentRoute in bottomNavItems.map { it.screen.route }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            if (showBottomBar) {
+            AnimatedVisibility(
+                visible = showBottomBar,
+                enter = fadeIn() + slideInVertically { it / 2 },
+                exit = fadeOut() + slideOutVertically { it / 2 }
+            ) {
                 NexalBottomBar(
                     currentRoute = currentRoute,
                     onNavigate = { screen ->
                         if (currentRoute == screen.route) return@NexalBottomBar
                         mainNavController.navigate(screen.route) {
-                            // Pop everything up to dashboard to avoid stacking
                             popUpTo(Screen.Dashboard.route) {
                                 saveState = true
                             }
@@ -173,17 +187,28 @@ private fun MainScaffold() {
         NavHost(
             navController = mainNavController,
             startDestination = Screen.Dashboard.route,
-            modifier = Modifier.padding(paddingValues)
+            modifier = Modifier.padding(paddingValues),
+            enterTransition = { tabEnterTransition() },
+            exitTransition = { tabExitTransition() },
+            popEnterTransition = { tabEnterTransition() },
+            popExitTransition = { tabExitTransition() }
         ) {
             composable(Screen.Dashboard.route) {
                 DashboardScreen(
                     onNavigateToWorkouts = { mainNavController.navigate(Screen.Workouts.route) },
                     onNavigateToMeals = { mainNavController.navigate(Screen.Meals.route) },
+                    onNavigateToDiary = { mainNavController.navigate(Screen.Nutrition.route) },
                     onNavigateToOnboarding = { mainNavController.navigate(Screen.Onboarding.route) },
                     onNavigateToProfile = { mainNavController.navigate(Screen.Profile.route) }
                 )
             }
-            composable(Screen.Onboarding.route) {
+            composable(
+                route = Screen.Onboarding.route,
+                enterTransition = { pushEnter() },
+                exitTransition = { pushExit() },
+                popEnterTransition = { popEnter() },
+                popExitTransition = { popExit() }
+            ) {
                 OnboardingScreen(
                     onComplete = {
                         mainNavController.navigate(Screen.Paywall.route) {
@@ -205,7 +230,11 @@ private fun MainScaffold() {
                 arguments = listOf(
                     navArgument("planId") { type = NavType.StringType },
                     navArgument("dayId") { type = NavType.StringType }
-                )
+                ),
+                enterTransition = { pushEnter() },
+                exitTransition = { pushExit() },
+                popEnterTransition = { popEnter() },
+                popExitTransition = { popExit() }
             ) { backStackEntry ->
                 WorkoutLogScreen(
                     planId = backStackEntry.arguments?.getString("planId") ?: "",
@@ -213,7 +242,13 @@ private fun MainScaffold() {
                     onBack = { mainNavController.popBackStack() }
                 )
             }
-            composable(Screen.CustomWorkouts.route) {
+            composable(
+                route = Screen.CustomWorkouts.route,
+                enterTransition = { pushEnter() },
+                exitTransition = { pushExit() },
+                popEnterTransition = { popEnter() },
+                popExitTransition = { popExit() }
+            ) {
                 CustomWorkoutsScreen(
                     onBack = { mainNavController.popBackStack() }
                 )
@@ -226,7 +261,13 @@ private fun MainScaffold() {
                     onNavigateToScanner = { mainNavController.navigate(Screen.Scanner.route) }
                 )
             }
-            composable(Screen.Scanner.route) {
+            composable(
+                route = Screen.Scanner.route,
+                enterTransition = { pushEnter() },
+                exitTransition = { pushExit() },
+                popEnterTransition = { popEnter() },
+                popExitTransition = { popExit() }
+            ) {
                 ScannerScreen(
                     onBack = { mainNavController.popBackStack() }
                 )
@@ -234,7 +275,13 @@ private fun MainScaffold() {
             composable(Screen.Progress.route) {
                 ProgressScreen()
             }
-            composable(Screen.Profile.route) {
+            composable(
+                route = Screen.Profile.route,
+                enterTransition = { pushEnter() },
+                exitTransition = { pushExit() },
+                popEnterTransition = { popEnter() },
+                popExitTransition = { popExit() }
+            ) {
                 ProfileScreen(
                     onNavigateToSubscription = {
                         mainNavController.navigate(Screen.Subscription.route)
@@ -243,12 +290,24 @@ private fun MainScaffold() {
                     onSignedOut = { /* AuthState change triggers recomposition */ }
                 )
             }
-            composable(Screen.Subscription.route) {
+            composable(
+                route = Screen.Subscription.route,
+                enterTransition = { pushEnter() },
+                exitTransition = { pushExit() },
+                popEnterTransition = { popEnter() },
+                popExitTransition = { popExit() }
+            ) {
                 SubscriptionScreen(
                     onBack = { mainNavController.popBackStack() }
                 )
             }
-            composable(Screen.Paywall.route) {
+            composable(
+                route = Screen.Paywall.route,
+                enterTransition = { pushEnter() },
+                exitTransition = { pushExit() },
+                popEnterTransition = { popEnter() },
+                popExitTransition = { popExit() }
+            ) {
                 PaywallScreen(
                     onBack = { mainNavController.popBackStack() },
                     onSubscribed = { mainNavController.popBackStack() }
@@ -265,7 +324,7 @@ private fun NexalBottomBar(
 ) {
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp
+        tonalElevation = 0.dp
     ) {
         bottomNavItems.forEach { item ->
             val selected = currentRoute == item.screen.route
@@ -278,11 +337,8 @@ private fun NexalBottomBar(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .shadow(4.dp, CircleShape)
                                 .clip(CircleShape)
-                                .background(
-                                    Brush.horizontalGradient(listOf(Emerald500, Cyan500))
-                                ),
+                                .background(BrandBlue),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -297,7 +353,7 @@ private fun NexalBottomBar(
                         Text(
                             item.label,
                             fontSize = 10.sp,
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
                         )
                     },
                     colors = NavigationBarItemDefaults.colors(
@@ -318,13 +374,13 @@ private fun NexalBottomBar(
                         Text(
                             item.label,
                             fontSize = 10.sp,
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
                         )
                     },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Emerald500,
-                        selectedTextColor = Emerald500,
-                        indicatorColor = Emerald500.copy(alpha = 0.12f)
+                        selectedIconColor = BrandBlue,
+                        selectedTextColor = BrandBlue,
+                        indicatorColor = Emerald100
                     )
                 )
             }

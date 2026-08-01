@@ -3,10 +3,12 @@
     <style name="Theme.Nexal" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/slate_50</item>
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 
     <style name="Theme.Nexal.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/slate_50</item>
         <item name="postSplashScreenTheme">@style/Theme.Nexal</item>
     </style>
 </resources>

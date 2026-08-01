@@ -17,7 +17,7 @@ import com.nexal.app.data.local.entity.*
         WaterLogEntryEntity::class,
         CardioLogEntryEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class NexalDatabase : RoomDatabase() {

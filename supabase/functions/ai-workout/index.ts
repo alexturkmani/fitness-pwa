@@ -1,19 +1,22 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import {
   callGemini, generateId, jsonResponse, errorResponse, corsHeaders,
-  calculateTDEE, calculateMacroTargets, calculateDailyWaterIntake,
+  normalizeProfile, normalizeEnum,
 } from "../_shared/helpers.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders() });
 
   try {
-    const { profile, previousLogs, assessment, currentInterval, workoutStyle } = await req.json();
+    const body = await req.json();
+    const profile = normalizeProfile(body.profile);
+    const { previousLogs, assessment, currentInterval } = body;
     const gymDays = profile.gymDaysPerWeek || 5;
     const restDays = 7 - gymDays;
-    const trainingLocation = (profile.trainingLocation || "gym").toLowerCase();
-    const liftingExperience = (profile.liftingExperience || "beginner").toLowerCase();
-    const isSingleMuscle = workoutStyle === "single_muscle";
+    const trainingLocation = profile.trainingLocation;
+    const liftingExperience = profile.liftingExperience;
+    const style = normalizeEnum(body.workoutStyle ?? profile.workoutStyle, "muscle_group");
+    const isSingleMuscle = style === "single_muscle";
 
     let prompt = `Generate a structured ${profile.intervalWeeks || 6}-week workout plan for the following user:
 
@@ -21,8 +24,8 @@ serve(async (req) => {
 - Height: ${profile.height}cm
 - Age: ${profile.age}
 - Gender: ${profile.gender}
-- Activity Level: ${(profile.activityLevel || "moderately_active").replace("_", " ")}
-- Goal: ${(profile.fitnessGoals || ["general_fitness"]).map((g: string) => g.replace("_", " ")).join(", ")}
+- Activity Level: ${(profile.activityLevel || "moderately_active").replace(/_/g, " ")}
+- Goal: ${(profile.fitnessGoals || ["general_fitness"]).map((g: string) => g.replace(/_/g, " ")).join(", ")}
 - Target Weight: ${profile.targetWeight}kg
 - Training days per week: ${gymDays} (${restDays} rest day${restDays !== 1 ? "s" : ""})
 - Lifting Experience: ${liftingExperience}

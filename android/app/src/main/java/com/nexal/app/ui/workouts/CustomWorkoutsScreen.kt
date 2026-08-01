@@ -19,8 +19,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.nexal.app.domain.model.CustomExerciseLog
 import com.nexal.app.domain.model.CustomSet
 import com.nexal.app.domain.model.CustomWorkoutLog
+import androidx.compose.ui.text.font.FontWeight
 import com.nexal.app.ui.components.*
-import com.nexal.app.ui.theme.Emerald500
+import com.nexal.app.ui.theme.BrandBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,9 +46,10 @@ fun CustomWorkoutsScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showLogSheet = true },
-                containerColor = Emerald500
+                containerColor = BrandBlue,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Log Workout", tint = MaterialTheme.colorScheme.onPrimary)
+                Icon(Icons.Default.Add, contentDescription = "Log Workout")
             }
         }
     ) { padding ->
@@ -56,6 +58,8 @@ fun CustomWorkoutsScreen(
                 icon = Icons.Default.FitnessCenter,
                 title = "No Custom Workouts",
                 description = "Log your own workouts with custom exercises, sets, and reps.",
+                actionLabel = "Log Workout",
+                onAction = { showLogSheet = true },
                 modifier = Modifier.padding(padding)
             )
         } else {
@@ -65,10 +69,13 @@ fun CustomWorkoutsScreen(
                 modifier = Modifier.padding(padding)
             ) {
                 items(uiState.logs, key = { it.id }) { log ->
-                    CustomWorkoutCard(
-                        log = log,
-                        onDelete = { viewModel.deleteLog(log.id) }
-                    )
+                    val index = uiState.logs.indexOf(log)
+                    FadeSlideIn(delayMs = index.coerceAtLeast(0) * 55) {
+                        CustomWorkoutCard(
+                            log = log,
+                            onDelete = { viewModel.deleteLog(log.id) }
+                        )
+                    }
                 }
             }
         }
@@ -104,7 +111,8 @@ fun CustomWorkoutCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = log.name,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
                     )
                     Text(
                         text = log.date,
@@ -128,7 +136,7 @@ fun CustomWorkoutCard(
             Text(
                 text = "${log.exercises.size} exercises",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = BrandBlue
             )
 
             AnimatedVisibility(visible = expanded) {
@@ -140,7 +148,7 @@ fun CustomWorkoutCard(
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(exercise.name, style = MaterialTheme.typography.titleSmall)
-                                Spacer(Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
                                 exercise.sets.forEachIndexed { i, set ->
                                     Text(
                                         "Set ${i + 1}: ${set.weight}kg × ${set.reps} reps",
@@ -205,13 +213,13 @@ fun CustomWorkoutSheet(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null)
-                    Spacer(Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text("Add Exercise")
                 }
             }
 
             item {
-                Spacer(Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 GradientButton(
                     text = "Save Workout",
                     onClick = {
@@ -299,7 +307,7 @@ private fun ExerciseEditor(
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             exercise.sets.forEachIndexed { setIndex, set ->
                 Row(

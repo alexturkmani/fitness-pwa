@@ -1,6 +1,7 @@
 package com.nexal.app.ui.auth
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -49,154 +51,172 @@ fun LoginScreen(
         if (uiState.loginSuccess) onLoginSuccess()
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .imePadding()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .background(
+                Brush.verticalGradient(
+                    listOf(Emerald50, Slate50, CreamSurface)
+                )
+            )
     ) {
-        // Logo / Title
-        Image(
-            painter = painterResource(id = R.drawable.nexal_logo),
-            contentDescription = "Nexal",
+        Column(
             modifier = Modifier
-                .size(72.dp)
-                .clip(RoundedCornerShape(16.dp))
-        )
-        Spacer(Modifier.height(16.dp))
-        Text(
-            "Welcome to Nexal",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            "Your AI fitness coach",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(Modifier.height(40.dp))
-
-        // Email field
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
-            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            ),
-            singleLine = true,
-            shape = MaterialTheme.shapes.medium
-        )
-        Spacer(Modifier.height(12.dp))
-
-        // Password field
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-            trailingIcon = {
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(
-                        if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                        contentDescription = "Toggle password visibility"
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            FadeSlideIn {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Image(
+                        painter = painterResource(id = R.drawable.nexal_logo),
+                        contentDescription = "Nexal",
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Nexal",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = BrandBlue
+                    )
+                    Text(
+                        "Your AI fitness diary",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    focusManager.clearFocus()
-                    viewModel.login(email, password)
+            }
+
+            Spacer(modifier = Modifier.height(36.dp))
+
+            ScalePopIn(delayMs = 80) {
+                FitCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            label = { Text("Email") },
+                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = BrandBlue) },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Email,
+                                imeAction = ImeAction.Next
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                            ),
+                            singleLine = true,
+                            shape = MaterialTheme.shapes.medium
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Password") },
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = BrandBlue) },
+                            trailingIcon = {
+                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                    Icon(
+                                        if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                        contentDescription = "Toggle password visibility"
+                                    )
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Password,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    focusManager.clearFocus()
+                                    viewModel.login(email, password)
+                                }
+                            ),
+                            singleLine = true,
+                            shape = MaterialTheme.shapes.medium
+                        )
+
+                        TextButton(
+                            onClick = onNavigateToForgotPassword,
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Text("Forgot password?", color = BrandBlue)
+                        }
+
+                        if (uiState.error != null) {
+                            Text(
+                                text = uiState.error!!,
+                                color = ErrorRed,
+                                style = MaterialTheme.typography.bodySmall,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+
+                        GradientButton(
+                            text = "Sign In",
+                            onClick = { viewModel.login(email, password) },
+                            modifier = Modifier.fillMaxWidth(),
+                            loading = uiState.isLoading,
+                            enabled = email.isNotBlank() && password.isNotBlank()
+                        )
+                    }
                 }
-            ),
-            singleLine = true,
-            shape = MaterialTheme.shapes.medium
-        )
-        Spacer(Modifier.height(8.dp))
+            }
 
-        // Forgot password link
-        TextButton(
-            onClick = onNavigateToForgotPassword,
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            Text("Forgot password?", color = Emerald500)
-        }
-        Spacer(Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-        // Error message
-        if (uiState.error != null) {
-            Text(
-                text = uiState.error!!,
-                color = ErrorRed,
-                style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(12.dp))
-        }
+            FadeSlideIn(delayMs = 160) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        HorizontalDivider(modifier = Modifier.weight(1f))
+                        Text(
+                            " or ",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        HorizontalDivider(modifier = Modifier.weight(1f))
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
 
-        // Login button
-        GradientButton(
-            text = "Sign In",
-            onClick = { viewModel.login(email, password) },
-            modifier = Modifier.fillMaxWidth(),
-            loading = uiState.isLoading,
-            enabled = email.isNotBlank() && password.isNotBlank()
-        )
-        Spacer(Modifier.height(16.dp))
+                    FitButton(
+                        text = "Continue with Google",
+                        onClick = { viewModel.signInWithGoogle(context) },
+                        variant = ButtonVariant.SECONDARY,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
 
-        // Divider
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            HorizontalDivider(modifier = Modifier.weight(1f))
-            Text(
-                " or ",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            HorizontalDivider(modifier = Modifier.weight(1f))
-        }
-        Spacer(Modifier.height(16.dp))
-
-        // Google Sign-In button
-        FitButton(
-            text = "Continue with Google",
-            onClick = { viewModel.signInWithGoogle(context) },
-            variant = ButtonVariant.SECONDARY,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(24.dp))
-
-        // Register link
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "Don't have an account? ",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            TextButton(onClick = onNavigateToRegister) {
-                Text("Sign Up", color = Emerald500, fontWeight = FontWeight.Bold)
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Don't have an account? ",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        TextButton(onClick = onNavigateToRegister) {
+                            Text("Sign Up", color = BrandBlue, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             }
         }
     }

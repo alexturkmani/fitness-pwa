@@ -34,7 +34,12 @@ class BillingRepository @Inject constructor(
 
     private val billingClient: BillingClient = BillingClient.newBuilder(context)
         .setListener(this)
-        .enablePendingPurchases()
+        .enablePendingPurchases(
+            PendingPurchasesParams.newBuilder()
+                .enableOneTimeProducts()
+                .build()
+        )
+        .enableAutoServiceReconnection()
         .build()
 
     init {
@@ -51,8 +56,6 @@ class BillingRepository @Inject constructor(
 
             override fun onBillingServiceDisconnected() {
                 _connectionState.value = false
-                // Retry connection
-                startConnection()
             }
         })
     }
@@ -92,7 +95,8 @@ class BillingRepository @Inject constructor(
             .build()
 
         return suspendCancellableCoroutine { continuation ->
-            billingClient.queryProductDetailsAsync(params) { result, detailsList ->
+            billingClient.queryProductDetailsAsync(params) { result, productDetailsResult ->
+                val detailsList = productDetailsResult.productDetailsList
                 if (result.responseCode == BillingResponseCode.OK && detailsList.isNotEmpty()) {
                     productDetails = detailsList.first()
                     continuation.resume(productDetails)

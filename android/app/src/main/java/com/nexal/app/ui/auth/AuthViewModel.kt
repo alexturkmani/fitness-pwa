@@ -50,7 +50,7 @@ class AuthViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false, loginSuccess = true) }
                 }
                 is Resource.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = result.message) }
+                    _uiState.update { it.copy(isLoading = false, error = friendlyAuthError(result.message)) }
                 }
                 is Resource.Loading -> {}
             }
@@ -73,7 +73,7 @@ class AuthViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false, registerSuccess = true, registerEmail = email.trim()) }
                 }
                 is Resource.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = result.message) }
+                    _uiState.update { it.copy(isLoading = false, error = friendlyAuthError(result.message)) }
                 }
                 is Resource.Loading -> {}
             }
@@ -92,7 +92,7 @@ class AuthViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false, forgotPasswordSent = true) }
                 }
                 is Resource.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = result.message) }
+                    _uiState.update { it.copy(isLoading = false, error = friendlyAuthError(result.message)) }
                 }
                 is Resource.Loading -> {}
             }
@@ -112,7 +112,7 @@ class AuthViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false, resetPasswordSuccess = true) }
                 }
                 is Resource.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = result.message) }
+                    _uiState.update { it.copy(isLoading = false, error = friendlyAuthError(result.message)) }
                 }
                 is Resource.Loading -> {}
             }
@@ -145,7 +145,7 @@ class AuthViewModel @Inject constructor(
                         _uiState.update { it.copy(isLoading = false, loginSuccess = true) }
                     }
                     is Resource.Error -> {
-                        _uiState.update { it.copy(isLoading = false, error = signInResult.message) }
+                        _uiState.update { it.copy(isLoading = false, error = friendlyAuthError(signInResult.message)) }
                     }
                     is Resource.Loading -> {}
                 }
@@ -154,12 +154,33 @@ class AuthViewModel @Inject constructor(
             } catch (_: NoCredentialException) {
                 _uiState.update { it.copy(isLoading = false, error = "No Google accounts found on this device") }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Google Sign-In failed") }
+                _uiState.update { it.copy(isLoading = false, error = friendlyAuthError(e.message)) }
             }
         }
     }
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    private fun friendlyAuthError(raw: String?): String {
+        val message = raw?.trim().orEmpty()
+        if (message.isEmpty()) return "Something went wrong. Please try again."
+        val lower = message.lowercase()
+        return when {
+            "unable to resolve host" in lower ||
+                "no address associated with hostname" in lower ||
+                "failed to connect" in lower ||
+                "unknownhost" in lower ||
+                "network" in lower && "unreachable" in lower ->
+                "Can't reach Nexal servers right now. Check your connection and try again."
+            "invalid login credentials" in lower || "invalid_credentials" in lower ->
+                "Incorrect email or password."
+            "email not confirmed" in lower ->
+                "Please confirm your email before signing in."
+            message.length > 160 || "http" in lower || "supabase" in lower ->
+                "Sign-in failed. Please try again."
+            else -> message
+        }
     }
 }

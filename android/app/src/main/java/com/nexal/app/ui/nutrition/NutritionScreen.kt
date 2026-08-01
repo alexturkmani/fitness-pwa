@@ -1,10 +1,13 @@
 package com.nexal.app.ui.nutrition
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,16 +20,25 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nexal.app.domain.model.FoodLogEntry
-import com.nexal.app.domain.model.FoodSource
 import com.nexal.app.domain.model.CardioLogEntry
+import com.nexal.app.domain.model.MealSlot
+import com.nexal.app.domain.model.UnitSystem
+import com.nexal.app.domain.model.WaterLogEntry
 import com.nexal.app.ui.components.*
-import com.nexal.app.ui.theme.Cyan500
-import com.nexal.app.ui.theme.Emerald500
+import com.nexal.app.ui.theme.*
 import com.nexal.app.util.formatWater
 import kotlinx.coroutines.flow.filter
+
+private val diaryMealSlots = listOf(
+    MealSlot.BREAKFAST,
+    MealSlot.LUNCH,
+    MealSlot.DINNER,
+    MealSlot.SNACK
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,226 +50,188 @@ fun NutritionScreen(
     var showAddModal by remember { mutableStateOf(false) }
     var showCardioModal by remember { mutableStateOf(false) }
 
+    fun openAddFor(slot: MealSlot) {
+        viewModel.prepareAdd(slot)
+        showAddModal = true
+    }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Nutrition") },
+                title = {
+                    Text("Diary", fontWeight = FontWeight.Bold, maxLines = 1)
+                },
                 actions = {
-                    TextButton(onClick = onNavigateToScanner) {
-                        Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Scan")
+                    IconButton(onClick = onNavigateToScanner) {
+                        Icon(
+                            Icons.Default.QrCodeScanner,
+                            contentDescription = "Scan barcode",
+                            tint = BrandBlue
+                        )
+                    }
+                    IconButton(onClick = { viewModel.copyYesterday() }) {
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = "Copy yesterday",
+                            tint = BrandBlue
+                        )
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showAddModal = true },
-                containerColor = Emerald500
+                onClick = { openAddFor(uiState.addSlot) },
+                containerColor = BrandBlue,
+                contentColor = Color.White
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add food", tint = Color.White)
+                Icon(Icons.Default.Add, contentDescription = "Add food")
             }
         }
     ) { padding ->
         LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.padding(padding)
         ) {
-            // 7-Day Calendar
-            item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(uiState.weekData) { day ->
-                        DayCalendarCell(
-                            dayName = day.dayName,
-                            dayNumber = day.dayNumber,
-                            calPercent = if (uiState.calorieTarget > 0) (day.calories.toFloat() / uiState.calorieTarget).coerceAtMost(1.2f) else 0f,
-                            isSelected = day.date == uiState.selectedDate,
-                            isToday = day.isToday,
-                            onClick = { viewModel.selectDate(day.date) }
-                        )
+            item(key = "week") {
+                FadeSlideIn {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(uiState.weekData, key = { it.date }) { day ->
+                            DayCalendarCell(
+                                dayName = day.dayName,
+                                dayNumber = day.dayNumber,
+                                calPercent = if (uiState.calorieTarget > 0) {
+                                    (day.calories.toFloat() / uiState.calorieTarget).coerceAtMost(1.2f)
+                                } else {
+                                    0f
+                                },
+                                isSelected = day.date == uiState.selectedDate,
+                                isToday = day.isToday,
+                                onClick = { viewModel.selectDate(day.date) }
+                            )
+                        }
                     }
                 }
             }
 
-            // Macro Progress Bars
-            item {
-                FitCard {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        MacroProgressRow(
-                            icon = Icons.Default.LocalFireDepartment,
-                            label = "Calories",
-                            current = uiState.dayTotals.calories,
-                            target = uiState.calorieTarget,
-                            color = Emerald500
-                        )
-                        MacroProgressRow(
-                            icon = Icons.Default.FitnessCenter,
-                            label = "Protein",
-                            current = uiState.dayTotals.protein,
-                            target = uiState.proteinTarget,
-                            unit = "g",
-                            color = Emerald500
-                        )
-                        MacroProgressRow(
-                            icon = Icons.Default.Grain,
-                            label = "Carbs",
-                            current = uiState.dayTotals.carbs,
-                            target = uiState.carbsTarget,
-                            unit = "g",
-                            color = Cyan500
-                        )
-                        MacroProgressRow(
-                            icon = Icons.Default.WaterDrop,
-                            label = "Fats",
-                            current = uiState.dayTotals.fats,
-                            target = uiState.fatsTarget,
-                            unit = "g",
-                            color = Color(0xFFF59E0B)
-                        )
-                    }
-                }
-            }
-
-            // Food Log header
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Food Log", style = MaterialTheme.typography.titleMedium)
-                    Text("${uiState.dayEntries.size} entries", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-
-            // Water Tracker Card
-            item {
-                FitCard {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+            item(key = "calories") {
+                ScalePopIn(delayMs = 40) {
+                    FitCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Icon(Icons.Default.WaterDrop, null, tint = Cyan500, modifier = Modifier.size(20.dp))
-                                Text("Water Intake", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                            }
                             Text(
-                                formatWater(uiState.waterTotalMl, uiState.unitSystem) + " / " + formatWater(uiState.waterGoalMl, uiState.unitSystem),
+                                "Calories",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            CalorieRing(
+                                consumed = uiState.dayTotals.calories,
+                                goal = uiState.calorieTarget
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                "${uiState.dayTotals.calories} eaten · ${uiState.calorieTarget} goal",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        val waterPercent = if (uiState.waterGoalMl > 0) (uiState.waterTotalMl.toFloat() / uiState.waterGoalMl).coerceAtMost(1f) else 0f
-                        LinearProgressIndicator(
-                            progress = { waterPercent },
-                            modifier = Modifier.fillMaxWidth().height(8.dp),
-                            color = Cyan500,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                            strokeCap = StrokeCap.Round
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(150, 250, 350, 500).forEach { ml ->
-                                OutlinedButton(
-                                    onClick = { viewModel.addWater(ml) },
-                                    modifier = Modifier.weight(1f),
-                                    contentPadding = PaddingValues(4.dp)
-                                ) {
-                                    Text("${ml}ml", style = MaterialTheme.typography.labelSmall)
-                                }
-                            }
-                        }
-                        // Show water entries
-                        if (uiState.waterEntries.isNotEmpty()) {
-                            Spacer(Modifier.height(8.dp))
-                            uiState.waterEntries.forEach { entry ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(formatWater(entry.amount, uiState.unitSystem), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    IconButton(onClick = { viewModel.removeWaterEntry(entry.id) }, modifier = Modifier.size(24.dp)) {
-                                        Icon(Icons.Default.Close, contentDescription = "Remove", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
-                                    }
-                                }
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                MacroChip("Protein", uiState.dayTotals.protein, uiState.proteinTarget, MacroProtein)
+                                MacroChip("Carbs", uiState.dayTotals.carbs, uiState.carbsTarget, MacroCarbs)
+                                MacroChip("Fat", uiState.dayTotals.fats, uiState.fatsTarget, MacroFat)
                             }
                         }
                     }
                 }
             }
 
-            // Cardio Log
-            item {
-                FitCard {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Icon(Icons.Default.DirectionsRun, null, tint = Color(0xFFF59E0B), modifier = Modifier.size(20.dp))
-                                Text("Cardio Log", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                            }
-                            TextButton(onClick = { showCardioModal = true }) {
-                                Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
-                                Text("Add")
-                            }
-                        }
-                        if (uiState.cardioCaloriesToday > 0) {
+            if (uiState.recentFoods.isNotEmpty()) {
+                item(key = "recent") {
+                    FadeSlideIn(delayMs = 80) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
-                                "Total burnt: ${uiState.cardioCaloriesToday} cal",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFFF59E0B)
+                                "Recent",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        }
-                        if (uiState.cardioEntries.isEmpty()) {
-                            Spacer(Modifier.height(8.dp))
-                            Text("No cardio logged today", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        } else {
-                            Spacer(Modifier.height(8.dp))
-                            uiState.cardioEntries.forEach { entry ->
-                                CardioEntryRow(entry = entry, onDelete = { viewModel.removeCardioEntry(entry.id) })
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                uiState.recentFoods.take(12).forEach { food ->
+                                    RecentFoodChip(
+                                        food = food,
+                                        onClick = {
+                                            viewModel.quickAddRecent(food, uiState.addSlot)
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // Food Log Entries
-            if (uiState.dayEntries.isEmpty()) {
-                item {
-                    FitCard {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(Icons.Default.Restaurant, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(32.dp))
-                            Spacer(Modifier.height(8.dp))
-                            Text("No entries for this day", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+            diaryMealSlots.forEachIndexed { index, slot ->
+                item(key = "meal_${slot.name}") {
+                    val slotEntries = uiState.dayEntries.filter { it.mealSlot == slot }
+                    val slotCalories = slotEntries.sumOf { it.macros.calories * it.quantity }
+                    FadeSlideIn(delayMs = 110 + index * 45) {
+                        MealSlotCard(
+                            slot = slot,
+                            entries = slotEntries,
+                            slotCalories = slotCalories,
+                            onAddFood = { openAddFor(slot) },
+                            onDeleteEntry = { viewModel.removeEntry(it) }
+                        )
                     }
                 }
-            } else {
-                items(uiState.dayEntries, key = { it.id }) { entry ->
-                    FoodEntryCard(
-                        entry = entry,
-                        onDelete = { viewModel.removeEntry(entry.id) }
+            }
+
+            item(key = "water") {
+                FadeSlideIn(delayMs = 300) {
+                    WaterSection(
+                        waterTotalMl = uiState.waterTotalMl,
+                        waterGoalMl = uiState.waterGoalMl,
+                        unitSystem = uiState.unitSystem,
+                        waterEntries = uiState.waterEntries,
+                        onAddWater = { viewModel.addWater(it) },
+                        onRemoveWater = { viewModel.removeWaterEntry(it) }
                     )
                 }
             }
 
-            // Bottom spacer for FAB
-            item { Spacer(Modifier.height(64.dp)) }
+            item(key = "cardio") {
+                FadeSlideIn(delayMs = 340) {
+                    CardioSection(
+                        cardioEntries = uiState.cardioEntries,
+                        cardioCaloriesToday = uiState.cardioCaloriesToday,
+                        onAdd = { showCardioModal = true },
+                        onDelete = { viewModel.removeCardioEntry(it) }
+                    )
+                }
+            }
+
+            item(key = "bottom_spacer") {
+                Spacer(modifier = Modifier.height(72.dp))
+            }
         }
 
-        // Add Food Modal
         if (showAddModal) {
             LaunchedEffect(Unit) { viewModel.resetAutoFillState() }
             AddFoodModal(
@@ -271,7 +245,6 @@ fun NutritionScreen(
             )
         }
 
-        // Add Cardio Modal
         if (showCardioModal) {
             AddCardioModal(
                 cardioTypes = uiState.cardioTypes,
@@ -286,8 +259,306 @@ fun NutritionScreen(
 
     uiState.toast?.let { message ->
         LaunchedEffect(message) {
-            kotlinx.coroutines.delay(2000)
+            snackbarHostState.showSnackbar(message)
             viewModel.clearToast()
+        }
+    }
+}
+
+@Composable
+private fun MealSlotCard(
+    slot: MealSlot,
+    entries: List<FoodLogEntry>,
+    slotCalories: Int,
+    onAddFood: () -> Unit,
+    onDeleteEntry: (String) -> Unit
+) {
+    FitCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    slot.label,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    "$slotCalories cal",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = if (slotCalories > 0) BrandBlue else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+
+            if (entries.isEmpty()) {
+                Text(
+                    "No foods logged",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 12.dp)
+                )
+            } else {
+                Column {
+                    entries.forEachIndexed { index, entry ->
+                        DiaryFoodRow(
+                            entry = entry,
+                            onDelete = { onDeleteEntry(entry.id) }
+                        )
+                        if (index < entries.lastIndex) {
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                            )
+                        }
+                    }
+                }
+            }
+
+            FitButton(
+                text = "+ Add food",
+                onClick = onAddFood,
+                variant = ButtonVariant.GHOST,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+private fun DiaryFoodRow(
+    entry: FoodLogEntry,
+    onDelete: () -> Unit
+) {
+    val calories = entry.macros.calories * entry.quantity
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                entry.foodName,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                buildString {
+                    append(entry.servingSize.ifBlank { "1 serving" })
+                    if (entry.quantity > 1) append(" × ${entry.quantity}")
+                    append(" · ")
+                    append("${calories} cal")
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("P ${entry.macros.protein}g", style = MaterialTheme.typography.labelSmall, color = MacroProtein)
+                Text("C ${entry.macros.carbs}g", style = MaterialTheme.typography.labelSmall, color = MacroCarbs)
+                Text("F ${entry.macros.fats}g", style = MaterialTheme.typography.labelSmall, color = MacroFat)
+            }
+        }
+        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+            Icon(
+                Icons.Default.Close,
+                contentDescription = "Remove",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun RecentFoodChip(
+    food: RecentFood,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        tonalElevation = 0.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                food.foodName,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                "${food.macros.calories} cal",
+                style = MaterialTheme.typography.labelSmall,
+                color = BrandBlue
+            )
+        }
+    }
+}
+
+@Composable
+private fun WaterSection(
+    waterTotalMl: Int,
+    waterGoalMl: Int,
+    unitSystem: UnitSystem,
+    waterEntries: List<WaterLogEntry>,
+    onAddWater: (Int) -> Unit,
+    onRemoveWater: (String) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.WaterDrop, null, tint = Cyan500, modifier = Modifier.size(18.dp))
+                    Text(
+                        "Water",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Text(
+                    formatWater(waterTotalMl, unitSystem) + " / " + formatWater(waterGoalMl, unitSystem),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            val waterPercent = if (waterGoalMl > 0) {
+                (waterTotalMl.toFloat() / waterGoalMl).coerceAtMost(1f)
+            } else {
+                0f
+            }
+            LinearProgressIndicator(
+                progress = { waterPercent },
+                modifier = Modifier.fillMaxWidth().height(6.dp),
+                color = Cyan500,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                strokeCap = StrokeCap.Round
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(150, 250, 350, 500).forEach { ml ->
+                    OutlinedButton(
+                        onClick = { onAddWater(ml) },
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(4.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Cyan500),
+                        border = BorderStroke(1.dp, Cyan500.copy(alpha = 0.45f))
+                    ) {
+                        Text("${ml}ml", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+            if (waterEntries.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                waterEntries.forEach { entry ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            formatWater(entry.amount, unitSystem),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        IconButton(onClick = { onRemoveWater(entry.id) }, modifier = Modifier.size(24.dp)) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Remove",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CardioSection(
+    cardioEntries: List<CardioLogEntry>,
+    cardioCaloriesToday: Int,
+    onAdd: () -> Unit,
+    onDelete: (String) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.DirectionsRun, null, tint = MacroFat, modifier = Modifier.size(18.dp))
+                    Text(
+                        "Cardio",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                TextButton(onClick = onAdd, contentPadding = PaddingValues(horizontal = 8.dp)) {
+                    Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp), tint = BrandBlue)
+                    Text("Add", color = BrandBlue)
+                }
+            }
+            if (cardioCaloriesToday > 0) {
+                Text(
+                    "Burnt: $cardioCaloriesToday cal",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MacroFat
+                )
+            }
+            if (cardioEntries.isEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "No cardio logged",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                Spacer(modifier = Modifier.height(4.dp))
+                cardioEntries.forEach { entry ->
+                    CardioEntryRow(entry = entry, onDelete = { onDelete(entry.id) })
+                }
+            }
         }
     }
 }
@@ -301,104 +572,48 @@ private fun DayCalendarCell(
     isToday: Boolean,
     onClick: () -> Unit
 ) {
-    val borderColor = if (isSelected) Emerald500 else MaterialTheme.colorScheme.outlineVariant
-    val textColor = if (isToday) Emerald500 else MaterialTheme.colorScheme.onSurfaceVariant
+    val borderColor = if (isSelected) BrandBlue else MaterialTheme.colorScheme.outlineVariant
+    val textColor = if (isToday) BrandBlue else MaterialTheme.colorScheme.onSurfaceVariant
     val ringColor = when {
         calPercent > 1f -> MaterialTheme.colorScheme.error
-        calPercent > 0f -> Emerald500
+        calPercent > 0f -> BrandBlue
         else -> MaterialTheme.colorScheme.outlineVariant
     }
 
     Surface(
         onClick = onClick,
-        color = if (isSelected) Emerald500.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface,
+        color = if (isSelected) BrandBlue.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
         shape = MaterialTheme.shapes.medium,
-        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
+        border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, borderColor),
+        tonalElevation = if (isSelected) 1.dp else 0.dp
     ) {
         Column(
-            modifier = Modifier.padding(8.dp).width(44.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp).width(44.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(dayName, style = MaterialTheme.typography.labelSmall, color = textColor, fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal)
-            Text(dayNumber, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(4.dp))
-            Canvas(modifier = Modifier.size(24.dp)) {
+            Text(
+                dayName,
+                style = MaterialTheme.typography.labelSmall,
+                color = textColor,
+                fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Normal
+            )
+            Text(
+                dayNumber,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Canvas(modifier = Modifier.size(22.dp)) {
                 val stroke = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
-                drawArc(color = Color(0xFF1E293B), startAngle = -90f, sweepAngle = 360f, useCenter = false, style = stroke)
-                drawArc(color = ringColor, startAngle = -90f, sweepAngle = 360f * calPercent.coerceAtMost(1f), useCenter = false, style = stroke)
-            }
-        }
-    }
-}
-
-@Composable
-private fun MacroProgressRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    current: Int,
-    target: Int,
-    unit: String = "",
-    color: Color
-) {
-    val percent = if (target > 0) (current.toFloat() / target).coerceAtMost(1f) else 0f
-    val barColor = if (current > target && target > 0) MaterialTheme.colorScheme.error else color
-
-    Column {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
-                Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Text("$current$unit / $target$unit", style = MaterialTheme.typography.bodySmall)
-        }
-        Spacer(Modifier.height(4.dp))
-        LinearProgressIndicator(
-            progress = { percent },
-            modifier = Modifier.fillMaxWidth().height(6.dp),
-            color = barColor,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-            strokeCap = StrokeCap.Round
-        )
-    }
-}
-
-@Composable
-private fun FoodEntryCard(
-    entry: FoodLogEntry,
-    onDelete: () -> Unit
-) {
-    val sourceLabel = when (entry.source) {
-        FoodSource.SCANNER -> "Scanned"
-        FoodSource.MEAL_PLAN -> "Meal Plan"
-        FoodSource.MANUAL -> "Manual"
-    }
-    val sourceColor = when (entry.source) {
-        FoodSource.SCANNER -> Cyan500
-        FoodSource.MEAL_PLAN -> Emerald500
-        FoodSource.MANUAL -> Color(0xFFF59E0B)
-    }
-
-    FitCard {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(entry.foodName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                    Surface(color = sourceColor.copy(alpha = 0.15f), shape = MaterialTheme.shapes.extraSmall) {
-                        Text(sourceLabel, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = sourceColor)
-                    }
-                }
-                Text(
-                    "${entry.macros.calories} cal | P:${entry.macros.protein}g C:${entry.macros.carbs}g F:${entry.macros.fats}g",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                drawArc(color = Slate200, startAngle = -90f, sweepAngle = 360f, useCenter = false, style = stroke)
+                drawArc(
+                    color = ringColor,
+                    startAngle = -90f,
+                    sweepAngle = 360f * calPercent.coerceAtMost(1f),
+                    useCenter = false,
+                    style = stroke
                 )
-            }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Remove", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
             }
         }
     }
@@ -427,8 +642,6 @@ private fun AddFoodModal(
     var carbs by remember { mutableStateOf("") }
     var fats by remember { mutableStateOf("") }
 
-    // Update fields when AI auto-fill completes
-    // Use rememberUpdatedState + snapshotFlow to reliably observe parameter changes inside Dialog composition
     val currentAutoFillState by rememberUpdatedState(autoFillState)
     LaunchedEffect(Unit) {
         snapshotFlow { currentAutoFillState }
@@ -472,18 +685,18 @@ private fun AddFoodModal(
 
             if (autoFillState.isLoading) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = Emerald500)
-                    Text("Estimating nutrition info...", style = MaterialTheme.typography.bodySmall, color = Emerald500)
+                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = BrandBlue)
+                    Text("Estimating nutrition info...", style = MaterialTheme.typography.bodySmall, color = BrandBlue)
                 }
             }
 
             if (autoFillState.autoFilled && !autoFillState.isLoading) {
-                Surface(color = Emerald500.copy(alpha = 0.1f), shape = MaterialTheme.shapes.small) {
+                Surface(color = BrandBlue.copy(alpha = 0.1f), shape = MaterialTheme.shapes.small) {
                     Text(
                         "Nutrition auto-filled from AI estimate. You can adjust values.",
                         modifier = Modifier.padding(8.dp),
                         style = MaterialTheme.typography.bodySmall,
-                        color = Emerald500
+                        color = BrandBlue
                     )
                 }
             }
@@ -525,12 +738,19 @@ private fun AddFoodModal(
                 )
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             GradientButton(
                 text = "Add Entry",
                 onClick = {
                     if (name.isNotBlank() && calories.isNotBlank()) {
-                        onAdd(name, servingSize.ifBlank { "1 serving" }, calories.toIntOrNull() ?: 0, protein.toIntOrNull() ?: 0, carbs.toIntOrNull() ?: 0, fats.toIntOrNull() ?: 0)
+                        onAdd(
+                            name,
+                            servingSize.ifBlank { "1 serving" },
+                            calories.toIntOrNull() ?: 0,
+                            protein.toIntOrNull() ?: 0,
+                            carbs.toIntOrNull() ?: 0,
+                            fats.toIntOrNull() ?: 0
+                        )
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -558,7 +778,12 @@ private fun CardioEntryRow(entry: CardioLogEntry, onDelete: () -> Unit) {
             }
         }
         IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
-            Icon(Icons.Default.Delete, contentDescription = "Remove", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+            Icon(
+                Icons.Default.Delete,
+                contentDescription = "Remove",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp)
+            )
         }
     }
 }
@@ -581,7 +806,6 @@ private fun AddCardioModal(
         onDismiss = onDismiss
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            // Type selector
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded }
@@ -619,7 +843,7 @@ private fun AddCardioModal(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             GradientButton(
                 text = "Log Cardio",
                 onClick = {

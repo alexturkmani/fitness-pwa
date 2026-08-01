@@ -23,8 +23,7 @@ import com.nexal.app.domain.model.LiftingExperience
 import com.nexal.app.domain.model.TrainingLocation
 import com.nexal.app.domain.model.UnitSystem
 import com.nexal.app.ui.components.*
-import com.nexal.app.ui.theme.Cyan500
-import com.nexal.app.ui.theme.Emerald500
+import com.nexal.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,13 +54,13 @@ fun ProfileScreen(
                     if (!uiState.editing) {
                         TextButton(onClick = { viewModel.startEditing() }) {
                             Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text("Edit")
                         }
                     } else {
                         TextButton(onClick = { viewModel.saveProfile() }) {
                             Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text("Save")
                         }
                     }
@@ -77,10 +76,12 @@ fun ProfileScreen(
             // Success banner
             if (uiState.saved) {
                 item {
-                    Surface(color = Emerald500.copy(alpha = 0.1f), shape = MaterialTheme.shapes.medium) {
-                        Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = Emerald500, modifier = Modifier.size(18.dp))
-                            Text("Profile saved successfully!", style = MaterialTheme.typography.bodyMedium, color = Emerald500, fontWeight = FontWeight.Medium)
+                    FadeSlideIn {
+                        Surface(color = SuccessGreen.copy(alpha = 0.1f), shape = MaterialTheme.shapes.medium) {
+                            Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Check, contentDescription = null, tint = SuccessGreen, modifier = Modifier.size(18.dp))
+                                Text("Profile saved successfully!", style = MaterialTheme.typography.bodyMedium, color = SuccessGreen, fontWeight = FontWeight.Medium)
+                            }
                         }
                     }
                 }
@@ -88,10 +89,11 @@ fun ProfileScreen(
 
             // Avatar & Name
             item {
+                ScalePopIn {
                 FitCard {
                     Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Surface(color = Emerald500.copy(alpha = 0.2f), shape = MaterialTheme.shapes.extraLarge, modifier = Modifier.size(64.dp)) {
-                            Icon(Icons.Default.Person, contentDescription = null, tint = Emerald500, modifier = Modifier.padding(16.dp))
+                        Surface(color = BrandBlue.copy(alpha = 0.2f), shape = MaterialTheme.shapes.extraLarge, modifier = Modifier.size(64.dp)) {
+                            Icon(Icons.Default.Person, contentDescription = null, tint = BrandBlue, modifier = Modifier.padding(16.dp))
                         }
                         if (uiState.editing) {
                             OutlinedTextField(
@@ -109,11 +111,14 @@ fun ProfileScreen(
                         }
                     }
                 }
+                }
             }
 
             // Body Stats
             item {
-                Text("Body Stats", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                FadeSlideIn(delayMs = 60) {
+                    Text("Body Stats", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                }
             }
             item {
                 FitCard {
@@ -185,8 +190,8 @@ fun ProfileScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
                             uiState.fitnessGoals.forEach { goal ->
                                 val fg = FitnessGoal.entries.find { it.name.lowercase() == goal }
-                                Surface(color = Emerald500.copy(alpha = 0.15f), shape = MaterialTheme.shapes.small) {
-                                    Text(fg?.label ?: goal, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = Emerald500)
+                                Surface(color = BrandBlue.copy(alpha = 0.15f), shape = MaterialTheme.shapes.small) {
+                                    Text(fg?.label ?: goal, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = BrandBlue)
                                 }
                             }
                         }
@@ -380,7 +385,7 @@ fun ProfileScreen(
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
                     Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text("Sign Out")
                 }
             }
@@ -394,12 +399,12 @@ fun ProfileScreen(
                         val isSelected = uiState.formActivityLevel == level.name.lowercase()
                         Surface(
                             onClick = { viewModel.updateFormField("activityLevel", level.name.lowercase()); showActivityModal = false },
-                            color = if (isSelected) Emerald500.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant,
+                            color = if (isSelected) BrandBlue.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant,
                             shape = MaterialTheme.shapes.medium,
-                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, Emerald500) else null
+                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, BrandBlue) else null
                         ) {
                             Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                                Text(level.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = if (isSelected) Emerald500 else MaterialTheme.colorScheme.onSurface)
+                                Text(level.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = if (isSelected) BrandBlue else MaterialTheme.colorScheme.onSurface)
                                 Text(level.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
@@ -417,13 +422,13 @@ fun ProfileScreen(
                         val isSelected = goal.name.lowercase() in uiState.formGoals
                         Surface(
                             onClick = { viewModel.toggleGoal(goal.name.lowercase()) },
-                            color = if (isSelected) Emerald500.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant,
+                            color = if (isSelected) BrandBlue.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant,
                             shape = MaterialTheme.shapes.medium,
-                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, Emerald500) else null
+                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, BrandBlue) else null
                         ) {
                             Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Text(goal.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = if (isSelected) Emerald500 else MaterialTheme.colorScheme.onSurface)
-                                if (isSelected) Icon(Icons.Default.Check, contentDescription = null, tint = Emerald500, modifier = Modifier.size(18.dp))
+                                Text(goal.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = if (isSelected) BrandBlue else MaterialTheme.colorScheme.onSurface)
+                                if (isSelected) Icon(Icons.Default.Check, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(18.dp))
                             }
                         }
                     }
@@ -460,12 +465,12 @@ fun ProfileScreen(
                         val isSelected = uiState.formLiftingExperience == exp.name
                         Surface(
                             onClick = { viewModel.updateFormField("liftingExperience", exp.name); showLiftingExpModal = false },
-                            color = if (isSelected) Emerald500.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant,
+                            color = if (isSelected) BrandBlue.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant,
                             shape = MaterialTheme.shapes.medium,
-                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, Emerald500) else null
+                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, BrandBlue) else null
                         ) {
                             Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                                Text(exp.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = if (isSelected) Emerald500 else MaterialTheme.colorScheme.onSurface)
+                                Text(exp.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = if (isSelected) BrandBlue else MaterialTheme.colorScheme.onSurface)
                                 Text(exp.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
@@ -482,12 +487,12 @@ fun ProfileScreen(
                         val isSelected = uiState.formTrainingLocation == loc.name
                         Surface(
                             onClick = { viewModel.updateFormField("trainingLocation", loc.name); showTrainingLocModal = false },
-                            color = if (isSelected) Emerald500.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant,
+                            color = if (isSelected) BrandBlue.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant,
                             shape = MaterialTheme.shapes.medium,
-                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, Emerald500) else null
+                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, BrandBlue) else null
                         ) {
                             Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                                Text(loc.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = if (isSelected) Emerald500 else MaterialTheme.colorScheme.onSurface)
+                                Text(loc.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = if (isSelected) BrandBlue else MaterialTheme.colorScheme.onSurface)
                                 Text(loc.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
@@ -564,7 +569,7 @@ private fun ChangePasswordModal(
             error?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             GradientButton(
                 text = "Update Password",
                 onClick = {
@@ -595,12 +600,12 @@ private fun ChangeEmailModal(
     ) {
         if (emailSent) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Surface(color = Emerald500.copy(alpha = 0.2f), shape = MaterialTheme.shapes.extraLarge, modifier = Modifier.size(56.dp)) {
-                    Icon(Icons.Default.Email, contentDescription = null, tint = Emerald500, modifier = Modifier.padding(16.dp))
+                Surface(color = BrandBlue.copy(alpha = 0.2f), shape = MaterialTheme.shapes.extraLarge, modifier = Modifier.size(56.dp)) {
+                    Icon(Icons.Default.Email, contentDescription = null, tint = BrandBlue, modifier = Modifier.padding(16.dp))
                 }
                 Text("Check your inbox", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Text("We sent a verification link to $newEmail. Click the link to confirm.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 FitButton(text = "Done", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
             }
         } else {
@@ -620,7 +625,7 @@ private fun ChangeEmailModal(
                 if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally).size(24.dp))
                 }
-                Spacer(Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 GradientButton(
                     text = "Send Verification Email",
                     onClick = { onSubmit(newEmail) },

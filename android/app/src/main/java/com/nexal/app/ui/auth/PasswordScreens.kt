@@ -1,5 +1,6 @@
 package com.nexal.app.ui.auth
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -11,6 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -19,7 +22,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nexal.app.ui.components.FadeSlideIn
+import com.nexal.app.ui.components.FitCard
 import com.nexal.app.ui.components.GradientButton
+import com.nexal.app.ui.components.ScalePopIn
 import com.nexal.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,73 +37,105 @@ fun ForgotPasswordScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var email by remember { mutableStateOf("") }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Reset Password") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Brush.verticalGradient(listOf(Emerald50, Slate50, CreamSurface)))
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    title = { Text("Reset Password") },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                )
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .imePadding()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                if (uiState.forgotPasswordSent) {
+                    ScalePopIn {
+                        Icon(Icons.Default.Email, null, modifier = Modifier.size(64.dp), tint = BrandBlue)
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    FadeSlideIn(delayMs = 80) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                "Check Your Email",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "We've sent a password reset link to your email. Please check your inbox.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    FadeSlideIn {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                "Forgot your password?",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "Enter your email and we'll send you a link to reset it.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(28.dp))
+
+                    ScalePopIn(delayMs = 80) {
+                        FitCard(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                OutlinedTextField(
+                                    value = email,
+                                    onValueChange = { email = it },
+                                    label = { Text("Email") },
+                                    leadingIcon = { Icon(Icons.Default.Email, null, tint = BrandBlue) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                                    singleLine = true,
+                                    shape = MaterialTheme.shapes.medium
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                if (uiState.error != null) {
+                                    Text(uiState.error!!, color = ErrorRed, style = MaterialTheme.typography.bodySmall)
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                }
+
+                                GradientButton(
+                                    text = "Send Reset Link",
+                                    onClick = { viewModel.forgotPassword(email) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    loading = uiState.isLoading,
+                                    enabled = email.isNotBlank()
+                                )
+                            }
+                        }
                     }
                 }
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .imePadding()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            if (uiState.forgotPasswordSent) {
-                Icon(Icons.Default.Email, null, modifier = Modifier.size(64.dp), tint = Emerald500)
-                Spacer(Modifier.height(16.dp))
-                Text("Check Your Email", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "We've sent a password reset link to your email. Please check your inbox.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-            } else {
-                Text("Forgot your password?", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Enter your email and we'll send you a link to reset it.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(Modifier.height(32.dp))
-
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email") },
-                    leadingIcon = { Icon(Icons.Default.Email, null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.medium
-                )
-                Spacer(Modifier.height(16.dp))
-
-                if (uiState.error != null) {
-                    Text(uiState.error!!, color = ErrorRed, style = MaterialTheme.typography.bodySmall)
-                    Spacer(Modifier.height(12.dp))
-                }
-
-                GradientButton(
-                    text = "Send Reset Link",
-                    onClick = { viewModel.forgotPassword(email) },
-                    modifier = Modifier.fillMaxWidth(),
-                    loading = uiState.isLoading,
-                    enabled = email.isNotBlank()
-                )
             }
         }
     }
@@ -119,67 +157,89 @@ fun ResetPasswordScreen(
         if (uiState.resetPasswordSuccess) onSuccess()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Set New Password") })
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .imePadding()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text("Create a new password", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(32.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("New Password") },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = "Toggle password visibility"
-                        )
-                    }
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                singleLine = true,
-                shape = MaterialTheme.shapes.medium
-            )
-            Spacer(Modifier.height(12.dp))
-            OutlinedTextField(
-                value = confirmPassword,
-                onValueChange = { confirmPassword = it },
-                label = { Text("Confirm Password") },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                singleLine = true,
-                shape = MaterialTheme.shapes.medium,
-                isError = confirmPassword.isNotBlank() && password != confirmPassword
-            )
-            Spacer(Modifier.height(16.dp))
-
-            if (uiState.error != null) {
-                Text(uiState.error!!, color = ErrorRed, style = MaterialTheme.typography.bodySmall)
-                Spacer(Modifier.height(12.dp))
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Brush.verticalGradient(listOf(Emerald50, Slate50, CreamSurface)))
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    title = { Text("Set New Password") },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                )
             }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .imePadding()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                FadeSlideIn {
+                    Text(
+                        "Create a new password",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(28.dp))
 
-            GradientButton(
-                text = "Reset Password",
-                onClick = { viewModel.resetPassword(token, password) },
-                modifier = Modifier.fillMaxWidth(),
-                loading = uiState.isLoading,
-                enabled = password.length >= 8 && password == confirmPassword
-            )
+                ScalePopIn(delayMs = 80) {
+                    FitCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            OutlinedTextField(
+                                value = password,
+                                onValueChange = { password = it },
+                                label = { Text("New Password") },
+                                modifier = Modifier.fillMaxWidth(),
+                                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                                trailingIcon = {
+                                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                        Icon(
+                                            if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                            contentDescription = "Toggle password visibility"
+                                        )
+                                    }
+                                },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                singleLine = true,
+                                shape = MaterialTheme.shapes.medium
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            OutlinedTextField(
+                                value = confirmPassword,
+                                onValueChange = { confirmPassword = it },
+                                label = { Text("Confirm Password") },
+                                modifier = Modifier.fillMaxWidth(),
+                                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                singleLine = true,
+                                shape = MaterialTheme.shapes.medium,
+                                isError = confirmPassword.isNotBlank() && password != confirmPassword
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            if (uiState.error != null) {
+                                Text(uiState.error!!, color = ErrorRed, style = MaterialTheme.typography.bodySmall)
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
+
+                            GradientButton(
+                                text = "Reset Password",
+                                onClick = { viewModel.resetPassword(token, password) },
+                                modifier = Modifier.fillMaxWidth(),
+                                loading = uiState.isLoading,
+                                enabled = password.length >= 8 && password == confirmPassword
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

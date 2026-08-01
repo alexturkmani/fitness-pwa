@@ -19,14 +19,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nexal.app.data.repository.PlanType
 import com.nexal.app.ui.components.*
@@ -41,7 +39,6 @@ fun SubscriptionScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    // Handle one-shot events (open URLs)
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
@@ -73,160 +70,167 @@ fun SubscriptionScreen(
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Status banner
-            Surface(
-                color = if (uiState.isActive)
-                    Emerald500.copy(alpha = 0.1f)
-                else
-                    Color(0xFFF59E0B).copy(alpha = 0.08f),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+            ScalePopIn {
+                Surface(
+                    color = if (uiState.isActive)
+                        SuccessGreen.copy(alpha = 0.1f)
+                    else
+                        WarningAmber.copy(alpha = 0.08f),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (uiState.isActive) Brush.horizontalGradient(listOf(Emerald500, Cyan500))
-                                else Brush.horizontalGradient(listOf(Color(0xFFF59E0B), Color(0xFFEF4444)))
-                            ),
-                        contentAlignment = Alignment.Center
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            if (uiState.isActive) Icons.Default.WorkspacePremium else Icons.Default.Lock,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (uiState.isActive) SuccessGreen
+                                    else WarningAmber
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                if (uiState.isActive) Icons.Default.WorkspacePremium else Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
 
-                    Spacer(Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
-                        if (uiState.isActive) "Premium Active" else "No Active Subscription",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-
-                    if (!uiState.isActive) {
-                        Spacer(Modifier.height(4.dp))
                         Text(
-                            "Unlock all premium features",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            if (uiState.isActive) "Premium Active" else "No Active Subscription",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center
                         )
+
+                        if (!uiState.isActive) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Unlock all premium features",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Features grid
-            Text(
-                "What You Get",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.Start)
-            )
-            Spacer(Modifier.height(12.dp))
-
-            // Feature cards in a 2-column grid
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                FeatureCard("AI Workouts", "Personalized plans", Icons.Default.FitnessCenter, Emerald500, Modifier.weight(1f))
-                FeatureCard("AI Meal Plans", "Macro-optimized", Icons.Default.Restaurant, Cyan500, Modifier.weight(1f))
-            }
-            Spacer(Modifier.height(10.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                FeatureCard("Scanner", "Barcode lookup", Icons.Default.QrCodeScanner, Color(0xFFF59E0B), Modifier.weight(1f))
-                FeatureCard("Progress", "Charts & trends", Icons.Default.BarChart, Color(0xFF8B5CF6), Modifier.weight(1f))
-            }
-            Spacer(Modifier.height(10.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                FeatureCard("Substitutions", "AI food swaps", Icons.Default.SwapHoriz, Color(0xFFEC4899), Modifier.weight(1f))
-                FeatureCard("Custom", "Your exercises", Icons.Default.Edit, Color(0xFF06B6D4), Modifier.weight(1f))
-            }
-
-            Spacer(Modifier.height(32.dp))
-
-            // CTA section
-            if (!uiState.isActive) {
-                // Plan selector
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    PlanOption(
-                        label = "Monthly",
-                        price = "\$12.99",
-                        period = "/month",
-                        selected = uiState.selectedPlan == PlanType.MONTHLY,
-                        badge = null,
-                        onClick = { viewModel.selectPlan(PlanType.MONTHLY) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    PlanOption(
-                        label = "Yearly",
-                        price = "\$110",
-                        period = "/year",
-                        selected = uiState.selectedPlan == PlanType.YEARLY,
-                        badge = "Save 29%",
-                        onClick = { viewModel.selectPlan(PlanType.YEARLY) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Spacer(Modifier.height(20.dp))
-
-                GradientButton(
-                    text = if (uiState.hasFreeTrial) "Start Free Trial" else "Subscribe Now",
-                    onClick = { viewModel.purchase(context as Activity) },
-                    modifier = Modifier.fillMaxWidth(),
-                    loading = uiState.isLoading
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    if (uiState.hasFreeTrial) "Free trial included. Cancel anytime."
-                    else "${if (uiState.selectedPlan == PlanType.MONTHLY) uiState.monthlyPriceText else uiState.yearlyPriceText}. Cancel anytime.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            } else {
-                OutlinedButton(
-                    onClick = { viewModel.manageSubscription() },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Default.Settings, null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Manage Subscription")
-                }
-            }
-
-            uiState.error?.let { error ->
-                Spacer(Modifier.height(12.dp))
-                Surface(
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+            FadeSlideIn(delayMs = 80) {
+                Column {
                     Text(
-                        error,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(12.dp)
+                        "What You Get",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.Start)
                     )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        FeatureCard("AI Workouts", "Personalized plans", Icons.Default.FitnessCenter, BrandBlue, Modifier.weight(1f))
+                        FeatureCard("AI Meal Plans", "Macro-optimized", Icons.Default.Restaurant, Cyan500, Modifier.weight(1f))
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        FeatureCard("Scanner", "Barcode lookup", Icons.Default.QrCodeScanner, MacroCarbs, Modifier.weight(1f))
+                        FeatureCard("Progress", "Charts & trends", Icons.Default.BarChart, MacroFat, Modifier.weight(1f))
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        FeatureCard("Substitutions", "AI food swaps", Icons.Default.SwapHoriz, BrandBlueDark, Modifier.weight(1f))
+                        FeatureCard("Custom", "Your exercises", Icons.Default.Edit, Cyan600, Modifier.weight(1f))
+                    }
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+
+            FadeSlideIn(delayMs = 140) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (!uiState.isActive) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            PlanOption(
+                                label = "Monthly",
+                                price = "\$12.99",
+                                period = "/month",
+                                selected = uiState.selectedPlan == PlanType.MONTHLY,
+                                badge = null,
+                                onClick = { viewModel.selectPlan(PlanType.MONTHLY) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            PlanOption(
+                                label = "Yearly",
+                                price = "\$110",
+                                period = "/year",
+                                selected = uiState.selectedPlan == PlanType.YEARLY,
+                                badge = "Save 29%",
+                                onClick = { viewModel.selectPlan(PlanType.YEARLY) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        GradientButton(
+                            text = if (uiState.hasFreeTrial) "Start Free Trial" else "Subscribe Now",
+                            onClick = { viewModel.purchase(context as Activity) },
+                            modifier = Modifier.fillMaxWidth(),
+                            loading = uiState.isLoading
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            if (uiState.hasFreeTrial) "Free trial included. Cancel anytime."
+                            else "${if (uiState.selectedPlan == PlanType.MONTHLY) uiState.monthlyPriceText else uiState.yearlyPriceText}. Cancel anytime.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        OutlinedButton(
+                            onClick = { viewModel.manageSubscription() },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = BrandBlue),
+                            border = BorderStroke(1.5.dp, BrandBlue)
+                        ) {
+                            Icon(Icons.Default.Settings, null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Manage Subscription")
+                        }
+                    }
+
+                    uiState.error?.let { error ->
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                error,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -257,7 +261,7 @@ private fun FeatureCard(
             ) {
                 Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
             }
-            Spacer(Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
             Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -274,8 +278,8 @@ private fun PlanOption(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val borderColor = if (selected) Emerald500 else MaterialTheme.colorScheme.outlineVariant
-    val bgColor = if (selected) Emerald500.copy(alpha = 0.08f) else Color.Transparent
+    val borderColor = if (selected) BrandBlue else MaterialTheme.colorScheme.outlineVariant
+    val bgColor = if (selected) BrandBlue.copy(alpha = 0.08f) else Color.Transparent
 
     Surface(
         shape = RoundedCornerShape(16.dp),
@@ -293,12 +297,12 @@ private fun PlanOption(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     price,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = if (selected) Emerald500 else MaterialTheme.colorScheme.onSurface
+                    color = if (selected) BrandBlue else MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     period,
@@ -309,7 +313,7 @@ private fun PlanOption(
 
             if (badge != null) {
                 Surface(
-                    color = Emerald500,
+                    color = BrandBlue,
                     shape = RoundedCornerShape(bottomStart = 8.dp, topEnd = 16.dp),
                     modifier = Modifier.align(Alignment.TopEnd)
                 ) {

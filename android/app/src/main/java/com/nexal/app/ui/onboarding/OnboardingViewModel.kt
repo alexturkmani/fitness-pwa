@@ -2,11 +2,17 @@ package com.nexal.app.ui.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nexal.app.data.repository.AiRepository
+import com.nexal.app.data.repository.NutritionRepository
 import com.nexal.app.data.repository.ProfileRepository
+import com.nexal.app.data.repository.WorkoutRepository
 import com.nexal.app.domain.model.*
+import com.nexal.app.util.Resource
 import com.nexal.app.util.generateId
 import com.nexal.app.util.todayFormatted
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,12 +37,17 @@ data class OnboardingUiState(
     val trainingLocation: TrainingLocation = TrainingLocation.GYM,
     val unitSystem: UnitSystem = UnitSystem.METRIC,
     val isSaving: Boolean = false,
+    val generatingPlans: Boolean = false,
+    val statusMessage: String = "",
     val completed: Boolean = false
 )
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val aiRepository: AiRepository,
+    private val workoutRepository: WorkoutRepository,
+    private val nutritionRepository: NutritionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
@@ -68,7 +79,13 @@ class OnboardingViewModel @Inject constructor(
 
     fun completeOnboarding() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isSaving = true) }
+            _uiState.update {
+                it.copy(
+                    isSaving = true,
+                    generatingPlans = true,
+                    statusMessage = "Saving your profile…"
+                )
+            }
             val state = _uiState.value
             val now = todayFormatted()
             val profile = UserProfile(
@@ -92,7 +109,36 @@ class OnboardingViewModel @Inject constructor(
                 updatedAt = now
             )
             profileRepository.saveProfile(profile)
-            _uiState.update { it.copy(isSaving = false, completed = true) }
+
+            _uiState.update { it.copy(statusMessage = "Creating your AI workout & meal plans…") }
+
+            coroutineScope {
+                val workoutDeferred = async {
+                    aiRepository.generateWorkoutPlan(profile = profile, workoutStyle = profile.workoutStyle)
+                }
+                val mealDeferred = async {
+                    aiRepository.generateMealPlan(profile = profile, allergies = emptyList())
+                }
+                when (val workout = workoutDeferred.await()) {
+                    is Resource.Success -> workoutRepository.savePlan(workout.data)
+                    is Resource.Error -> { /* continue; user can regenerate */ }
+                    is Resource.Loading -> {}
+                }
+                when (val meal = mealDeferred.await()) {
+                    is Resource.Success -> nutritionRepository.saveMealPlan(meal.data)
+                    is Resource.Error -> {}
+                    is Resource.Loading -> {}
+                }
+            }
+
+            _uiState.update {
+                it.copy(
+                    isSaving = false,
+                    generatingPlans = false,
+                    statusMessage = "",
+                    completed = true
+                )
+            }
         }
     }
 }

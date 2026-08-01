@@ -18,14 +18,14 @@ if (localFile.exists()) {
 
 android {
     namespace = "com.nexal.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.nexal.app"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 3
-        versionName = "1.0.2"
+        targetSdk = 36
+        versionCode = 126
+        versionName = "1.4.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -133,8 +133,8 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:functions-kt")
     implementation("io.ktor:ktor-client-okhttp:3.0.3")
 
-    // Google Play Billing
-    implementation("com.android.billingclient:billing-ktx:7.1.1")
+    // Google Play Billing (Play requires 8.0.0+ from 31 Aug 2026)
+    implementation("com.android.billingclient:billing-ktx:8.0.0")
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")

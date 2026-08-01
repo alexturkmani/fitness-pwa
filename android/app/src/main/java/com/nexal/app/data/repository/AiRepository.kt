@@ -21,7 +21,44 @@ class AiRepository @Inject constructor(
 ) {
     private suspend fun callFunction(name: String, bodyObj: JsonObject): String {
         val response = functions.invoke(name, body = bodyObj)
-        return response.body<String>()
+        val text = response.body<String>()
+        throwIfFunctionError(text)
+        return text
+    }
+
+    private fun throwIfFunctionError(text: String) {
+        val trimmed = text.trim()
+        if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+            throw IllegalStateException(trimmed.ifBlank { "Empty AI response" })
+        }
+        runCatching {
+            val element = json.parseToJsonElement(trimmed)
+            val obj = element as? JsonObject ?: return
+            val error = obj["error"]?.jsonPrimitive?.contentOrNull
+            if (!error.isNullOrBlank() && obj.keys.size <= 3 && !obj.containsKey("days") && !obj.containsKey("meals")) {
+                throw IllegalStateException(error)
+            }
+        }
+    }
+
+    private fun UserProfile.toAiJson(): JsonObject = buildJsonObject {
+        put("id", id)
+        put("name", name)
+        put("weight", weight)
+        put("height", height)
+        put("age", age)
+        put("gender", gender.name.lowercase())
+        put("activityLevel", activityLevel.name.lowercase())
+        put("fitnessGoals", JsonArray(fitnessGoals.map { JsonPrimitive(it.name.lowercase()) }))
+        put("targetWeight", targetWeight)
+        put("intervalWeeks", intervalWeeks)
+        put("gymDaysPerWeek", gymDaysPerWeek)
+        put("workoutStyle", workoutStyle.name.lowercase())
+        put("liftingExperience", liftingExperience.name.lowercase())
+        put("trainingLocation", trainingLocation.name.lowercase())
+        put("unitSystem", unitSystem.name.lowercase())
+        put("allergies", JsonArray(allergies.map { JsonPrimitive(it) }))
+        put("onboardingCompleted", onboardingCompleted)
     }
 
     suspend fun generateWorkoutPlan(
@@ -33,7 +70,7 @@ class AiRepository @Inject constructor(
     ): Resource<WorkoutPlan> {
         return try {
             val bodyObj = buildJsonObject {
-                put("profile", json.encodeToJsonElement(profile))
+                put("profile", profile.toAiJson())
                 if (previousLogs != null) put("previousLogs", json.encodeToJsonElement(previousLogs))
                 if (assessment != null) put("assessment", JsonPrimitive(assessment))
                 put("currentInterval", JsonPrimitive(currentInterval))
@@ -42,7 +79,7 @@ class AiRepository @Inject constructor(
             val text = callFunction("ai-workout", bodyObj)
             Resource.Success(json.decodeFromString<WorkoutPlan>(text))
         } catch (e: Exception) {
-            Resource.Error(e.message ?: "Network error")
+            Resource.Error(friendlyAiError(e))
         }
     }
 
@@ -52,13 +89,13 @@ class AiRepository @Inject constructor(
     ): Resource<MealPlan> {
         return try {
             val bodyObj = buildJsonObject {
-                put("profile", json.encodeToJsonElement(profile))
+                put("profile", profile.toAiJson())
                 if (allergies != null) put("allergies", json.encodeToJsonElement(allergies))
             }
             val text = callFunction("ai-meal", bodyObj)
             Resource.Success(json.decodeFromString<MealPlan>(text))
         } catch (e: Exception) {
-            Resource.Error(e.message ?: "Network error")
+            Resource.Error(friendlyAiError(e))
         }
     }
 
@@ -79,7 +116,7 @@ class AiRepository @Inject constructor(
             val result = json.decodeFromString<MealSubstituteResponseDto>(text)
             Resource.Success(result.substitutions)
         } catch (e: Exception) {
-            Resource.Error(e.message ?: "Network error")
+            Resource.Error(friendlyAiError(e))
         }
     }
 
@@ -95,7 +132,7 @@ class AiRepository @Inject constructor(
             val text = callFunction("ai-food-lookup", bodyObj)
             Resource.Success(json.decodeFromString<MacroNutrients>(text))
         } catch (e: Exception) {
-            Resource.Error(e.message ?: "Network error")
+            Resource.Error(friendlyAiError(e))
         }
     }
 
@@ -120,7 +157,7 @@ class AiRepository @Inject constructor(
             val result = json.decodeFromString<ExerciseSuggestionsResponseDto>(text)
             Resource.Success(result.suggestions)
         } catch (e: Exception) {
-            Resource.Error(e.message ?: "Network error")
+            Resource.Error(friendlyAiError(e))
         }
     }
 
@@ -129,10 +166,12 @@ class AiRepository @Inject constructor(
             val bodyObj = buildJsonObject {
                 put("barcode", JsonPrimitive(barcode))
             }
-            val text = callFunction("nutrition-lookup", bodyObj)
+            // Live function currently reads query params; body support ships on next deploy.
+            val encoded = java.net.URLEncoder.encode(barcode, Charsets.UTF_8.name())
+            val text = callFunction("nutrition-lookup?barcode=$encoded", bodyObj)
             Resource.Success(json.decodeFromString<ScannedProduct>(text))
         } catch (e: Exception) {
-            Resource.Error(e.message ?: "Network error")
+            Resource.Error(friendlyAiError(e))
         }
     }
 
@@ -160,7 +199,22 @@ class AiRepository @Inject constructor(
             } ?: emptyList()
             Resource.Success(FoodAssessment(assessment, alternatives))
         } catch (e: Exception) {
-            Resource.Error(e.message ?: "Network error")
+            Resource.Error(friendlyAiError(e))
+        }
+    }
+
+    private fun friendlyAiError(e: Exception): String {
+        val raw = e.message?.trim().orEmpty()
+        return when {
+            raw.contains("GEMINI_API_KEY", ignoreCase = true) ||
+                raw.contains("not configured", ignoreCase = true) ->
+                "AI is not configured on the server. Please try again later."
+            raw.contains("timed out", ignoreCase = true) ->
+                "AI took too long. Please try again."
+            raw.contains("temporarily unavailable", ignoreCase = true) ->
+                "AI is temporarily unavailable. Please try again in a minute."
+            raw.isNotBlank() && raw.length < 220 && !raw.contains("JsonDecoding") -> raw
+            else -> "Couldn't generate a plan. Check your connection and try again."
         }
     }
 }

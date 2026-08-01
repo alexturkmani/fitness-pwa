@@ -2,15 +2,20 @@ package com.nexal.app.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nexal.app.data.repository.AiRepository
 import com.nexal.app.data.repository.AuthRepository
 import com.nexal.app.data.repository.NutritionRepository
 import com.nexal.app.data.repository.ProfileRepository
 import com.nexal.app.data.repository.WorkoutRepository
 import com.nexal.app.domain.model.AuthState
 import com.nexal.app.domain.model.UnitSystem
-import com.nexal.app.util.formatDate
+import com.nexal.app.util.Resource
+import com.nexal.app.util.calculateMacroTargets
 import com.nexal.app.util.calculateDailyWaterIntakeMl
+import com.nexal.app.util.formatDate
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -26,13 +31,22 @@ data class DashboardUiState(
     val weightChange: Double = 0.0,
     val todayWorkout: String? = null,
     val showTrialExpiredBanner: Boolean = false,
-    // Water
     val waterTotalMl: Int = 0,
     val waterGoalMl: Int = 2500,
-    // Cardio
     val cardioCaloriesToday: Int = 0,
-    // Units
-    val unitSystem: UnitSystem = UnitSystem.METRIC
+    val unitSystem: UnitSystem = UnitSystem.METRIC,
+    val caloriesToday: Int = 0,
+    val proteinToday: Int = 0,
+    val carbsToday: Int = 0,
+    val fatsToday: Int = 0,
+    val calorieGoal: Int = 2000,
+    val proteinGoal: Int = 150,
+    val carbsGoal: Int = 200,
+    val fatsGoal: Int = 65,
+    val hasWorkoutPlan: Boolean = false,
+    val hasMealPlan: Boolean = false,
+    val isGeneratingPlans: Boolean = false,
+    val firstWinMessage: String? = null
 )
 
 @HiltViewModel
@@ -40,7 +54,8 @@ class DashboardViewModel @Inject constructor(
     private val profileRepo: ProfileRepository,
     private val workoutRepo: WorkoutRepository,
     private val nutritionRepo: NutritionRepository,
-    private val authRepo: AuthRepository
+    private val authRepo: AuthRepository,
+    private val aiRepo: AiRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -51,31 +66,30 @@ class DashboardViewModel @Inject constructor(
     }
 
     private fun loadDashboard() {
-        // Check subscription status
         viewModelScope.launch {
             authRepo.authState.collect { state ->
                 if (state is AuthState.Authenticated) {
-                    val showExpired = !state.subscriptionActive
-
-                    _uiState.update {
-                        it.copy(showTrialExpiredBanner = showExpired)
-                    }
+                    _uiState.update { it.copy(showTrialExpiredBanner = !state.subscriptionActive) }
                 }
             }
         }
 
         viewModelScope.launch {
-            // Observe profile
             profileRepo.observeProfile().collect { profile ->
                 if (profile != null) {
                     val waterGoal = calculateDailyWaterIntakeMl(profile.weight, profile.activityLevel)
+                    val macros = calculateMacroTargets(profile)
                     _uiState.update {
                         it.copy(
                             userName = profile.name,
                             onboardingCompleted = profile.onboardingCompleted,
                             currentWeight = profile.weight,
                             waterGoalMl = waterGoal,
-                            unitSystem = profile.unitSystem
+                            unitSystem = profile.unitSystem,
+                            calorieGoal = macros.calories,
+                            proteinGoal = macros.protein,
+                            carbsGoal = macros.carbs,
+                            fatsGoal = macros.fats
                         )
                     }
                 }
@@ -83,35 +97,44 @@ class DashboardViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            // Observe workout plans for today's workout
             workoutRepo.observePlans().collect { plans ->
-                val today = LocalDate.now()
-                val todayDayOfWeek = today.dayOfWeek.value // 1=Monday..7=Sunday
+                val todayDayOfWeek = LocalDate.now().dayOfWeek.value
                 val latestPlan = plans.firstOrNull()
-                if (latestPlan != null) {
-                    val todayWorkout = latestPlan.days.find { it.dayNumber == todayDayOfWeek }
-                    _uiState.update {
-                        it.copy(todayWorkout = if (todayWorkout?.isRestDay == true) "Rest Day 🧘" else todayWorkout?.dayLabel)
-                    }
+                val todayWorkout = latestPlan?.days?.find { it.dayNumber == todayDayOfWeek }
+                _uiState.update {
+                    it.copy(
+                        hasWorkoutPlan = latestPlan != null,
+                        todayWorkout = when {
+                            latestPlan == null -> null
+                            todayWorkout?.isRestDay == true -> "Rest Day"
+                            else -> todayWorkout?.dayLabel
+                        }
+                    )
                 }
             }
         }
 
         viewModelScope.launch {
-            // Count this week's workout logs
+            nutritionRepo.observeMealPlans().collect { plans ->
+                _uiState.update { it.copy(hasMealPlan = plans.isNotEmpty()) }
+            }
+        }
+
+        viewModelScope.launch {
             workoutRepo.observeLogs().collect { logs ->
                 val startOfWeek = LocalDate.now().with(DayOfWeek.MONDAY)
                 val count = logs.count {
                     try {
                         LocalDate.parse(it.date) >= startOfWeek
-                    } catch (_: Exception) { false }
+                    } catch (_: Exception) {
+                        false
+                    }
                 }
                 _uiState.update { it.copy(workoutsThisWeek = count) }
             }
         }
 
         viewModelScope.launch {
-            // Weight change from weight entries
             nutritionRepo.observeRecentWeightEntries(30).collect { entries ->
                 if (entries.size >= 2) {
                     val latest = entries.first().weight
@@ -129,7 +152,6 @@ class DashboardViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            // Average daily calories (last 7 days)
             val today = LocalDate.now()
             val sevenDaysAgo = today.minusDays(6)
             nutritionRepo.observeFoodLogByDateRange(formatDate(sevenDaysAgo), formatDate(today)).collect { entries ->
@@ -141,22 +163,79 @@ class DashboardViewModel @Inject constructor(
             }
         }
 
-        // Water intake today
         viewModelScope.launch {
             val todayStr = formatDate(LocalDate.now())
-            nutritionRepo.observeWaterLogByDate(todayStr).collect { entries ->
-                val total = entries.sumOf { it.amount }
-                _uiState.update { it.copy(waterTotalMl = total) }
+            nutritionRepo.observeFoodLogByDate(todayStr).collect { entries ->
+                val calories = entries.sumOf { it.macros.calories * it.quantity }
+                val protein = entries.sumOf { it.macros.protein * it.quantity }
+                val carbs = entries.sumOf { it.macros.carbs * it.quantity }
+                val fats = entries.sumOf { it.macros.fats * it.quantity }
+                _uiState.update {
+                    it.copy(
+                        caloriesToday = calories,
+                        proteinToday = protein,
+                        carbsToday = carbs,
+                        fatsToday = fats
+                    )
+                }
             }
         }
 
-        // Cardio calories today
+        viewModelScope.launch {
+            val todayStr = formatDate(LocalDate.now())
+            nutritionRepo.observeWaterLogByDate(todayStr).collect { entries ->
+                _uiState.update { it.copy(waterTotalMl = entries.sumOf { e -> e.amount }) }
+            }
+        }
+
         viewModelScope.launch {
             val todayStr = formatDate(LocalDate.now())
             nutritionRepo.observeCardioLogByDate(todayStr).collect { entries ->
-                val total = entries.sumOf { it.estimatedCaloriesBurnt }
-                _uiState.update { it.copy(cardioCaloriesToday = total) }
+                _uiState.update {
+                    it.copy(cardioCaloriesToday = entries.sumOf { e -> e.estimatedCaloriesBurnt })
+                }
             }
         }
+    }
+
+    fun generateStarterPlans() {
+        viewModelScope.launch {
+            val profile = profileRepo.getProfile()
+            if (profile == null || !profile.onboardingCompleted) {
+                _uiState.update { it.copy(firstWinMessage = "Complete onboarding first") }
+                return@launch
+            }
+            _uiState.update {
+                it.copy(isGeneratingPlans = true, firstWinMessage = "Creating your AI workout & meal plans…")
+            }
+            coroutineScope {
+                val workoutJob = async {
+                    aiRepo.generateWorkoutPlan(profile = profile, workoutStyle = profile.workoutStyle)
+                }
+                val mealJob = async {
+                    aiRepo.generateMealPlan(profile = profile, allergies = profile.allergies)
+                }
+                when (val w = workoutJob.await()) {
+                    is Resource.Success -> workoutRepo.savePlan(w.data)
+                    is Resource.Error -> {}
+                    is Resource.Loading -> {}
+                }
+                when (val m = mealJob.await()) {
+                    is Resource.Success -> nutritionRepo.saveMealPlan(m.data)
+                    is Resource.Error -> {}
+                    is Resource.Loading -> {}
+                }
+            }
+            _uiState.update {
+                it.copy(
+                    isGeneratingPlans = false,
+                    firstWinMessage = "Your plans are ready — open Workouts & Meals"
+                )
+            }
+        }
+    }
+
+    fun clearFirstWinMessage() {
+        _uiState.update { it.copy(firstWinMessage = null) }
     }
 }

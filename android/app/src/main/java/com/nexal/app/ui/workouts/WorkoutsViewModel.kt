@@ -71,7 +71,13 @@ class WorkoutsViewModel @Inject constructor(
 
     fun generatePlan() {
         viewModelScope.launch {
-            val profile = profileRepo.getProfile() ?: return@launch
+            val profile = profileRepo.getProfile()
+            if (profile == null || !profile.onboardingCompleted) {
+                _uiState.update {
+                    it.copy(error = "Complete onboarding first so we can personalize your plan.")
+                }
+                return@launch
+            }
             _uiState.update { it.copy(isGenerating = true, error = null) }
             when (val result = aiRepo.generateWorkoutPlan(
                 profile = profile,
@@ -79,7 +85,7 @@ class WorkoutsViewModel @Inject constructor(
             )) {
                 is Resource.Success -> {
                     workoutRepo.savePlan(result.data)
-                    _uiState.update { it.copy(isGenerating = false) }
+                    _uiState.update { it.copy(isGenerating = false, error = null) }
                 }
                 is Resource.Error -> {
                     _uiState.update { it.copy(isGenerating = false, error = result.message) }
@@ -87,6 +93,10 @@ class WorkoutsViewModel @Inject constructor(
                 is Resource.Loading -> {}
             }
         }
+    }
+
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
     }
 
     fun deletePlan() {

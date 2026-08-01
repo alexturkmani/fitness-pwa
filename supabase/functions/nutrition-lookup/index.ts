@@ -6,10 +6,23 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const barcode = url.searchParams.get("barcode");
+    let barcode = url.searchParams.get("barcode");
+
+    // Android client POSTs JSON body { barcode }; also accept query for older callers
+    if (!barcode && req.method !== "GET") {
+      try {
+        const body = await req.json();
+        barcode = body?.barcode ? String(body.barcode) : null;
+      } catch {
+        // ignore empty/invalid body
+      }
+    }
+
     if (!barcode) return errorResponse("Barcode parameter is required", 400);
 
-    const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json`);
+    const response = await fetch(
+      `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json`,
+    );
     if (!response.ok) return errorResponse("Product not found", 404);
 
     const data = await response.json();

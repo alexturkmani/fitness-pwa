@@ -51,10 +51,14 @@ fun WorkoutsScreen(
                 description = "Generate an AI-powered workout plan tailored to your goals.",
                 actionLabel = "Generate Plan",
                 onAction = { viewModel.generatePlan() },
-                modifier = Modifier.padding(paddingValues)
+                modifier = Modifier.padding(paddingValues),
+                error = uiState.error
             )
         } else if (uiState.isGenerating) {
-            LoadingScreen("Generating your personalized workout plan...")
+            LoadingScreen(
+                message = "Generating your personalized workout plan...",
+                modifier = Modifier.padding(paddingValues)
+            )
         } else {
             LazyColumn(
                 modifier = Modifier
@@ -63,17 +67,33 @@ fun WorkoutsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
+                uiState.error?.let { err ->
+                    item {
+                        FitCard(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                err,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
+
                 // AI Notes
                 if (uiState.aiNotes.isNotBlank()) {
                     item {
-                        FitCard(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text("AI Coach Notes", style = MaterialTheme.typography.labelMedium, color = Emerald500)
-                                Spacer(Modifier.height(4.dp))
-                                Text(uiState.aiNotes, style = MaterialTheme.typography.bodySmall)
+                        FadeSlideIn {
+                            FitCard(modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text("AI Coach Notes", style = MaterialTheme.typography.labelMedium, color = BrandBlue)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(uiState.aiNotes, style = MaterialTheme.typography.bodySmall)
+                                }
                             }
                         }
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                     }
                 }
 
@@ -101,7 +121,7 @@ fun WorkoutsScreen(
                             )
                         }
                     }
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
 
                 // Selected day exercises
@@ -122,7 +142,7 @@ fun WorkoutsScreen(
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
 
                         items(selectedDay.exercises) { exercise ->
@@ -133,7 +153,7 @@ fun WorkoutsScreen(
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.SemiBold
                                     )
-                                    Spacer(Modifier.height(4.dp))
+                                    Spacer(modifier = Modifier.height(4.dp))
                                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                         Text(
                                             "${exercise.sets} sets × ${exercise.reps}",
@@ -147,7 +167,7 @@ fun WorkoutsScreen(
                                         )
                                     }
                                     if (!exercise.notes.isNullOrBlank()) {
-                                        Spacer(Modifier.height(4.dp))
+                                        Spacer(modifier = Modifier.height(4.dp))
                                         Text(
                                             exercise.notes!!,
                                             style = MaterialTheme.typography.bodySmall,
@@ -156,11 +176,11 @@ fun WorkoutsScreen(
                                     }
                                 }
                             }
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
 
                         item {
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             GradientButton(
                                 text = "Start Workout",
                                 onClick = {
@@ -175,7 +195,7 @@ fun WorkoutsScreen(
                 }
 
                 item {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     FitButton(
                         text = "Delete Plan",
                         onClick = { viewModel.deletePlan() },
@@ -188,13 +208,13 @@ fun WorkoutsScreen(
                 // Workout History section
                 if (uiState.workoutLogs.isNotEmpty()) {
                     item {
-                        Spacer(Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
                         Text(
                             "Workout History",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                     items(uiState.workoutLogs.take(20)) { log ->
                         val label = log.dayLabel.ifBlank {
@@ -205,7 +225,7 @@ fun WorkoutsScreen(
                             dayLabel = label,
                             onClick = { viewModel.showLogDetail(log) }
                         )
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                     }
                 }
             }
@@ -237,7 +257,7 @@ private fun WorkoutLogCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Default.CheckCircle, null, tint = Emerald500, modifier = Modifier.size(24.dp))
-            Spacer(Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(dayLabel, fontWeight = FontWeight.SemiBold)
                 Text(
@@ -260,7 +280,7 @@ private fun WorkoutLogCard(
                     )
                 }
             }
-            Spacer(Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(4.dp))
             Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -279,11 +299,11 @@ private fun WorkoutLogDetailModal(
     ) {
         if (log.duration != null && log.duration > 0) {
             Text("Duration: ${log.duration} minutes", style = MaterialTheme.typography.bodyMedium, color = Emerald500)
-            Spacer(Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
         log.exercises.forEach { exercise ->
             Text(exercise.exerciseName, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleSmall)
-            Spacer(Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             exercise.sets.forEach { set ->
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(start = 8.dp, bottom = 2.dp),
@@ -302,13 +322,13 @@ private fun WorkoutLogDetailModal(
                     }
                 }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
         if (!log.notes.isNullOrBlank()) {
             Text("Notes", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleSmall)
             Text(log.notes, style = MaterialTheme.typography.bodySmall)
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         FitButton(
             text = "Close",
             onClick = onDismiss,

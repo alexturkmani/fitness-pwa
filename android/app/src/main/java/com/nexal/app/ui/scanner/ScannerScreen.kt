@@ -10,7 +10,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -28,11 +27,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nexal.app.domain.model.FoodAlternative
-import com.nexal.app.domain.model.FoodAssessment
 import com.nexal.app.domain.model.ScannedProduct
 import com.nexal.app.ui.components.*
-import com.nexal.app.ui.theme.Cyan500
-import com.nexal.app.ui.theme.Emerald500
+import com.nexal.app.ui.theme.*
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -58,7 +55,7 @@ fun ScannerScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Barcode Scanner") },
+                title = { Text("Barcode Scanner", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -76,31 +73,65 @@ fun ScannerScreen(
                     LoadingScreen(message = "Looking up product...")
                 }
                 uiState.product != null -> {
-                    ProductResultCard(
-                        product = uiState.product!!,
-                        ratio = uiState.proteinRatio,
-                        ratingLabel = uiState.ratingLabel,
-                        ratingColor = uiState.ratingColor,
-                        onAddToLog = { viewModel.addToLog() },
-                        onScanAgain = { viewModel.resetAndScan() }
-                    )
+                    FadeSlideIn {
+                        ProductResultCard(
+                            product = uiState.product!!,
+                            ratio = uiState.proteinRatio,
+                            ratingLabel = uiState.ratingLabel,
+                            ratingColor = uiState.ratingColor,
+                            onAddToLog = { viewModel.addToLog() },
+                            onScanAgain = { viewModel.resetAndScan() }
+                        )
+                    }
 
                     uiState.aiAssessment?.let { assessment ->
-                        AiAssessmentCard(
-                            assessment = assessment.assessment,
-                            alternatives = assessment.alternatives
-                        )
+                        ScalePopIn(delayMs = 80) {
+                            AiAssessmentCard(
+                                assessment = assessment.assessment,
+                                alternatives = assessment.alternatives
+                            )
+                        }
+                    }
+
+                    uiState.assessmentError?.let { assessmentError ->
+                        FadeSlideIn(delayMs = 100) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.errorContainer,
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Warning,
+                                        null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        assessmentError,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
                 uiState.error != null -> {
-                    FitCard {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                                Text(uiState.error!!, style = MaterialTheme.typography.bodyMedium)
+                    FadeSlideIn {
+                        FitCard {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                    Text(uiState.error!!, style = MaterialTheme.typography.bodyMedium)
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+                                FitButton(text = "Try Again", onClick = { viewModel.resetAndScan() })
                             }
-                            Spacer(Modifier.height(12.dp))
-                            FitButton(text = "Try Again", onClick = { viewModel.resetAndScan() })
                         }
                     }
                 }
@@ -116,88 +147,96 @@ fun ScannerScreen(
                 uiState.scanning -> {
                     var torchOn by remember { mutableStateOf(false) }
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                    ) {
-                        BarcodeCameraPreview(
-                            onBarcodeDetected = { barcode ->
-                                viewModel.onBarcodeScanned(barcode)
-                            },
-                            torchEnabled = torchOn
-                        )
-
-                        // Top overlay bar with torch + cancel
-                        Row(
+                    ScalePopIn {
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .align(Alignment.TopCenter)
-                                .background(Color.Black.copy(alpha = 0.45f))
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                                .clip(RoundedCornerShape(16.dp))
                         ) {
-                            // Cancel button
-                            TextButton(
-                                onClick = { viewModel.stopScanning() },
-                                colors = ButtonDefaults.textButtonColors(contentColor = Color.White)
+                            BarcodeCameraPreview(
+                                onBarcodeDetected = { barcode ->
+                                    viewModel.onBarcodeScanned(barcode)
+                                },
+                                torchEnabled = torchOn
+                            )
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .align(Alignment.TopCenter)
+                                    .background(Color.Black.copy(alpha = 0.45f))
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Cancel", fontWeight = FontWeight.Medium)
+                                TextButton(
+                                    onClick = { viewModel.stopScanning() },
+                                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White)
+                                ) {
+                                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Cancel", fontWeight = FontWeight.Medium)
+                                }
+
+                                IconButton(
+                                    onClick = { torchOn = !torchOn },
+                                    colors = IconButtonDefaults.iconButtonColors(
+                                        containerColor = if (torchOn) Color(0xFFFBBF24).copy(alpha = 0.25f) else Color.White.copy(alpha = 0.15f)
+                                    )
+                                ) {
+                                    Icon(
+                                        if (torchOn) Icons.Default.FlashlightOn else Icons.Default.FlashlightOff,
+                                        contentDescription = if (torchOn) "Turn off flashlight" else "Turn on flashlight",
+                                        tint = if (torchOn) Color(0xFFFBBF24) else Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
                             }
 
-                            // Flashlight toggle
-                            IconButton(
-                                onClick = { torchOn = !torchOn },
-                                colors = IconButtonDefaults.iconButtonColors(
-                                    containerColor = if (torchOn) Color(0xFFFBBF24).copy(alpha = 0.25f) else Color.White.copy(alpha = 0.15f)
-                                )
-                            ) {
-                                Icon(
-                                    if (torchOn) Icons.Default.FlashlightOn else Icons.Default.FlashlightOff,
-                                    contentDescription = if (torchOn) "Turn off flashlight" else "Turn on flashlight",
-                                    tint = if (torchOn) Color(0xFFFBBF24) else Color.White,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
+                            Text(
+                                "Point at a barcode",
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
-
-                        // Scan hint at the bottom
-                        Text(
-                            "Point at a barcode",
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(20.dp))
-                                .padding(horizontal = 20.dp, vertical = 8.dp),
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Medium
-                        )
                     }
                 }
                 else -> {
-                    FitCard {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Surface(
-                                color = Emerald500.copy(alpha = 0.1f),
-                                shape = MaterialTheme.shapes.large
+                    FadeSlideIn {
+                        FitCard {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Icon(
-                                    Icons.Default.CameraAlt,
-                                    contentDescription = null,
-                                    tint = Emerald500,
-                                    modifier = Modifier.padding(20.dp).size(36.dp)
+                                Surface(
+                                    color = BrandBlue.copy(alpha = 0.1f),
+                                    shape = MaterialTheme.shapes.large
+                                ) {
+                                    Icon(
+                                        Icons.Default.CameraAlt,
+                                        contentDescription = null,
+                                        tint = BrandBlue,
+                                        modifier = Modifier.padding(20.dp).size(36.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    "Point your camera at a product barcode",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                GradientButton(
+                                    text = "Start Scanning",
+                                    onClick = { viewModel.startScanning() },
+                                    modifier = Modifier.fillMaxWidth()
                                 )
                             }
-                            Spacer(Modifier.height(16.dp))
-                            Text("Point your camera at a product barcode", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Spacer(Modifier.height(16.dp))
-                            GradientButton(text = "Start Scanning", onClick = { viewModel.startScanning() }, modifier = Modifier.fillMaxWidth())
                         }
                     }
                 }
@@ -224,7 +263,6 @@ fun BarcodeCameraPreview(
     var detected by remember { mutableStateOf(false) }
     var camera by remember { mutableStateOf<Camera?>(null) }
 
-    // Toggle torch when the parameter changes
     LaunchedEffect(torchEnabled) {
         camera?.cameraControl?.enableTorch(torchEnabled)
     }
@@ -275,7 +313,6 @@ fun BarcodeCameraPreview(
                     val cam = cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageAnalysis)
                     camera = cam
                     onCameraReady?.invoke(cam)
-                    // Apply initial torch state
                     cam.cameraControl.enableTorch(torchEnabled)
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -303,36 +340,43 @@ private fun ProductResultCard(
             product.brand?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             Text("Per ${product.servingSize}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Macro grid
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MacroChip("${product.macros.calories}", "Calories", MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
-                MacroChip("${product.macros.protein}g", "Protein", Emerald500, Modifier.weight(1f))
-                MacroChip("${product.macros.carbs}g", "Carbs", Cyan500, Modifier.weight(1f))
-                MacroChip("${product.macros.fats}g", "Fats", Color(0xFFF59E0B), Modifier.weight(1f))
+                ScannerMacroChip("${product.macros.calories}", "Calories", MacroCalorie, Modifier.weight(1f))
+                ScannerMacroChip("${product.macros.protein}g", "Protein", MacroProtein, Modifier.weight(1f))
+                ScannerMacroChip("${product.macros.carbs}g", "Carbs", MacroCarbs, Modifier.weight(1f))
+                ScannerMacroChip("${product.macros.fats}g", "Fats", MacroFat, Modifier.weight(1f))
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Protein-to-Calorie Ratio
             Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.small) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Protein-to-Calorie Ratio", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "Protein-to-Calorie Ratio",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("${"%.1f".format(ratio)}g/100cal", fontWeight = FontWeight.Bold, color = ratingColor)
                         Surface(color = ratingColor.copy(alpha = 0.15f), shape = MaterialTheme.shapes.extraSmall) {
-                            Text(ratingLabel, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = ratingColor)
+                            Text(
+                                ratingLabel,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = ratingColor
+                            )
                         }
                     }
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 GradientButton(text = "Add to Log", onClick = onAddToLog, modifier = Modifier.weight(1f))
@@ -343,8 +387,8 @@ private fun ProductResultCard(
 }
 
 @Composable
-private fun MacroChip(value: String, label: String, color: Color, modifier: Modifier = Modifier) {
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.small, modifier = modifier) {
+private fun ScannerMacroChip(value: String, label: String, color: Color, modifier: Modifier = Modifier) {
+    Surface(color = color.copy(alpha = 0.1f), shape = MaterialTheme.shapes.small, modifier = modifier) {
         Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = color)
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -359,14 +403,23 @@ private fun AiAssessmentCard(
 ) {
     FitCard {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("AI Assessment", style = MaterialTheme.typography.titleSmall, color = Cyan500, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
+            Text(
+                "AI Assessment",
+                style = MaterialTheme.typography.titleSmall,
+                color = BrandBlue,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(assessment, style = MaterialTheme.typography.bodyMedium)
 
             if (alternatives.isNotEmpty()) {
-                Spacer(Modifier.height(12.dp))
-                Text("Better Alternatives:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    "Better Alternatives:",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 alternatives.forEach { alt ->
                     Surface(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), shape = MaterialTheme.shapes.small) {
                         Row(
@@ -380,13 +433,13 @@ private fun AiAssessmentCard(
                             }
                             alt.macros?.let { macros ->
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Text("${macros.protein}g protein", style = MaterialTheme.typography.bodySmall, color = Emerald500)
+                                    Text("${macros.protein}g protein", style = MaterialTheme.typography.bodySmall, color = MacroProtein)
                                     Text("${macros.calories} cal", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
                     }
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                 }
             }
         }

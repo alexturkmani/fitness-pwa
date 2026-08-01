@@ -114,8 +114,14 @@ interface FoodLogDao {
     @Query("SELECT * FROM food_log_entries WHERE date = :date ORDER BY createdAt DESC")
     fun observeByDate(date: String): Flow<List<FoodLogEntryEntity>>
 
+    @Query("SELECT * FROM food_log_entries WHERE date = :date ORDER BY createdAt DESC")
+    suspend fun getByDate(date: String): List<FoodLogEntryEntity>
+
     @Query("SELECT * FROM food_log_entries WHERE date BETWEEN :startDate AND :endDate ORDER BY date DESC, createdAt DESC")
     fun observeByDateRange(startDate: String, endDate: String): Flow<List<FoodLogEntryEntity>>
+
+    @Query("SELECT * FROM food_log_entries ORDER BY date DESC, createdAt DESC LIMIT :limit")
+    suspend fun getRecent(limit: Int = 40): List<FoodLogEntryEntity>
 
     @Query("SELECT * FROM food_log_entries ORDER BY date DESC, createdAt DESC")
     suspend fun getAll(): List<FoodLogEntryEntity>

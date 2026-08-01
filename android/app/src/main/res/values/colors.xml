@@ -1,42 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Primary Emerald -->
-    <color name="emerald_50">#ecfdf5</color>
-    <color name="emerald_100">#d1fae5</color>
-    <color name="emerald_200">#a7f3d0</color>
-    <color name="emerald_300">#6ee7b7</color>
-    <color name="emerald_400">#34d399</color>
-    <color name="emerald_500">#10b981</color>
-    <color name="emerald_600">#059669</color>
-    <color name="emerald_700">#047857</color>
-    <color name="emerald_800">#065f46</color>
-    <color name="emerald_900">#064e3b</color>
+    <!-- Brand blue (MFP-inspired) -->
+    <color name="emerald_50">#E8F1FF</color>
+    <color name="emerald_100">#D0E4FF</color>
+    <color name="emerald_200">#A8CBFF</color>
+    <color name="emerald_300">#75AFFF</color>
+    <color name="emerald_400">#3D8FFF</color>
+    <color name="emerald_500">#0B6EFD</color>
+    <color name="emerald_600">#0056D6</color>
+    <color name="emerald_700">#0045AD</color>
+    <color name="emerald_800">#003688</color>
+    <color name="emerald_900">#00255E</color>
 
-    <!-- Accent Cyan -->
-    <color name="cyan_400">#22d3ee</color>
-    <color name="cyan_500">#06b6d4</color>
-    <color name="cyan_600">#0891b2</color>
-    <color name="cyan_700">#0e7490</color>
-    <color name="cyan_800">#155e75</color>
-    <color name="cyan_900">#164e63</color>
+    <!-- Teal secondary -->
+    <color name="cyan_400">#4DB8C4</color>
+    <color name="cyan_500">#1AA6B7</color>
+    <color name="cyan_600">#0E8796</color>
+    <color name="cyan_700">#0A6B77</color>
+    <color name="cyan_800">#08545E</color>
+    <color name="cyan_900">#063C44</color>
 
-    <!-- Neutrals -->
+    <!-- Cool neutrals -->
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
-    <color name="slate_50">#f8fafc</color>
-    <color name="slate_100">#f1f5f9</color>
-    <color name="slate_200">#e2e8f0</color>
-    <color name="slate_300">#cbd5e1</color>
-    <color name="slate_400">#94a3b8</color>
-    <color name="slate_500">#64748b</color>
-    <color name="slate_600">#475569</color>
-    <color name="slate_700">#334155</color>
-    <color name="slate_800">#1e293b</color>
-    <color name="slate_900">#0f172a</color>
-    <color name="slate_950">#020617</color>
+    <color name="slate_50">#F4F6F8</color>
+    <color name="slate_100">#E9EDF2</color>
+    <color name="slate_200">#D5DCE5</color>
+    <color name="slate_300">#B8C2CF</color>
+    <color name="slate_400">#8A96A8</color>
+    <color name="slate_500">#667385</color>
+    <color name="slate_600">#4A5565</color>
+    <color name="slate_700">#343D4A</color>
+    <color name="slate_800">#222933</color>
+    <color name="slate_900">#141920</color>
+    <color name="slate_950">#0B0E13</color>
 
     <!-- Semantic -->
-    <color name="error">#ef4444</color>
-    <color name="warning">#f59e0b</color>
-    <color name="success">#10b981</color>
+    <color name="error">#E5484D</color>
+    <color name="warning">#F5A524</color>
+    <color name="success">#30A46C</color>
 </resources>

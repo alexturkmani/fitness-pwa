@@ -72,6 +72,12 @@ class MealsViewModel @Inject constructor(
 
     fun addMealToLog(meal: Meal) {
         viewModelScope.launch {
+            val slot = when {
+                meal.name.contains("breakfast", ignoreCase = true) -> MealSlot.BREAKFAST
+                meal.name.contains("lunch", ignoreCase = true) -> MealSlot.LUNCH
+                meal.name.contains("dinner", ignoreCase = true) -> MealSlot.DINNER
+                else -> MealSlot.SNACK
+            }
             val entry = FoodLogEntry(
                 id = generateId(),
                 date = todayFormatted(),
@@ -80,10 +86,11 @@ class MealsViewModel @Inject constructor(
                 quantity = 1,
                 macros = meal.totalMacros,
                 source = FoodSource.MEAL_PLAN,
+                mealSlot = slot,
                 createdAt = todayFormatted()
             )
             nutritionRepo.addFoodLogEntry(entry)
-            _uiState.update { it.copy(toast = "${meal.name} added to food log") }
+            _uiState.update { it.copy(toast = "${meal.name} added to Diary · ${slot.label}") }
         }
     }
 
@@ -105,7 +112,9 @@ class MealsViewModel @Inject constructor(
                     _uiState.update { it.copy(subLoading = false, substitutions = result.data) }
                 }
                 is Resource.Error -> {
-                    _uiState.update { it.copy(subLoading = false) }
+                    _uiState.update {
+                        it.copy(subLoading = false, error = result.message, toast = result.message)
+                    }
                 }
                 is Resource.Loading -> {}
             }

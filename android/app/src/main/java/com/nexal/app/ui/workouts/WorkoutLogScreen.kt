@@ -79,35 +79,40 @@ fun WorkoutLogScreen(
                 ) {
                     uiState.exercises.forEachIndexed { exIndex, exercise ->
                         item(key = "header_$exIndex") {
-                            Text(
-                                exercise.exerciseName,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
+                            FadeSlideIn(delayMs = exIndex * 50) {
+                                Text(
+                                    exercise.exerciseName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                         items(exercise.sets, key = { "set_${exIndex}_${it.setNumber}" }) { set ->
-                            SetRow(
-                                set = set,
-                                onWeightChange = { viewModel.updateWeight(exIndex, set.setNumber, it) },
-                                onRepsChange = { viewModel.updateReps(exIndex, set.setNumber, it) },
-                                onToggleComplete = { viewModel.toggleSetComplete(exIndex, set.setNumber) },
-                                onRestTimer = { viewModel.startRestTimer(uiState.restDefaultSeconds) }
-                            )
+                            FadeSlideIn(delayMs = 40 + exIndex * 40) {
+                                SetRow(
+                                    set = set,
+                                    onWeightChange = { viewModel.updateWeight(exIndex, set.setNumber, it) },
+                                    onRepsChange = { viewModel.updateReps(exIndex, set.setNumber, it) },
+                                    onToggleComplete = { viewModel.toggleSetComplete(exIndex, set.setNumber) },
+                                    onRestTimer = { viewModel.startRestTimer(uiState.restDefaultSeconds) }
+                                )
+                            }
                         }
                     }
                 }
 
-                // Save button
-                GradientButton(
-                    text = "Save Workout",
-                    onClick = {
-                        viewModel.saveWorkout()
-                        onBack()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                )
+                ScalePopIn(delayMs = 100) {
+                    GradientButton(
+                        text = "Save Workout",
+                        onClick = {
+                            viewModel.saveWorkout()
+                            onBack()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    )
+                }
             }
         }
     }
@@ -208,7 +213,7 @@ private fun SetRow(
                     onToggleComplete()
                     if (!set.completed) onRestTimer()
                 },
-                colors = CheckboxDefaults.colors(checkedColor = Emerald500)
+                colors = CheckboxDefaults.colors(checkedColor = BrandBlue)
             )
         }
     }
@@ -230,8 +235,8 @@ private fun RestTimer(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Rest Timer", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(12.dp))
+            Text("Rest Timer", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = BrandBlue)
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Circular timer
             Box(contentAlignment = Alignment.Center, modifier = Modifier.size(100.dp)) {
@@ -245,7 +250,7 @@ private fun RestTimer(
                     )
                     // Progress arc
                     drawArc(
-                        color = Color(0xFF10b981),
+                        color = BrandBlue,
                         startAngle = -90f, sweepAngle = 360f * progress,
                         useCenter = false, style = stroke
                     )
@@ -257,7 +262,7 @@ private fun RestTimer(
                 )
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             TextButton(onClick = onCancel) {
                 Text("Skip", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }

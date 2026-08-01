@@ -34,7 +34,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             NexalTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.background
+                ) {
                     NexalNavHost()
                 }
             }

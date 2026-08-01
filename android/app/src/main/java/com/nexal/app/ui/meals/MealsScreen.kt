@@ -1,14 +1,17 @@
 package com.nexal.app.ui.meals
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -17,8 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.nexal.app.domain.model.FoodItem
 import com.nexal.app.domain.model.Meal
 import com.nexal.app.ui.components.*
-import com.nexal.app.ui.theme.Cyan500
-import com.nexal.app.ui.theme.Emerald500
+import com.nexal.app.ui.theme.*
 
 private val COMMON_ALLERGIES = listOf(
     "Dairy", "Gluten", "Nuts", "Peanuts", "Eggs",
@@ -42,14 +44,16 @@ fun MealsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Meal Plan") },
+                title = {
+                    Text("Food Diary", fontWeight = FontWeight.Bold)
+                },
                 actions = {
                     if (uiState.plan != null) {
                         IconButton(onClick = { showDeleteConfirm = true }) {
                             Icon(Icons.Default.Delete, "Delete plan", tint = MaterialTheme.colorScheme.error)
                         }
                         IconButton(onClick = { showAllergyModal = true }) {
-                            Icon(Icons.Default.Refresh, "New plan")
+                            Icon(Icons.Default.Refresh, "New plan", tint = BrandBlue)
                         }
                     }
                 }
@@ -57,62 +61,130 @@ fun MealsScreen(
         }
     ) { padding ->
         if (uiState.isLoading) {
-            LoadingScreen(message = "AI is creating your meal plan...")
+            LoadingScreen(
+                message = "AI is creating your meal plan...",
+                modifier = Modifier.padding(padding)
+            )
         } else if (uiState.plan == null) {
-            Column(modifier = Modifier.padding(padding)) {
-                EmptyState(
-                    icon = Icons.Default.Restaurant,
-                    title = "No Meal Plan",
-                    description = "Generate an AI-powered meal plan tailored to your goals and macro targets.",
-                    actionLabel = "Generate Meal Plan",
-                    onAction = { showAllergyModal = true }
-                )
-                uiState.error?.let { error ->
-                    FitCard(modifier = Modifier.padding(16.dp)) {
-                        Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(12.dp))
-                    }
-                }
-            }
+            EmptyState(
+                icon = Icons.Default.Restaurant,
+                title = "No Meal Plan Yet",
+                description = "Generate an AI meal plan tailored to your goals and macro targets.",
+                actionLabel = "Generate Meal Plan",
+                onAction = { showAllergyModal = true },
+                error = uiState.error,
+                modifier = Modifier.padding(padding)
+            )
         } else {
             val plan = uiState.plan!!
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
                 modifier = Modifier.padding(padding)
             ) {
                 item {
-                    FitCard {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Daily Totals", style = MaterialTheme.typography.titleMedium)
-                            Spacer(Modifier.height(12.dp))
-                            MacroRow(Icons.Default.LocalFireDepartment, "Calories", "${plan.dailyTotals.calories}", Emerald500)
-                            MacroRow(Icons.Default.FitnessCenter, "Protein", "${plan.dailyTotals.protein}g", Emerald500)
-                            MacroRow(Icons.Default.Grain, "Carbs", "${plan.dailyTotals.carbs}g", Cyan500)
-                            MacroRow(Icons.Default.WaterDrop, "Fats", "${plan.dailyTotals.fats}g", Color(0xFFF59E0B))
+                    ScalePopIn {
+                        FitCard(modifier = Modifier.fillMaxWidth()) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    "Daily Totals",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    "${plan.dailyTotals.calories}",
+                                    style = MaterialTheme.typography.displaySmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = BrandBlue
+                                )
+                                Text(
+                                    "calories planned",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(18.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceEvenly
+                                ) {
+                                    MacroChip("Protein", plan.dailyTotals.protein, plan.dailyTotals.protein, MacroProtein)
+                                    MacroChip("Carbs", plan.dailyTotals.carbs, plan.dailyTotals.carbs, MacroCarbs)
+                                    MacroChip("Fat", plan.dailyTotals.fats, plan.dailyTotals.fats, MacroFat)
+                                }
+                            }
                         }
                     }
                 }
 
-                // Daily Water Recommendation
+                uiState.error?.let { error ->
+                    item {
+                        FadeSlideIn {
+                            Surface(
+                                color = MaterialTheme.colorScheme.errorContainer,
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Warning,
+                                        null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        error,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 plan.dailyWaterIntakeMl?.let { waterMl ->
                     if (waterMl > 0) {
                         item {
-                            FitCard {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Surface(
-                                        color = Cyan500.copy(alpha = 0.15f),
-                                        shape = MaterialTheme.shapes.medium,
-                                        modifier = Modifier.size(40.dp)
+                            FadeSlideIn(delayMs = 80) {
+                                FitCard {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
-                                        Icon(Icons.Default.WaterDrop, null, tint = Cyan500, modifier = Modifier.padding(8.dp))
-                                    }
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text("Daily Water Intake", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                                        Text("Recommended: ${waterMl} ml (${"%.1f".format(waterMl / 1000.0)}L)", style = MaterialTheme.typography.bodySmall, color = Cyan500)
+                                        Box(
+                                            modifier = Modifier
+                                                .size(40.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(Cyan500.copy(alpha = 0.15f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(Icons.Default.WaterDrop, null, tint = Cyan500, modifier = Modifier.size(20.dp))
+                                        }
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                "Daily Water",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Text(
+                                                "Recommended: ${waterMl} ml (${"%.1f".format(waterMl / 1000.0)}L)",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = Cyan500
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -123,33 +195,56 @@ fun MealsScreen(
                 plan.aiNotes?.let { notes ->
                     if (notes.isNotBlank()) {
                         item {
-                            FitCard {
-                                Text(
-                                    notes,
-                                    style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(16.dp)
-                                )
+                            FadeSlideIn(delayMs = 100) {
+                                FitCard {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(
+                                            "Coach Notes",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = BrandBlue,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            notes,
+                                            style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
 
-                items(plan.meals, key = { it.id }) { meal ->
-                    MealCard(
-                        meal = meal,
-                        onAddToLog = { viewModel.addMealToLog(meal) },
-                        onSubstitute = { food ->
-                            viewModel.selectFoodForSub(meal.name, food)
-                            subReason = ""
-                            showSubModal = true
-                        }
-                    )
+                item {
+                    FadeSlideIn(delayMs = 120) {
+                        Text(
+                            "Meals",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
+
+                itemsIndexed(plan.meals, key = { _, meal -> meal.id }) { index, meal ->
+                    FadeSlideIn(delayMs = 140 + index * 55) {
+                        MealCard(
+                            meal = meal,
+                            onAddToLog = { viewModel.addMealToLog(meal) },
+                            onSubstitute = { food ->
+                                viewModel.selectFoodForSub(meal.name, food)
+                                subReason = ""
+                                showSubModal = true
+                            }
+                        )
+                    }
+                }
+
+                item { Spacer(modifier = Modifier.height(8.dp)) }
             }
         }
 
-        // Allergy Modal
         if (showAllergyModal) {
             AllergySelectionModal(
                 allergies = selectedAllergies,
@@ -173,7 +268,6 @@ fun MealsScreen(
             )
         }
 
-        // Delete Confirmation
         if (showDeleteConfirm) {
             FitModal(
                 isOpen = true,
@@ -185,13 +279,13 @@ fun MealsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     FitButton(text = "Delete Plan", onClick = {
                         viewModel.deletePlan()
                         showDeleteConfirm = false
@@ -200,7 +294,6 @@ fun MealsScreen(
             }
         }
 
-        // Substitution Modal
         if (showSubModal && uiState.selectedFood != null) {
             SubstitutionModal(
                 foodName = uiState.selectedFood!!.second.name,
@@ -222,21 +315,6 @@ fun MealsScreen(
 }
 
 @Composable
-private fun MacroRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String, color: Color) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
-            Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
 private fun MealCard(
     meal: Meal,
     onAddToLog: () -> Unit,
@@ -249,46 +327,106 @@ private fun MealCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(meal.name, style = MaterialTheme.typography.titleMedium)
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("${meal.totalMacros.calories} cal", style = MaterialTheme.typography.labelMedium, color = Emerald500)
-                    IconButton(onClick = onAddToLog, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Add, contentDescription = "Add to log", tint = Emerald500, modifier = Modifier.size(18.dp))
-                    }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        meal.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        "${meal.totalMacros.calories} cal",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = BrandBlue
+                    )
+                }
+                FilledTonalIconButton(
+                    onClick = onAddToLog,
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = Emerald50,
+                        contentColor = BrandBlue
+                    )
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add to log")
                 }
             }
-            Spacer(Modifier.height(8.dp))
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             meal.foods.forEach { food ->
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(food.name, style = MaterialTheme.typography.bodyMedium)
-                        Text(food.servingSize, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(food.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                        Text(
+                            food.servingSize,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("${food.macros.calories} cal", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("P:${food.macros.protein}g C:${food.macros.carbs}g F:${food.macros.fats}g", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                "${food.macros.calories} cal",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("P ${food.macros.protein}g", style = MaterialTheme.typography.labelSmall, color = MacroProtein)
+                                Text("C ${food.macros.carbs}g", style = MaterialTheme.typography.labelSmall, color = MacroCarbs)
+                                Text("F ${food.macros.fats}g", style = MaterialTheme.typography.labelSmall, color = MacroFat)
+                            }
                         }
                         IconButton(onClick = { onSubstitute(food) }, modifier = Modifier.size(28.dp)) {
-                            Icon(Icons.Default.SwapHoriz, contentDescription = "Substitute", modifier = Modifier.size(16.dp))
+                            Icon(
+                                Icons.Default.SwapHoriz,
+                                contentDescription = "Substitute",
+                                tint = BrandBlue,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     }
                 }
                 if (food != meal.foods.last()) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                    )
                 }
             }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("P: ${meal.totalMacros.protein}g", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("C: ${meal.totalMacros.carbs}g", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("F: ${meal.totalMacros.fats}g", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                MealMacroBadge("P", "${meal.totalMacros.protein}g", MacroProtein)
+                MealMacroBadge("C", "${meal.totalMacros.carbs}g", MacroCarbs)
+                MealMacroBadge("F", "${meal.totalMacros.fats}g", MacroFat)
             }
         }
+    }
+}
+
+@Composable
+private fun MealMacroBadge(label: String, value: String, color: Color) {
+    Surface(
+        color = color.copy(alpha = 0.12f),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text(
+            "$label $value",
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = color
+        )
     }
 }
 
@@ -309,33 +447,52 @@ private fun AllergySelectionModal(
         onDismiss = onDismiss
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Select any food allergies so the AI can avoid them.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                "Select any food allergies so the AI can avoid them.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 COMMON_ALLERGIES.forEach { allergy ->
                     FilterChip(
                         selected = allergy in allergies,
                         onClick = { onToggleAllergy(allergy) },
-                        label = { Text(allergy) }
+                        label = { Text(allergy) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Emerald50,
+                            selectedLabelColor = BrandBlue
+                        )
                     )
                 }
             }
 
             val customOnes = allergies.filter { it !in COMMON_ALLERGIES }
             if (customOnes.isNotEmpty()) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     customOnes.forEach { a ->
                         InputChip(
                             selected = true,
                             onClick = { onToggleAllergy(a) },
                             label = { Text(a) },
-                            trailingIcon = { Icon(Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.size(16.dp)) }
+                            trailingIcon = {
+                                Icon(Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.size(16.dp))
+                            }
                         )
                     }
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 OutlinedTextField(
                     value = customAllergy,
                     onValueChange = onCustomAllergyChange,
@@ -352,15 +509,30 @@ private fun AllergySelectionModal(
             }
 
             if (allergies.isNotEmpty()) {
-                Surface(color = Color(0xFFF59E0B).copy(alpha = 0.1f), shape = MaterialTheme.shapes.small) {
-                    Row(modifier = Modifier.padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFF59E0B), modifier = Modifier.size(16.dp))
-                        Text("The meal plan will exclude: ${allergies.joinToString(", ")}", style = MaterialTheme.typography.bodySmall, color = Color(0xFFF59E0B))
+                Surface(
+                    color = WarningAmber.copy(alpha = 0.12f),
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Row(
+                        modifier = Modifier.padding(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = WarningAmber,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            "The meal plan will exclude: ${allergies.joinToString(", ")}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = WarningAmber
+                        )
                     }
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             GradientButton(
                 text = "Generate Meal Plan",
                 onClick = onGenerate,
@@ -400,8 +572,15 @@ private fun SubstitutionModal(
                 }
             }
 
-            Text("Why do you want to substitute? (optional)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "Why do you want to substitute? (optional)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 OutlinedTextField(
                     value = reason,
                     onValueChange = onReasonChange,
@@ -411,15 +590,19 @@ private fun SubstitutionModal(
                 )
                 IconButton(onClick = onSearch, enabled = !isLoading) {
                     if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = BrandBlue)
                     } else {
-                        Icon(Icons.Default.Send, contentDescription = "Search")
+                        Icon(Icons.Default.Send, contentDescription = "Search", tint = BrandBlue)
                     }
                 }
             }
 
             if (substitutions.isNotEmpty()) {
-                Text("Tap to replace", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Tap to replace",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 substitutions.forEach { sub ->
                     Surface(
                         onClick = { onReplace(sub) },
@@ -427,15 +610,34 @@ private fun SubstitutionModal(
                         shape = MaterialTheme.shapes.small
                     ) {
                         Column(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
                                 Text(sub.name, style = MaterialTheme.typography.titleSmall)
-                                Text("${sub.macros?.calories ?: "–"} cal", style = MaterialTheme.typography.labelSmall, color = Emerald500)
+                                Text(
+                                    "${sub.macros?.calories ?: "–"} cal",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = BrandBlue
+                                )
                             }
-                            sub.servingSize?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                            sub.servingSize?.let {
+                                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                             sub.macros?.let { m ->
-                                Text("P:${m.protein}g C:${m.carbs}g F:${m.fats}g", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("P:${m.protein}g", style = MaterialTheme.typography.bodySmall, color = MacroProtein)
+                                    Text("C:${m.carbs}g", style = MaterialTheme.typography.bodySmall, color = MacroCarbs)
+                                    Text("F:${m.fats}g", style = MaterialTheme.typography.bodySmall, color = MacroFat)
+                                }
                             }
-                            sub.reason?.let { Text(it, style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                            sub.reason?.let {
+                                Text(
+                                    it,
+                                    style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }
