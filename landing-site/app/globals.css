@@ -18,3 +18,19 @@
 .brand-mark img{object-fit:contain!important;padding:0}
 .final-cta .brand-mark{width:210px;height:64px}
 .eyebrow::before,.eyebrow>span:first-child{display:none!important}
+
+/* Mobile containment and footer credit. */
+html,body{width:100%;max-width:100%;overflow-x:clip}
+main{width:100%;max-width:100%;overflow-x:clip;contain:inline-size}
+img,svg{max-width:100%}
+.shell{max-width:100%}
+.footer-meta{display:flex;flex-direction:column;align-items:flex-end;gap:5px!important;white-space:nowrap}
+.footer-meta>span{font-size:10px;color:#727d75}
+.designer-credit{font-size:10px;color:var(--lime);transition:color .2s ease}
+.designer-credit:hover{color:white}
+@media(max-width:600px){
+  .premium-screen{width:min(270px,calc(100vw - 58px))}
+  .phone-wrap{max-width:calc(100vw + 28px)}
+  .orbit{max-width:calc(100vw + 120px)}
+  .footer-meta{align-items:center}
+}

@@ -46,6 +46,15 @@ fun ProgressScreen(
             modifier = Modifier.padding(padding)
         ) {
             item {
+                ScalePopIn {
+                    MomentumHero(
+                        workouts = uiState.weeklyWorkouts,
+                        averageCalories = uiState.avgDailyCalories,
+                        weightChange = uiState.weightChange
+                    )
+                }
+            }
+            item {
                 FadeSlideIn {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         StatCard(
@@ -337,6 +346,57 @@ fun ProgressScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun MomentumHero(
+    workouts: Int,
+    averageCalories: Int,
+    weightChange: Double
+) {
+    val momentum = (workouts * 20 + (if (averageCalories > 0) 18 else 0) + (if (weightChange != 0.0) 12 else 0))
+        .coerceIn(8, 100)
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = HeroInk
+    ) {
+        Column(modifier = Modifier.padding(22.dp)) {
+            Text("YOUR MOMENTUM", style = MaterialTheme.typography.labelSmall, color = AccentBright)
+            Spacer(Modifier.height(6.dp))
+            Text("Progress, made visible.", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+            Text(
+                "Your daily wins connect into one clear picture.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.62f)
+            )
+            Spacer(Modifier.height(20.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(118.dp)) {
+                    ActivityOrb(modifier = Modifier.fillMaxSize(), progress = momentum / 100f)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("$momentum%", style = MaterialTheme.typography.headlineMedium, color = Color.White)
+                        Text("score", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.55f))
+                    }
+                }
+                Spacer(Modifier.width(20.dp))
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    MomentumMetric("WORKOUTS", "$workouts this week")
+                    MomentumMetric("NUTRITION", if (averageCalories > 0) "$averageCalories cal daily" else "Start logging")
+                    MomentumMetric("WEIGHT TREND", if (weightChange == 0.0) "Building baseline" else "${if (weightChange > 0) "+" else ""}${"%.1f".format(weightChange)} kg")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MomentumMetric(label: String, value: String) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = AccentBright)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.SemiBold)
     }
 }
 
