@@ -16,13 +16,13 @@ val Emerald700 = Color(0xFF117B50)
 val Emerald800 = Color(0xFF115F42)
 val Emerald900 = Color(0xFF0E4E37)
 
-// Secondary teal (water / secondary accents)
-val Cyan400 = Color(0xFF4DB8C4)
-val Cyan500 = Color(0xFF1AA6B7)
-val Cyan600 = Color(0xFF0E8796)
-val Cyan700 = Color(0xFF0A6B77)
-val Cyan800 = Color(0xFF08545E)
-val Cyan900 = Color(0xFF063C44)
+// Secondary mint family keeps water and supporting metrics on-brand.
+val Cyan400 = Color(0xFF77DDB2)
+val Cyan500 = Color(0xFF28D58A)
+val Cyan600 = Color(0xFF20B66F)
+val Cyan700 = Color(0xFF159B63)
+val Cyan800 = Color(0xFF115F42)
+val Cyan900 = Color(0xFF0E4E37)
 
 // Cool neutrals
 val Slate50 = Color(0xFFF4F5EF)

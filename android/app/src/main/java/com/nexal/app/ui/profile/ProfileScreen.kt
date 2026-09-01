@@ -341,7 +341,7 @@ fun ProfileScreen(
                 FitCard {
                     Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Icon(if (uiState.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode, contentDescription = null, tint = if (uiState.isDarkMode) Cyan500 else Color(0xFFF59E0B))
+                            Icon(if (uiState.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode, contentDescription = null, tint = if (uiState.isDarkMode) Cyan500 else AccentDeep)
                             Column {
                                 Text("Dark Mode", fontWeight = FontWeight.Medium)
                                 Text(if (uiState.isDarkMode) "On" else "Off", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -391,8 +391,8 @@ fun ProfileScreen(
                 ) {
                     Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Surface(color = Color(0xFFF59E0B).copy(alpha = 0.1f), shape = MaterialTheme.shapes.medium, modifier = Modifier.size(40.dp)) {
-                                Icon(Icons.Default.WorkspacePremium, contentDescription = null, tint = Color(0xFFF59E0B), modifier = Modifier.padding(8.dp))
+                            Surface(color = AccentBright.copy(alpha = 0.16f), shape = MaterialTheme.shapes.medium, modifier = Modifier.size(40.dp)) {
+                                Icon(Icons.Default.WorkspacePremium, contentDescription = null, tint = AccentDeep, modifier = Modifier.padding(8.dp))
                             }
                             Column {
                                 Text("Subscription & Billing", fontWeight = FontWeight.Medium)

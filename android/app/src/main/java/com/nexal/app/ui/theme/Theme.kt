@@ -17,9 +17,9 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
-private val SoftDarkSurface = Color(0xFF161A21)
-private val SoftDarkVariant = Color(0xFF222833)
-private val SoftDarkOutline = Color(0xFF3A4454)
+private val SoftDarkSurface = Color(0xFF121914)
+private val SoftDarkVariant = Color(0xFF1A241D)
+private val SoftDarkOutline = Color(0xFF344239)
 
 private val LightColorScheme = lightColorScheme(
     primary = Accent,
