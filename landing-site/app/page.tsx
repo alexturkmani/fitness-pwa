@@ -1,6 +1,8 @@
 const playStoreUrl = "https://play.google.com/store/apps/details?id=com.nexal.app";
 
-function BrandMark() { return <span className="brand-mark" aria-hidden="true"><img src="/nexal-horizontal.png" alt="" /></span>; }
+function BrandMark() {
+  return <span className="brand-lockup" aria-hidden="true"><span className="brand-mark"><img src="/nexal-mark.png" alt="" /></span><strong className="brand-word">Nexal</strong></span>;
+}
 
 function GooglePlayMark() {
   return <svg className="google-play-mark" viewBox="0 0 32 36" aria-hidden="true">
@@ -33,7 +35,7 @@ function PhonePreview() {
 export default function Home() {
   return <main>
     <nav className="nav shell"><a href="#top" className="brand" aria-label="Nexal home"><BrandMark /></a><div className="nav-links"><a href="#features">Features</a><a href="#results">Results</a><a href="#premium">Premium</a></div><PlayButton compact /></nav>
-    <section className="hero shell" id="top"><div className="hero-copy"><div className="eyebrow"><span /> YOUR FITNESS, FINALLY CONNECTED</div><h1>Build the body.<br /><em>Own the journey.</em></h1><p>Nexal brings your meals, workouts and progress into one intelligent daily plan, built around you and designed to keep you moving.</p><div className="hero-actions"><PlayButton /><a className="text-link" href="#features">Explore Nexal <span>↓</span></a></div><div className="trust-row"><div className="avatars"><i>J</i><i>M</i><i>A</i><i>+</i></div><div><span>★★★★★</span><p>Built for real, lasting progress</p></div></div></div><PhonePreview /></section>
+    <section className="hero shell" id="top"><div className="hero-copy"><div className="eyebrow">YOUR FITNESS, FINALLY CONNECTED</div><h1>Build the body.<br /><em>Own the journey.</em></h1><p>Nexal brings your meals, workouts and progress into one intelligent daily plan, built around you and designed to keep you moving.</p><div className="hero-actions"><PlayButton /><a className="text-link" href="#features">Explore Nexal <span>↓</span></a></div><div className="trust-row"><div className="avatars"><i>J</i><i>M</i><i>A</i><i>+</i></div><div><span>★★★★★</span><p>Built for real, lasting progress</p></div></div></div><PhonePreview /></section>
     <section className="signal-strip" aria-label="Nexal benefits"><div className="shell"><span>◆ PERSONALIZED DAILY TARGETS</span><span>◆ AI-POWERED PLANS</span><span>◆ MEANINGFUL PROGRESS</span></div></section>
 
     <section className="features-section shell" id="features">
