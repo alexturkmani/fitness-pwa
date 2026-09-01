@@ -1,7 +1,7 @@
 const playStoreUrl = "https://play.google.com/store/apps/details?id=com.nexal.app";
 
 function BrandMark() {
-  return <span className="brand-lockup" aria-hidden="true"><span className="brand-mark"><img src="/nexal-mark.png" alt="" /></span><strong className="brand-word">Nexal</strong></span>;
+  return <span className="brand-lockup" aria-hidden="true"><span className="brand-mark"><img src="/nexal-mark.png" alt="" /></span><strong className="brand-word">NEXAL</strong></span>;
 }
 
 function GooglePlayMark() {
