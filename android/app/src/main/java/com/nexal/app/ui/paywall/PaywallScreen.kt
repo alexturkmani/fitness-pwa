@@ -1,6 +1,9 @@
 package com.nexal.app.ui.paywall
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,6 +32,14 @@ import com.nexal.app.data.repository.PlanType
 import com.nexal.app.ui.subscription.SubscriptionViewModel
 import com.nexal.app.ui.theme.*
 
+// LocalContext is not always the Activity itself — it can be a themed wrapper,
+// where a direct cast would throw.
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaywallScreen(
@@ -43,130 +54,255 @@ fun PaywallScreen(
         if (uiState.isActive || uiState.purchaseCompleted) onSubscribed()
     }
 
+    val metrics = rememberAdaptiveMetrics()
+
+    BackHandler(onBack = onBack)
+
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = { },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                )
+            )
+        }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Dark hero band — the single high-contrast surface, matching the
+            // dashboard so the paywall doesn't read as a different product.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(BrandBlue.copy(alpha = 0.16f), Color.Transparent)
-                        )
-                    )
-                    .padding(horizontal = 24.dp, vertical = 40.dp),
+                    .padding(horizontal = 14.dp)
+                    .clip(RoundedCornerShape(30.dp))
+                    .background(HeroInk)
+                    .padding(
+                        horizontal = metrics.horizontalPadding,
+                        vertical = if (metrics.isCompactHeight) 22.dp else 32.dp
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    ScalePopIn(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = 520.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    ScalePopIn(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        val hero = if (metrics.isCompactHeight) 64.dp else metrics.heroSize.coerceAtLeast(64.dp)
                         Box(
                             modifier = Modifier
-                                .size(88.dp)
+                                .size(hero)
                                 .clip(CircleShape)
-                                .background(BrandBlueDark),
+                                .background(AccentBright),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Default.MonitorHeart,
                                 contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(44.dp)
+                                tint = HeroInk,
+                                modifier = Modifier.size(hero / 2)
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(metrics.sectionSpacing))
 
-                    FadeSlideIn(delayMs = 80) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                "Welcome to Nexal",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                "Your AI-Powered Fitness Partner",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp)
-                            )
-                        }
+                    FadeSlideIn(
+                        delayMs = 80,
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "NEXAL PREMIUM",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AccentBright,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            "Train with a plan that adapts to you",
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = Color.White,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            "Keep tracking for free, or unlock AI plans and barcode scanning.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.62f),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
 
             FadeSlideIn(delayMs = 120) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier
+                        .widthIn(max = 520.dp)
+                        .fillMaxWidth()
+                        .padding(horizontal = metrics.horizontalPadding),
+                    verticalArrangement = Arrangement.spacedBy(if (metrics.isCompactHeight) 8.dp else 12.dp)
                 ) {
-                    PaywallFeature(Icons.Default.FitnessCenter, "AI Workout Plans", "Personalized training tailored to your goals and experience", BrandBlue)
-                    PaywallFeature(Icons.Default.Restaurant, "AI Meal Plans", "Macro-optimized nutrition with allergy and preference support", Cyan500)
-                    PaywallFeature(Icons.Default.QrCodeScanner, "Barcode Scanner", "Scan any product for instant nutrition info and AI assessment", MacroCarbs)
-                    PaywallFeature(Icons.Default.BarChart, "Progress Analytics", "Track weight, volume, and nutrition trends over time", MacroFat)
-                    PaywallFeature(Icons.Default.SwapHoriz, "Smart Substitutions", "AI food alternatives that match your macro targets", BrandBlueDark)
+                    PaywallFeature(Icons.Default.FitnessCenter, "AI Workout Plans", "Personalized training tailored to your goals", Accent, metrics.useCompactOptions)
+                    PaywallFeature(Icons.Default.Restaurant, "AI Meal Plans", "Macro-optimized nutrition for your preferences", Accent, metrics.useCompactOptions)
+                    PaywallFeature(Icons.Default.QrCodeScanner, "Barcode Scanner", "Instant nutrition info and AI assessment", Accent, metrics.useCompactOptions)
+                    if (!metrics.isCompactHeight) {
+                        PaywallFeature(Icons.Default.BarChart, "Progress Analytics", "Track weight, volume, and nutrition trends", Accent, false)
+                        PaywallFeature(Icons.Default.SwapHoriz, "Smart Substitutions", "AI alternatives that match your macros", Accent, false)
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(metrics.sectionSpacing))
 
             FadeSlideIn(delayMs = 180) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 24.dp),
+                    modifier = Modifier
+                        .widthIn(max = 520.dp)
+                        .fillMaxWidth()
+                        .padding(horizontal = metrics.horizontalPadding),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        PlanCard(
-                            label = "Monthly",
-                            price = "\$12.99",
-                            period = "/month",
-                            selected = uiState.selectedPlan == PlanType.MONTHLY,
-                            badge = null,
-                            onClick = { viewModel.selectPlan(PlanType.MONTHLY) },
-                            modifier = Modifier.weight(1f)
-                        )
-                        PlanCard(
-                            label = "Yearly",
-                            price = "\$110",
-                            period = "/year",
-                            selected = uiState.selectedPlan == PlanType.YEARLY,
-                            badge = "Save 29%",
-                            onClick = { viewModel.selectPlan(PlanType.YEARLY) },
-                            modifier = Modifier.weight(1f)
-                        )
+                    if (metrics.isCompactWidth) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            PlanCard(
+                                label = "Monthly",
+                                price = uiState.monthlyPrice,
+                                period = uiState.monthlyPeriod,
+                                selected = uiState.selectedPlan == PlanType.MONTHLY,
+                                badge = null,
+                                onClick = { viewModel.selectPlan(PlanType.MONTHLY) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            PlanCard(
+                                label = "Yearly",
+                                price = uiState.yearlyPrice,
+                                period = uiState.yearlyPeriod,
+                                selected = uiState.selectedPlan == PlanType.YEARLY,
+                                badge = "Best value",
+                                onClick = { viewModel.selectPlan(PlanType.YEARLY) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            PlanCard(
+                                label = "Monthly",
+                                price = uiState.monthlyPrice,
+                                period = uiState.monthlyPeriod,
+                                selected = uiState.selectedPlan == PlanType.MONTHLY,
+                                badge = null,
+                                onClick = { viewModel.selectPlan(PlanType.MONTHLY) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            PlanCard(
+                                label = "Yearly",
+                                price = uiState.yearlyPrice,
+                                period = uiState.yearlyPeriod,
+                                selected = uiState.selectedPlan == PlanType.YEARLY,
+                                badge = "Best value",
+                                onClick = { viewModel.selectPlan(PlanType.YEARLY) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
 
                     GradientButton(
-                        text = "Start 14-Day Free Trial",
-                        onClick = { viewModel.purchase(context as Activity) },
+                        text = if (uiState.hasFreeTrial) "Start 14-Day Free Trial" else "Subscribe",
+                        onClick = { context.findActivity()?.let { viewModel.purchase(it) } },
                         modifier = Modifier.fillMaxWidth(),
-                        loading = uiState.isLoading
+                        loading = uiState.isLoading,
+                        enabled = uiState.pricesLoaded && !uiState.isLoading
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    val selectedPriceText = if (uiState.selectedPlan == PlanType.MONTHLY) uiState.monthlyPriceText else uiState.yearlyPriceText
+                    val selectedPriceText =
+                        if (uiState.selectedPlan == PlanType.MONTHLY) uiState.monthlyPriceText
+                        else uiState.yearlyPriceText
                     Text(
-                        "14 days free, then $selectedPriceText. Cancel anytime.",
+                        if (uiState.hasFreeTrial) {
+                            "14 days free, then $selectedPriceText. Cancel anytime in Google Play before the trial ends to avoid being charged."
+                        } else {
+                            "$selectedPriceText. Cancel anytime in Google Play."
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
+                    if (!uiState.pricesLoaded) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            "Loading local prices from Google Play…",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    TextButton(
+                        onClick = { viewModel.restorePurchases() },
+                        enabled = !uiState.isLoading,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Restore purchases",
+                            color = BrandBlue,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    TextButton(
+                        onClick = onBack,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Continue with free tracking",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
 
                     if (com.nexal.app.BuildConfig.DEBUG) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         TextButton(onClick = { viewModel.skipForDev() }) {
                             Text(
                                 "Skip (Dev Testing)",
@@ -193,7 +329,7 @@ fun PaywallScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(metrics.sectionSpacing))
         }
     }
 }
@@ -208,31 +344,30 @@ private fun PlanCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val borderColor = if (selected) BrandBlue else MaterialTheme.colorScheme.outlineVariant
-    val bgColor = if (selected) BrandBlue.copy(alpha = 0.08f) else Color.Transparent
+    val borderColor = if (selected) Accent else MaterialTheme.colorScheme.outlineVariant
+    val bgColor = if (selected) AccentWash else MaterialTheme.colorScheme.surface
 
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         border = BorderStroke(if (selected) 2.dp else 1.dp, borderColor),
         color = bgColor,
         modifier = modifier.clickable { onClick() }
     ) {
         Box {
             Column(
-                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                modifier = Modifier.padding(vertical = 22.dp, horizontal = 16.dp).fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    label,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    label.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (selected) AccentDeep else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     price,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = if (selected) BrandBlue else MaterialTheme.colorScheme.onSurface
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = if (selected) AccentDeep else MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     period,
@@ -243,8 +378,8 @@ private fun PlanCard(
 
             if (badge != null) {
                 Surface(
-                    color = BrandBlue,
-                    shape = RoundedCornerShape(bottomStart = 8.dp, topEnd = 16.dp),
+                    color = Accent,
+                    shape = RoundedCornerShape(bottomStart = 12.dp, topEnd = 24.dp),
                     modifier = Modifier.align(Alignment.TopEnd)
                 ) {
                     Text(
@@ -265,7 +400,8 @@ private fun PaywallFeature(
     icon: ImageVector,
     title: String,
     description: String,
-    color: Color
+    color: Color,
+    compact: Boolean = false
 ) {
     Surface(
         color = color.copy(alpha = 0.06f),
@@ -273,22 +409,37 @@ private fun PaywallFeature(
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.padding(if (compact) 10.dp else 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(if (compact) 10.dp else 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(if (compact) 34.dp else 40.dp)
                     .clip(CircleShape)
                     .background(color.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(if (compact) 18.dp else 22.dp)
+                )
             }
-            Column {
-                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
+                Text(
+                    description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = if (compact) 2 else 3
+                )
             }
         }
     }

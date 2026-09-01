@@ -3,11 +3,9 @@ package com.nexal.app.ui.auth
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -60,27 +58,18 @@ fun LoginScreen(
                 )
             )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            FadeSlideIn {
+        AdaptiveScrollScreen {
+            metrics ->
+            FadeSlideIn(horizontalAlignment = Alignment.CenterHorizontally) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Image(
                         painter = painterResource(id = R.drawable.nexal_logo),
                         contentDescription = "Nexal",
                         modifier = Modifier
-                            .size(80.dp)
+                            .size(metrics.heroSize)
                             .clip(RoundedCornerShape(20.dp))
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(if (metrics.isCompactHeight) 10.dp else 16.dp))
                     Text(
                         "Nexal",
                         style = MaterialTheme.typography.headlineMedium,
@@ -90,16 +79,17 @@ fun LoginScreen(
                     Text(
                         "Your AI fitness diary",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(metrics.sectionSpacing))
 
             ScalePopIn(delayMs = 80) {
                 FitCard(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(20.dp)) {
+                    Column(modifier = Modifier.padding(if (metrics.isCompactWidth) 16.dp else 20.dp)) {
                         OutlinedTextField(
                             value = email,
                             onValueChange = { email = it },
@@ -116,7 +106,7 @@ fun LoginScreen(
                             singleLine = true,
                             shape = MaterialTheme.shapes.medium
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(metrics.fieldSpacing))
 
                         OutlinedTextField(
                             value = password,
@@ -162,7 +152,7 @@ fun LoginScreen(
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth()
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(metrics.fieldSpacing))
                         }
 
                         GradientButton(
@@ -176,7 +166,7 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(metrics.sectionSpacing))
 
             FadeSlideIn(delayMs = 160) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -193,19 +183,27 @@ fun LoginScreen(
                         )
                         HorizontalDivider(modifier = Modifier.weight(1f))
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(metrics.fieldSpacing))
 
                     FitButton(
                         text = "Continue with Google",
                         onClick = { viewModel.signInWithGoogle(context) },
                         variant = ButtonVariant.SECONDARY,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        leading = {
+                            Image(
+                                painter = painterResource(R.drawable.ic_google),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     )
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(metrics.sectionSpacing))
 
                     Row(
                         horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             "Don't have an account? ",

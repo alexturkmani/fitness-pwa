@@ -12,7 +12,8 @@ sealed class AuthState {
         val name: String?,
         val subscriptionActive: Boolean
     ) : AuthState() {
-        val hasAccess: Boolean get() = subscriptionActive
+        /** Premium controls paid features, not access to the core app. */
+        val isPremium: Boolean get() = subscriptionActive
     }
 }
 

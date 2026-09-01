@@ -2,7 +2,9 @@ package com.nexal.app.ui.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
@@ -26,6 +28,7 @@ import com.nexal.app.ui.components.FadeSlideIn
 import com.nexal.app.ui.components.FitCard
 import com.nexal.app.ui.components.GradientButton
 import com.nexal.app.ui.components.ScalePopIn
+import com.nexal.app.ui.components.rememberAdaptiveMetrics
 import com.nexal.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,6 +38,7 @@ fun ForgotPasswordScreen(
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val metrics = rememberAdaptiveMetrics()
     var email by remember { mutableStateOf("") }
 
     Box(
@@ -61,28 +65,38 @@ fun ForgotPasswordScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .imePadding()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .verticalScroll(rememberScrollState())
+                    .padding(
+                        horizontal = metrics.horizontalPadding,
+                        vertical = metrics.verticalPadding
+                    ),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (uiState.forgotPasswordSent) {
                     ScalePopIn {
-                        Icon(Icons.Default.Email, null, modifier = Modifier.size(64.dp), tint = BrandBlue)
+                        Icon(
+                            Icons.Default.Email,
+                            null,
+                            modifier = Modifier.size(metrics.heroSize),
+                            tint = BrandBlue
+                        )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(metrics.sectionSpacing))
                     FadeSlideIn(delayMs = 80) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 "Check Your Email",
                                 style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 "We've sent a password reset link to your email. Please check your inbox.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
                     }
@@ -92,22 +106,24 @@ fun ForgotPasswordScreen(
                             Text(
                                 "Forgot your password?",
                                 style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 "Enter your email and we'll send you a link to reset it.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(28.dp))
+                    Spacer(modifier = Modifier.height(metrics.sectionSpacing))
 
                     ScalePopIn(delayMs = 80) {
                         FitCard(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.padding(20.dp)) {
+                            Column(modifier = Modifier.padding(if (metrics.isCompactWidth) 16.dp else 20.dp)) {
                                 OutlinedTextField(
                                     value = email,
                                     onValueChange = { email = it },
@@ -121,8 +137,13 @@ fun ForgotPasswordScreen(
                                 Spacer(modifier = Modifier.height(16.dp))
 
                                 if (uiState.error != null) {
-                                    Text(uiState.error!!, color = ErrorRed, style = MaterialTheme.typography.bodySmall)
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        uiState.error!!,
+                                        color = ErrorRed,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Spacer(modifier = Modifier.height(metrics.fieldSpacing))
                                 }
 
                                 GradientButton(
@@ -149,6 +170,7 @@ fun ResetPasswordScreen(
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val metrics = rememberAdaptiveMetrics()
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -176,22 +198,27 @@ fun ResetPasswordScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .imePadding()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .verticalScroll(rememberScrollState())
+                    .padding(
+                        horizontal = metrics.horizontalPadding,
+                        vertical = metrics.verticalPadding
+                    ),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 FadeSlideIn {
                     Text(
                         "Create a new password",
                         style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(metrics.sectionSpacing))
 
                 ScalePopIn(delayMs = 80) {
                     FitCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(20.dp)) {
+                        Column(modifier = Modifier.padding(if (metrics.isCompactWidth) 16.dp else 20.dp)) {
                             OutlinedTextField(
                                 value = password,
                                 onValueChange = { password = it },
@@ -210,7 +237,7 @@ fun ResetPasswordScreen(
                                 singleLine = true,
                                 shape = MaterialTheme.shapes.medium
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(metrics.fieldSpacing))
                             OutlinedTextField(
                                 value = confirmPassword,
                                 onValueChange = { confirmPassword = it },
@@ -225,8 +252,13 @@ fun ResetPasswordScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             if (uiState.error != null) {
-                                Text(uiState.error!!, color = ErrorRed, style = MaterialTheme.typography.bodySmall)
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    uiState.error!!,
+                                    color = ErrorRed,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Spacer(modifier = Modifier.height(metrics.fieldSpacing))
                             }
 
                             GradientButton(

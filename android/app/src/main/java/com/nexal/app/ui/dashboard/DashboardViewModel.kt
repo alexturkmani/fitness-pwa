@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.util.Locale
 import javax.inject.Inject
 
 data class DashboardUiState(
@@ -46,7 +47,10 @@ data class DashboardUiState(
     val hasWorkoutPlan: Boolean = false,
     val hasMealPlan: Boolean = false,
     val isGeneratingPlans: Boolean = false,
-    val firstWinMessage: String? = null
+    val firstWinMessage: String? = null,
+    val promptPlayReview: Boolean = false,
+    // Last 7 days of intake, oldest first, as (single-letter day, calories).
+    val weeklyCalories: List<Pair<String, Int>> = emptyList()
 )
 
 @HiltViewModel
@@ -69,7 +73,13 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             authRepo.authState.collect { state ->
                 if (state is AuthState.Authenticated) {
-                    _uiState.update { it.copy(showTrialExpiredBanner = !state.subscriptionActive) }
+                    _uiState.update {
+                        it.copy(
+                            showTrialExpiredBanner = !state.subscriptionActive,
+                            // Prefer profile name; fall back to auth display name
+                            userName = it.userName.ifBlank { state.name.orEmpty() }
+                        )
+                    }
                 }
             }
         }
@@ -80,8 +90,9 @@ class DashboardViewModel @Inject constructor(
                     val waterGoal = calculateDailyWaterIntakeMl(profile.weight, profile.activityLevel)
                     val macros = calculateMacroTargets(profile)
                     _uiState.update {
+                        val authName = (authRepo.authState.value as? AuthState.Authenticated)?.name
                         it.copy(
-                            userName = profile.name,
+                            userName = profile.name.ifBlank { authName.orEmpty() },
                             onboardingCompleted = profile.onboardingCompleted,
                             currentWeight = profile.weight,
                             waterGoalMl = waterGoal,
@@ -160,6 +171,17 @@ class DashboardViewModel @Inject constructor(
                     val days = entries.map { it.date }.distinct().size.coerceAtLeast(1)
                     _uiState.update { it.copy(avgDailyCalories = totalCalories / days) }
                 }
+                // Bucket by day so the chart always shows all 7 columns, including
+                // zero days — a gap is information, not something to omit.
+                val byDate = entries.groupBy { it.date }
+                    .mapValues { (_, e) -> e.sumOf { it.macros.calories * it.quantity } }
+                val series = (0..6).map { offset ->
+                    val day = sevenDaysAgo.plusDays(offset.toLong())
+                    val label = day.dayOfWeek
+                        .getDisplayName(java.time.format.TextStyle.NARROW, Locale.getDefault())
+                    label to (byDate[formatDate(day)] ?: 0)
+                }
+                _uiState.update { it.copy(weeklyCalories = series) }
             }
         }
 
@@ -200,6 +222,11 @@ class DashboardViewModel @Inject constructor(
 
     fun generateStarterPlans() {
         viewModelScope.launch {
+            val auth = authRepo.authState.value as? AuthState.Authenticated
+            if (auth?.isPremium != true) {
+                _uiState.update { it.copy(firstWinMessage = "Premium unlocks personalized AI plans") }
+                return@launch
+            }
             val profile = profileRepo.getProfile()
             if (profile == null || !profile.onboardingCompleted) {
                 _uiState.update { it.copy(firstWinMessage = "Complete onboarding first") }
@@ -208,6 +235,7 @@ class DashboardViewModel @Inject constructor(
             _uiState.update {
                 it.copy(isGeneratingPlans = true, firstWinMessage = "Creating your AI workout & meal plans…")
             }
+            var anySaved = false
             coroutineScope {
                 val workoutJob = async {
                     aiRepo.generateWorkoutPlan(profile = profile, workoutStyle = profile.workoutStyle)
@@ -216,12 +244,18 @@ class DashboardViewModel @Inject constructor(
                     aiRepo.generateMealPlan(profile = profile, allergies = profile.allergies)
                 }
                 when (val w = workoutJob.await()) {
-                    is Resource.Success -> workoutRepo.savePlan(w.data)
+                    is Resource.Success -> {
+                        workoutRepo.savePlan(w.data)
+                        anySaved = true
+                    }
                     is Resource.Error -> {}
                     is Resource.Loading -> {}
                 }
                 when (val m = mealJob.await()) {
-                    is Resource.Success -> nutritionRepo.saveMealPlan(m.data)
+                    is Resource.Success -> {
+                        nutritionRepo.saveMealPlan(m.data)
+                        anySaved = true
+                    }
                     is Resource.Error -> {}
                     is Resource.Loading -> {}
                 }
@@ -229,7 +263,8 @@ class DashboardViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isGeneratingPlans = false,
-                    firstWinMessage = "Your plans are ready — open Workouts & Meals"
+                    firstWinMessage = "Your plans are ready — open Workouts & Meals",
+                    promptPlayReview = anySaved
                 )
             }
         }
@@ -237,5 +272,9 @@ class DashboardViewModel @Inject constructor(
 
     fun clearFirstWinMessage() {
         _uiState.update { it.copy(firstWinMessage = null) }
+    }
+
+    fun markReviewPrompted() {
+        _uiState.update { it.copy(promptPlayReview = false) }
     }
 }

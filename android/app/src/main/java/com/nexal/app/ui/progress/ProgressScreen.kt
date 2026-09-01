@@ -50,14 +50,14 @@ fun ProgressScreen(
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         StatCard(
                             icon = Icons.Default.FitnessCenter,
-                            iconColor = BrandBlue,
+                            iconColor = Accent,
                             label = "Workouts This Week",
                             value = "${uiState.weeklyWorkouts}",
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
                             icon = Icons.Default.LocalFireDepartment,
-                            iconColor = MacroCalorie,
+                            iconColor = Accent,
                             label = "Avg Daily Calories",
                             value = "${uiState.avgDailyCalories}",
                             modifier = Modifier.weight(1f)
@@ -70,7 +70,7 @@ fun ProgressScreen(
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         StatCard(
                             icon = Icons.Default.MonitorWeight,
-                            iconColor = Cyan500,
+                            iconColor = Accent,
                             label = "Current Weight",
                             value = "${uiState.currentWeight} kg",
                             modifier = Modifier.weight(1f)
@@ -99,9 +99,13 @@ fun ProgressScreen(
 
             item {
                 FadeSlideIn(delayMs = 100) {
-                    FitCard {
+                    FitCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Weight Trend", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "WEIGHT TREND",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             Spacer(modifier = Modifier.height(12.dp))
                             if (uiState.weightData.isEmpty()) {
                                 Text(
@@ -111,15 +115,26 @@ fun ProgressScreen(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)
                                 )
                             } else {
-                                uiState.weightData.takeLast(10).forEach { (date, weight) ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(date, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text("$weight kg", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
-                                    }
+                                val recent = uiState.weightData.takeLast(12)
+                                Row(verticalAlignment = Alignment.Bottom) {
+                                    Text(
+                                        "${recent.last().second} kg",
+                                        style = MaterialTheme.typography.headlineMedium
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    val delta = recent.last().second - recent.first().second
+                                    Text(
+                                        (if (delta >= 0) "+" else "") + String.format("%.1f", delta) + " kg",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (delta <= 0) SuccessGreen else WarningAmber,
+                                        modifier = Modifier.padding(bottom = 5.dp)
+                                    )
                                 }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                LineTrendChart(
+                                    points = recent.map { it.second.toFloat() },
+                                    labels = listOf(recent.first().first, recent.last().first)
+                                )
                                 if (uiState.targetWeight > 0) {
                                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -135,9 +150,13 @@ fun ProgressScreen(
 
             item {
                 FadeSlideIn(delayMs = 140) {
-                    FitCard {
+                    FitCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Workout Volume (kg × reps)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "WORKOUT VOLUME (KG × REPS)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             Spacer(modifier = Modifier.height(12.dp))
                             if (uiState.volumeData.isEmpty()) {
                                 Text(
@@ -147,18 +166,13 @@ fun ProgressScreen(
                                     modifier = Modifier.padding(vertical = 32.dp)
                                 )
                             } else {
-                                uiState.volumeData.forEach { (week, volume, workouts) ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(week, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                            Text("$volume kg", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
-                                            Text("$workouts sessions", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
-                                    }
-                                }
+                                val vols = uiState.volumeData.takeLast(7)
+                                Text(
+                                    "${vols.sumOf { it.second }} kg lifted",
+                                    style = MaterialTheme.typography.headlineMedium
+                                )
+                                Spacer(modifier = Modifier.height(18.dp))
+                                WeeklyBarChart(data = vols.map { it.first to it.second })
                             }
                         }
                     }
@@ -167,21 +181,29 @@ fun ProgressScreen(
 
             item {
                 FadeSlideIn(delayMs = 180) {
-                    FitCard {
+                    FitCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Daily Calories & Protein", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "DAILY CALORIES & PROTEIN",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             Spacer(modifier = Modifier.height(12.dp))
-                            uiState.calorieData.forEach { (day, calories, protein) ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(day, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                        Text("$calories cal", style = MaterialTheme.typography.bodySmall, color = MacroCalorie)
-                                        Text("${protein}g protein", style = MaterialTheme.typography.bodySmall, color = MacroProtein)
-                                    }
-                                }
+                            if (uiState.calorieData.isEmpty()) {
+                                Text(
+                                    "Log meals to see daily intake",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(vertical = 32.dp)
+                                )
+                            } else {
+                                val cals = uiState.calorieData.takeLast(7)
+                                Text(
+                                    "${cals.sumOf { it.second } / cals.size} cal / day",
+                                    style = MaterialTheme.typography.headlineMedium
+                                )
+                                Spacer(modifier = Modifier.height(18.dp))
+                                WeeklyBarChart(data = cals.map { it.first to it.second })
                             }
                         }
                     }
@@ -190,9 +212,13 @@ fun ProgressScreen(
 
             item {
                 FadeSlideIn(delayMs = 200) {
-                    FitCard {
+                    FitCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Avg. Daily Macro Split", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "AVG. DAILY MACRO SPLIT",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             Spacer(modifier = Modifier.height(12.dp))
                             MacroSplitRow("Protein", uiState.avgProtein, "g", MacroProtein)
                             MacroSplitRow("Carbs", uiState.avgCarbs, "g", MacroCarbs)
@@ -204,9 +230,13 @@ fun ProgressScreen(
 
             item {
                 FadeSlideIn(delayMs = 220) {
-                    FitCard {
+                    FitCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Daily Water Intake", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "DAILY WATER INTAKE",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             Spacer(modifier = Modifier.height(12.dp))
                             if (uiState.waterData.isEmpty() || uiState.waterData.all { it.second == 0 }) {
                                 Text(
@@ -238,9 +268,13 @@ fun ProgressScreen(
 
             item {
                 FadeSlideIn(delayMs = 240) {
-                    FitCard {
+                    FitCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Daily Cardio", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "DAILY CARDIO",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             Spacer(modifier = Modifier.height(12.dp))
                             if (uiState.cardioData.isEmpty() || uiState.cardioData.all { it.second == 0 }) {
                                 Text(

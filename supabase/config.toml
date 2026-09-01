@@ -233,10 +233,23 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Nexal-branded auth emails. Keep these in sync with the hosted project's
+# Authentication -> Email Templates.
+[auth.email.template.confirmation]
+subject = "Confirm your Nexal account"
+content_path = "./supabase/templates/confirm-signup.html"
+
+[auth.email.template.recovery]
+subject = "Reset your Nexal password"
+content_path = "./supabase/templates/reset-password.html"
+
+[auth.email.template.magic_link]
+subject = "Your Nexal sign-in link"
+content_path = "./supabase/templates/magic-link.html"
+
+[auth.email.template.email_change]
+subject = "Confirm your new Nexal email"
+content_path = "./supabase/templates/change-email.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
@@ -360,6 +373,40 @@ enabled = false
 authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
+
+# Legacy Edge JWT check rejects ES256 user access tokens. AI endpoints are
+# public-ish (anon key) and validate nothing user-specific server-side.
+[functions.ai-workout]
+verify_jwt = false
+[functions.ai-meal]
+verify_jwt = false
+[functions.ai-meal-substitute]
+verify_jwt = false
+[functions.ai-food-lookup]
+verify_jwt = false
+[functions.ai-exercise-suggestions]
+verify_jwt = false
+[functions.ai-assess]
+verify_jwt = false
+[functions.nutrition-lookup]
+verify_jwt = false
+
+# Auth landing pages are opened from email links in a browser — no JWT is sent.
+[functions.email-confirmed]
+verify_jwt = false
+[functions.auth-callback]
+verify_jwt = false
+
+# Purchase verify authenticates inside the function via auth.getUser().
+# Gateway JWT verify rejects ES256 user access tokens from the Android app.
+[functions.verify-purchase]
+verify_jwt = false
+[functions.rtdn-webhook]
+verify_jwt = false
+[functions.privacy-policy]
+verify_jwt = false
+[functions.nexal-account-deletion]
+verify_jwt = false
 
 [edge_runtime]
 enabled = true

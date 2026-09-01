@@ -163,8 +163,8 @@ fun SubscriptionScreen(
                         ) {
                             PlanOption(
                                 label = "Monthly",
-                                price = "\$12.99",
-                                period = "/month",
+                                price = uiState.monthlyPrice,
+                                period = uiState.monthlyPeriod,
                                 selected = uiState.selectedPlan == PlanType.MONTHLY,
                                 badge = null,
                                 onClick = { viewModel.selectPlan(PlanType.MONTHLY) },
@@ -172,10 +172,10 @@ fun SubscriptionScreen(
                             )
                             PlanOption(
                                 label = "Yearly",
-                                price = "\$110",
-                                period = "/year",
+                                price = uiState.yearlyPrice,
+                                period = uiState.yearlyPeriod,
                                 selected = uiState.selectedPlan == PlanType.YEARLY,
-                                badge = "Save 29%",
+                                badge = "Best value",
                                 onClick = { viewModel.selectPlan(PlanType.YEARLY) },
                                 modifier = Modifier.weight(1f)
                             )

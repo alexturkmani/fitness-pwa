@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexal – Email confirmed</title>
+  <style>
+    :root {
+      --bg: #F4F6F8;
+      --ink: #12161C;
+      --muted: #667385;
+      --blue: #059669;
+      --green: #059669;
+      --red: #E5484D;
+      --card: #ffffff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: linear-gradient(180deg, #E8F1FF 0%, var(--bg) 45%, #ffffff 100%);
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .card {
+      width: min(440px, 100%);
+      background: var(--card);
+      border-radius: 24px;
+      box-shadow: 0 16px 40px rgba(18, 22, 28, 0.08);
+      padding: 36px 28px;
+      text-align: center;
+    }
+    .logo {
+      width: 72px; height: 72px; border-radius: 20px;
+      background: var(--blue); color: white;
+      display: grid; place-items: center;
+      font-size: 34px; font-weight: 800;
+      margin: 0 auto 20px;
+    }
+    h1 { font-size: 26px; font-weight: 800; margin-bottom: 10px; }
+    p { color: var(--muted); font-size: 16px; line-height: 1.5; margin-bottom: 12px; }
+    .status { font-weight: 700; margin: 16px 0 8px; }
+    .ok { color: var(--green); }
+    .err { color: var(--red); }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 100%; margin-top: 18px; padding: 16px 18px;
+      border-radius: 14px; border: 0; text-decoration: none;
+      background: var(--blue); color: white; font-weight: 700; font-size: 16px;
+    }
+    .btn.secondary {
+      background: transparent; color: var(--blue);
+      border: 1.5px solid #BFD6FF; margin-top: 10px;
+    }
+    .hint { font-size: 13px; color: var(--muted); margin-top: 18px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">N</div>
+    <h1 id="title">Confirming…</h1>
+    <p id="message">Please wait while we finish verifying your email.</p>
+    <div id="status" class="status"></div>
+    <a id="openApp" class="btn" href="nexal://app/login" style="display:none">Open Nexal</a>
+    <a id="playStore" class="btn secondary" href="https://play.google.com/store/apps/details?id=com.nexal.app" style="display:none">Get the app on Google Play</a>
+    <p class="hint" id="hint"></p>
+  </div>
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const query = new URLSearchParams(window.location.search);
+      const error = params.get("error") || params.get("error_description") || query.get("error_description") || query.get("error");
+      const type = params.get("type") || query.get("type") || "";
+      const accessToken = params.get("access_token");
+      const code = query.get("code");
+
+      const title = document.getElementById("title");
+      const message = document.getElementById("message");
+      const status = document.getElementById("status");
+      const openApp = document.getElementById("openApp");
+      const playStore = document.getElementById("playStore");
+      const hint = document.getElementById("hint");
+
+      function showSuccess(kind) {
+        title.textContent = kind === "recovery" ? "Password reset ready" : "Email confirmed";
+        message.textContent = kind === "recovery"
+          ? "You can return to the Nexal app and set a new password."
+          : "Your email is verified. Open the Nexal app and sign in to continue.";
+        status.textContent = "Success";
+        status.className = "status ok";
+        openApp.style.display = "inline-flex";
+        playStore.style.display = "inline-flex";
+        hint.textContent = "If the app doesn’t open automatically, tap Open Nexal above.";
+        // Best-effort deep link into the installed app
+        setTimeout(function () {
+          window.location.href = "nexal://app/login";
+        }, 600);
+      }
+
+      function showError(text) {
+        title.textContent = "Couldn’t confirm";
+        message.textContent = text || "This link is invalid or has expired. Request a new email from the app.";
+        status.textContent = "Something went wrong";
+        status.className = "status err";
+        openApp.style.display = "inline-flex";
+        playStore.style.display = "inline-flex";
+        openApp.textContent = "Back to Nexal";
+      }
+
+      if (error) {
+        showError(decodeURIComponent(String(error).replace(/\+/g, " ")));
+        return;
+      }
+
+      if (accessToken || code || type === "signup" || type === "email_change" || type === "recovery" || type === "magiclink" || type === "invite") {
+        showSuccess(type === "recovery" ? "recovery" : "signup");
+        return;
+      }
+
+      // No tokens: user may have opened Site URL directly
+      title.textContent = "Nexal";
+      message.textContent = "Open this page from the link in your Nexal email to confirm your account.";
+      openApp.style.display = "inline-flex";
+      playStore.style.display = "inline-flex";
+    })();
+  </script>
+</body>
+</html>

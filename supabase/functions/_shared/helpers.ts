@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 // Shared Gemini AI helper for all AI Edge Functions
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
 const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
@@ -134,6 +136,51 @@ export function jsonResponse(data: unknown, status = 200) {
 
 export function errorResponse(message: string, status = 500) {
   return jsonResponse({ error: message }, status);
+}
+
+/**
+ * Authenticate the caller and enforce an active, unexpired Premium subscription.
+ *
+ * Function gateway JWT verification stays disabled because Supabase Auth issues
+ * ES256 tokens while the legacy gateway verifier rejects that algorithm. The
+ * Auth API performs the authoritative token validation here instead.
+ */
+export async function requirePremium(req: Request): Promise<Response | null> {
+  const authHeader = req.headers.get("authorization");
+  const token = authHeader?.match(/^Bearer\s+(.+)$/i)?.[1];
+  if (!token) return errorResponse("Unauthorized", 401);
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+    console.error("Premium authorization is missing Supabase environment variables");
+    return errorResponse("Premium authorization is unavailable", 500);
+  }
+
+  const authClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+  const { data: { user }, error: authError } = await authClient.auth.getUser(token);
+  if (authError || !user) return errorResponse("Unauthorized", 401);
+
+  const admin = createClient(supabaseUrl, serviceRoleKey);
+  const { data: subscription, error: subscriptionError } = await admin
+    .from("user_subscriptions")
+    .select("status, expiry_time")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (subscriptionError) {
+    console.error("Premium subscription lookup failed:", subscriptionError.message);
+    return errorResponse("Unable to verify Premium access", 500);
+  }
+
+  const expiryTime = subscription?.expiry_time
+    ? Date.parse(subscription.expiry_time)
+    : Number.POSITIVE_INFINITY;
+  const isActive = subscription?.status === "active" && expiryTime > Date.now();
+  return isActive ? null : errorResponse("Premium subscription required", 403);
 }
 
 // ─── Nutrition calculation helpers (ported from utils.ts) ────────────────────

@@ -1,6 +1,7 @@
-import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
-
-serve((_req) => {
+// Native Deno.serve — the deprecated std/http serve shim was not passing
+// Content-Type through, so the page was served as text/plain and browsers
+// (with nosniff set) rendered the HTML source as literal text.
+Deno.serve((_req) => {
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -72,10 +73,28 @@ serve((_req) => {
     <div class="check-circle">
       <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
     </div>
-    <h1>Email Verified</h1>
-    <p>Your Nexal account has been confirmed. Go back to the app and sign in.</p>
-    <a href="nexal://app/login" class="btn">Back to Sign In</a>
+    <h1 id="title">Email Verified</h1>
+    <p id="message">Your Nexal account has been confirmed. Go back to the app and sign in.</p>
+    <a href="nexal://app/login" class="btn" id="openApp">Back to Sign In</a>
   </div>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      var query = new URLSearchParams(window.location.search);
+      var error = params.get("error_description") || params.get("error") || query.get("error_description") || query.get("error");
+      var type = params.get("type") || query.get("type") || "";
+      if (error) {
+        document.getElementById("title").textContent = "Couldn't confirm";
+        document.getElementById("message").textContent = decodeURIComponent(String(error).replace(/\\+/g, " "));
+        return;
+      }
+      if (type === "recovery") {
+        document.getElementById("title").textContent = "Password reset ready";
+        document.getElementById("message").textContent = "Return to the Nexal app to set a new password.";
+      }
+      setTimeout(function () { window.location.href = "nexal://app/login"; }, 700);
+    })();
+  </script>
 </body>
 </html>`;
 

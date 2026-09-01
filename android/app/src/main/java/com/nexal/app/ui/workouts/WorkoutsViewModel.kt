@@ -3,8 +3,10 @@ package com.nexal.app.ui.workouts
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nexal.app.data.repository.AiRepository
+import com.nexal.app.data.repository.AuthRepository
 import com.nexal.app.data.repository.ProfileRepository
 import com.nexal.app.data.repository.WorkoutRepository
+import com.nexal.app.domain.model.AuthState
 import com.nexal.app.domain.model.WorkoutDay
 import com.nexal.app.domain.model.WorkoutLog
 import com.nexal.app.domain.model.WorkoutPlan
@@ -30,7 +32,8 @@ data class WorkoutsUiState(
 class WorkoutsViewModel @Inject constructor(
     private val workoutRepo: WorkoutRepository,
     private val profileRepo: ProfileRepository,
-    private val aiRepo: AiRepository
+    private val aiRepo: AiRepository,
+    private val authRepo: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WorkoutsUiState())
@@ -71,6 +74,11 @@ class WorkoutsViewModel @Inject constructor(
 
     fun generatePlan() {
         viewModelScope.launch {
+            val auth = authRepo.authState.value as? AuthState.Authenticated
+            if (auth?.isPremium != true) {
+                _uiState.update { it.copy(error = "Premium is required to generate AI workout plans.") }
+                return@launch
+            }
             val profile = profileRepo.getProfile()
             if (profile == null || !profile.onboardingCompleted) {
                 _uiState.update {

@@ -51,18 +51,22 @@ class MainActivity : ComponentActivity() {
 
     private fun handleDeepLink(intent: Intent?) {
         val data = intent?.data ?: return
-        val path = data.path ?: return
+        val host = data.host.orEmpty()
+        val path = data.path.orEmpty()
+        val full = "${data.scheme}://$host$path"
 
         when {
+            // nexal://app/login (from auth-callback page)
+            data.scheme == "nexal" && (path.contains("login") || full.contains("login") || host == "app") -> {
+                _deepLinkFlow.tryEmit("login")
+            }
             path.startsWith("/reset-password") -> {
                 val token = data.getQueryParameter("token")
                 if (!token.isNullOrBlank()) {
                     _deepLinkFlow.tryEmit("reset_password/$token")
                 }
             }
-            path.startsWith("/api/auth/verify") -> {
-                // Email verification is handled by the server via browser
-                // Just navigate to login after verification
+            path.startsWith("/api/auth/verify") || path.contains("auth-callback") -> {
                 _deepLinkFlow.tryEmit("login")
             }
         }

@@ -10,7 +10,9 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -52,7 +54,10 @@ fun ScannerScreen(
         }
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Barcode Scanner", fontWeight = FontWeight.Bold) },
@@ -65,7 +70,11 @@ fun ScannerScreen(
         }
     ) { padding ->
         Column(
-            modifier = Modifier.padding(padding).padding(16.dp),
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             when {
@@ -79,6 +88,7 @@ fun ScannerScreen(
                             ratio = uiState.proteinRatio,
                             ratingLabel = uiState.ratingLabel,
                             ratingColor = uiState.ratingColor,
+                            addedToLog = uiState.addedToLog,
                             onAddToLog = { viewModel.addToLog() },
                             onScanAgain = { viewModel.resetAndScan() }
                         )
@@ -244,14 +254,15 @@ fun ScannerScreen(
         }
     }
 
-    uiState.toast?.let {
-        LaunchedEffect(it) {
-            kotlinx.coroutines.delay(2000)
+    uiState.toast?.let { message ->
+        LaunchedEffect(message) {
+            snackbarHostState.showSnackbar(message)
             viewModel.clearToast()
         }
     }
 }
 
+@androidx.annotation.OptIn(markerClass = [androidx.camera.core.ExperimentalGetImage::class])
 @Composable
 fun BarcodeCameraPreview(
     onBarcodeDetected: (String) -> Unit,
@@ -285,7 +296,6 @@ fun BarcodeCameraPreview(
                     .build()
                     .also { analysis ->
                         analysis.setAnalyzer(ContextCompat.getMainExecutor(ctx)) { imageProxy ->
-                            @androidx.camera.core.ExperimentalGetImage
                             val mediaImage = imageProxy.image
                             if (mediaImage != null && !detected) {
                                 val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
@@ -331,6 +341,7 @@ private fun ProductResultCard(
     ratio: Double,
     ratingLabel: String,
     ratingColor: Color,
+    addedToLog: Boolean,
     onAddToLog: () -> Unit,
     onScanAgain: () -> Unit
 ) {
@@ -379,8 +390,28 @@ private fun ProductResultCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                GradientButton(text = "Add to Log", onClick = onAddToLog, modifier = Modifier.weight(1f))
-                FitButton(text = "Scan Again", onClick = onScanAgain, variant = ButtonVariant.SECONDARY, icon = Icons.Default.Refresh)
+                if (addedToLog) {
+                    FitButton(
+                        text = "Added",
+                        onClick = {},
+                        variant = ButtonVariant.SECONDARY,
+                        icon = Icons.Default.Check,
+                        modifier = Modifier.weight(1f),
+                        enabled = false
+                    )
+                } else {
+                    GradientButton(
+                        text = "Add to Log",
+                        onClick = onAddToLog,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                FitButton(
+                    text = "Scan Again",
+                    onClick = onScanAgain,
+                    variant = ButtonVariant.SECONDARY,
+                    icon = Icons.Default.Refresh
+                )
             }
         }
     }

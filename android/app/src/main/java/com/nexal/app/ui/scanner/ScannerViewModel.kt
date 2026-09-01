@@ -4,7 +4,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nexal.app.data.repository.AiRepository
+import com.nexal.app.data.repository.AuthRepository
 import com.nexal.app.data.repository.NutritionRepository
+import com.nexal.app.domain.model.AuthState
 import com.nexal.app.domain.model.FoodAssessment
 import com.nexal.app.domain.model.FoodLogEntry
 import com.nexal.app.domain.model.FoodSource
@@ -31,19 +33,25 @@ data class ScannerUiState(
     val aiAssessment: FoodAssessment? = null,
     val assessmentError: String? = null,
     val error: String? = null,
-    val toast: String? = null
+    val toast: String? = null,
+    val addedToLog: Boolean = false
 )
 
 @HiltViewModel
 class ScannerViewModel @Inject constructor(
     private val nutritionRepo: NutritionRepository,
-    private val aiRepo: AiRepository
+    private val aiRepo: AiRepository,
+    private val authRepo: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ScannerUiState())
     val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
 
     fun startScanning() {
+        if (!hasPremiumAccess()) {
+            _uiState.update { it.copy(error = "Premium is required for barcode scanning.") }
+            return
+        }
         _uiState.update { it.copy(scanning = true, error = null, product = null, aiAssessment = null, assessmentError = null) }
     }
 
@@ -52,6 +60,10 @@ class ScannerViewModel @Inject constructor(
     }
 
     fun onBarcodeScanned(barcode: String) {
+        if (!hasPremiumAccess()) {
+            _uiState.update { it.copy(scanning = false, error = "Premium is required for barcode scanning.") }
+            return
+        }
         _uiState.update { it.copy(scanning = false, isLoading = true) }
         viewModelScope.launch {
             when (val result = aiRepo.lookupBarcode(barcode)) {
@@ -117,7 +129,12 @@ class ScannerViewModel @Inject constructor(
                 createdAt = todayFormatted()
             )
             nutritionRepo.addFoodLogEntry(entry)
-            _uiState.update { it.copy(toast = "${product.name} added to food log") }
+            _uiState.update {
+                it.copy(
+                    toast = "${product.name} added to food log",
+                    addedToLog = true
+                )
+            }
         }
     }
 
@@ -130,4 +147,7 @@ class ScannerViewModel @Inject constructor(
     fun clearToast() {
         _uiState.update { it.copy(toast = null) }
     }
+
+    private fun hasPremiumAccess(): Boolean =
+        (authRepo.authState.value as? AuthState.Authenticated)?.isPremium == true
 }

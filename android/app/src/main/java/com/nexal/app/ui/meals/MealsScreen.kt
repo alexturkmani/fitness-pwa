@@ -30,6 +30,8 @@ private val COMMON_ALLERGIES = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MealsScreen(
+    isPremium: Boolean,
+    onUpgrade: () -> Unit,
     viewModel: MealsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -41,18 +43,32 @@ fun MealsScreen(
     var customAllergy by remember { mutableStateOf("") }
     var subReason by remember { mutableStateOf("") }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = SuccessGreen,
+                    contentColor = Color.White,
+                    actionColor = Color.White
+                )
+            }
+        },
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Food Diary", fontWeight = FontWeight.Bold)
+                    Text("Food Diary", style = MaterialTheme.typography.headlineMedium)
                 },
                 actions = {
                     if (uiState.plan != null) {
                         IconButton(onClick = { showDeleteConfirm = true }) {
                             Icon(Icons.Default.Delete, "Delete plan", tint = MaterialTheme.colorScheme.error)
                         }
-                        IconButton(onClick = { showAllergyModal = true }) {
+                        IconButton(
+                            onClick = { if (isPremium) showAllergyModal = true else onUpgrade() }
+                        ) {
                             Icon(Icons.Default.Refresh, "New plan", tint = BrandBlue)
                         }
                     }
@@ -69,9 +85,13 @@ fun MealsScreen(
             EmptyState(
                 icon = Icons.Default.Restaurant,
                 title = "No Meal Plan Yet",
-                description = "Generate an AI meal plan tailored to your goals and macro targets.",
-                actionLabel = "Generate Meal Plan",
-                onAction = { showAllergyModal = true },
+                description = if (isPremium) {
+                    "Generate an AI meal plan tailored to your goals and macro targets."
+                } else {
+                    "Track meals manually in Diary, or unlock a personalized AI meal plan."
+                },
+                actionLabel = if (isPremium) "Generate Meal Plan" else "Unlock AI Meal Plan",
+                onAction = { if (isPremium) showAllergyModal = true else onUpgrade() },
                 error = uiState.error,
                 modifier = Modifier.padding(padding)
             )
@@ -168,10 +188,10 @@ fun MealsScreen(
                                             modifier = Modifier
                                                 .size(40.dp)
                                                 .clip(RoundedCornerShape(12.dp))
-                                                .background(Cyan500.copy(alpha = 0.15f)),
+                                                .background(Accent.copy(alpha = 0.15f)),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            Icon(Icons.Default.WaterDrop, null, tint = Cyan500, modifier = Modifier.size(20.dp))
+                                            Icon(Icons.Default.WaterDrop, null, tint = Accent, modifier = Modifier.size(20.dp))
                                         }
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
@@ -182,7 +202,7 @@ fun MealsScreen(
                                             Text(
                                                 "Recommended: ${waterMl} ml (${"%.1f".format(waterMl / 1000.0)}L)",
                                                 style = MaterialTheme.typography.bodySmall,
-                                                color = Cyan500
+                                                color = Accent
                                             )
                                         }
                                     }
@@ -220,28 +240,46 @@ fun MealsScreen(
                 item {
                     FadeSlideIn(delayMs = 120) {
                         Text(
-                            "Meals",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                            "MEALS",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
-                itemsIndexed(plan.meals, key = { _, meal -> meal.id }) { index, meal ->
+                itemsIndexed(
+                    plan.meals,
+                    key = { _, meal -> MealsViewModel.mealKey(meal) }
+                ) { index, meal ->
                     FadeSlideIn(delayMs = 140 + index * 55) {
                         MealCard(
                             meal = meal,
+                            added = MealsViewModel.mealKey(meal) in uiState.addedMealIds,
                             onAddToLog = { viewModel.addMealToLog(meal) },
                             onSubstitute = { food ->
-                                viewModel.selectFoodForSub(meal.name, food)
-                                subReason = ""
-                                showSubModal = true
+                                if (isPremium) {
+                                    viewModel.selectFoodForSub(meal.name, food)
+                                    subReason = ""
+                                    showSubModal = true
+                                } else {
+                                    onUpgrade()
+                                }
                             }
                         )
                     }
                 }
 
                 item { Spacer(modifier = Modifier.height(8.dp)) }
+            }
+        }
+
+        uiState.toast?.let { message ->
+            LaunchedEffect(message) {
+                snackbarHostState.showSnackbar(
+                    message = message,
+                    duration = SnackbarDuration.Short
+                )
+                viewModel.clearToast()
             }
         }
 
@@ -317,6 +355,7 @@ fun MealsScreen(
 @Composable
 private fun MealCard(
     meal: Meal,
+    added: Boolean,
     onAddToLog: () -> Unit,
     onSubstitute: (FoodItem) -> Unit
 ) {
@@ -334,20 +373,17 @@ private fun MealCard(
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        "${meal.totalMacros.calories} cal",
+                        if (added) "Added to diary · ${meal.totalMacros.calories} cal"
+                        else "${meal.totalMacros.calories} cal",
                         style = MaterialTheme.typography.labelMedium,
-                        color = BrandBlue
+                        color = if (added) SuccessGreen else BrandBlue
                     )
                 }
-                FilledTonalIconButton(
+                AddConfirmIconButton(
+                    added = added,
                     onClick = onAddToLog,
-                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                        containerColor = Emerald50,
-                        contentColor = BrandBlue
-                    )
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add to log")
-                }
+                    contentDescription = "Add to log"
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -463,7 +499,7 @@ private fun AllergySelectionModal(
                         onClick = { onToggleAllergy(allergy) },
                         label = { Text(allergy) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Emerald50,
+                            selectedContainerColor = Accent,
                             selectedLabelColor = BrandBlue
                         )
                     )

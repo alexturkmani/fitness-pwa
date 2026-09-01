@@ -3,6 +3,7 @@ package com.nexal.app.ui.onboarding
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nexal.app.data.repository.AiRepository
+import com.nexal.app.data.repository.AuthRepository
 import com.nexal.app.data.repository.NutritionRepository
 import com.nexal.app.data.repository.ProfileRepository
 import com.nexal.app.data.repository.WorkoutRepository
@@ -36,6 +37,7 @@ data class OnboardingUiState(
     val liftingExperience: LiftingExperience = LiftingExperience.BEGINNER,
     val trainingLocation: TrainingLocation = TrainingLocation.GYM,
     val unitSystem: UnitSystem = UnitSystem.METRIC,
+    val isPremium: Boolean = false,
     val isSaving: Boolean = false,
     val generatingPlans: Boolean = false,
     val statusMessage: String = "",
@@ -47,11 +49,29 @@ class OnboardingViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val aiRepository: AiRepository,
     private val workoutRepository: WorkoutRepository,
-    private val nutritionRepository: NutritionRepository
+    private val nutritionRepository: NutritionRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
+
+    init {
+        // Prefill display name from signup metadata when onboarding name is still empty
+        viewModelScope.launch {
+            authRepository.authState.collect { auth ->
+                if (auth is AuthState.Authenticated) {
+                    val authName = auth.name?.trim().orEmpty()
+                    _uiState.update { state ->
+                        state.copy(
+                            name = if (state.name.isBlank() && authName.isNotEmpty()) authName else state.name,
+                            isPremium = auth.isPremium
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     fun nextStep() { _uiState.update { it.copy(currentStep = (it.currentStep + 1).coerceAtMost(2)) } }
     fun previousStep() { _uiState.update { it.copy(currentStep = (it.currentStep - 1).coerceAtLeast(0)) } }
@@ -109,6 +129,18 @@ class OnboardingViewModel @Inject constructor(
                 updatedAt = now
             )
             profileRepository.saveProfile(profile)
+
+            if (!state.isPremium) {
+                _uiState.update {
+                    it.copy(
+                        isSaving = false,
+                        generatingPlans = false,
+                        statusMessage = "",
+                        completed = true
+                    )
+                }
+                return@launch
+            }
 
             _uiState.update { it.copy(statusMessage = "Creating your AI workout & meal plans…") }
 

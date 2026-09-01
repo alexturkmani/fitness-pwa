@@ -1,8 +1,10 @@
 package com.nexal.app.data.repository
 
+import android.content.Context
 import com.nexal.app.data.local.NexalDatabase
 import com.nexal.app.domain.model.AuthState
 import com.nexal.app.util.Resource
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
@@ -28,12 +30,26 @@ data class SubscriptionRow(
 class AuthRepository @Inject constructor(
     private val auth: Auth,
     private val postgrest: Postgrest,
-    private val database: NexalDatabase
+    private val database: NexalDatabase,
+    @ApplicationContext private val context: Context
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val prefs by lazy {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    }
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
+
+    companion object {
+        private const val PREFS_NAME = "nexal_auth_prefs"
+        private fun paywallKey(userId: String) = "paywall_dismissed_$userId"
+
+        /** Hosted HTML callback so verify links don't hit the bare Supabase API root. */
+        // Live edge function that renders a success page + nexal:// deep link
+        private val AUTH_CALLBACK_URL =
+            com.nexal.app.BuildConfig.SUPABASE_URL.trimEnd('/') + "/functions/v1/email-confirmed"
+    }
 
     init {
         // Observe Supabase session changes
@@ -57,7 +73,10 @@ class AuthRepository @Inject constructor(
                         _authState.value = AuthState.Unauthenticated
                     }
                     is SessionStatus.Initializing -> {
-                        _authState.value = AuthState.Loading
+                        // Don't replace the sign-in screen with a loading flash during logout.
+                        if (_authState.value !is AuthState.Unauthenticated) {
+                            _authState.value = AuthState.Loading
+                        }
                     }
                     else -> {}
                 }
@@ -98,7 +117,7 @@ class AuthRepository @Inject constructor(
 
     suspend fun register(name: String, email: String, password: String): Resource<Unit> {
         return try {
-            auth.signUpWith(Email) {
+            auth.signUpWith(Email, redirectUrl = AUTH_CALLBACK_URL) {
                 this.email = email
                 this.password = password
                 data = kotlinx.serialization.json.buildJsonObject {
@@ -115,11 +134,14 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun googleSignIn(idToken: String): Resource<AuthState.Authenticated> {
+    suspend fun googleSignIn(idToken: String, rawNonce: String = ""): Resource<AuthState.Authenticated> {
         return try {
             auth.signInWith(IDToken) {
                 this.provider = Google
                 this.idToken = idToken
+                if (rawNonce.isNotBlank()) {
+                    this.nonce = rawNonce
+                }
             }
             val state = waitForAuthenticatedState()
             if (state != null) Resource.Success(state)
@@ -131,7 +153,7 @@ class AuthRepository @Inject constructor(
 
     suspend fun forgotPassword(email: String): Resource<Unit> {
         return try {
-            auth.resetPasswordForEmail(email)
+            auth.resetPasswordForEmail(email, redirectUrl = AUTH_CALLBACK_URL)
             Resource.Success(Unit)
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Failed to send reset email")
@@ -169,7 +191,11 @@ class AuthRepository @Inject constructor(
             val subscriptionActive = checkSubscriptionStatus(user.id)
             val currentState = _authState.value
             if (currentState is AuthState.Authenticated) {
-                _authState.value = currentState.copy(subscriptionActive = subscriptionActive)
+                // Clear any legacy soft-paywall dismiss flags from earlier builds
+                prefs.edit().remove(paywallKey(user.id)).apply()
+                _authState.value = currentState.copy(
+                    subscriptionActive = subscriptionActive
+                )
             }
             Resource.Success(Unit)
         } catch (e: Exception) {
@@ -178,9 +204,16 @@ class AuthRepository @Inject constructor(
     }
 
     suspend fun logout() {
-        try { auth.signOut() } catch (_: Exception) {}
-        database.clearAllTables()
+        // Flip UI to the sign-in screen first so logout never feels like the app closed.
         _authState.value = AuthState.Unauthenticated
+        try {
+            auth.signOut()
+        } catch (_: Exception) {
+        }
+        try {
+            database.clearAllTables()
+        } catch (_: Exception) {
+        }
     }
 
     private suspend fun waitForAuthenticatedState(): AuthState.Authenticated? {

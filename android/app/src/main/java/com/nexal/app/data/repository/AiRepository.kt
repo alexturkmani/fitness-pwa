@@ -1,10 +1,19 @@
 package com.nexal.app.data.repository
 
+import com.nexal.app.BuildConfig
 import com.nexal.app.data.remote.dto.*
 import com.nexal.app.domain.model.*
 import com.nexal.app.util.Resource
-import io.github.jan.supabase.functions.Functions
-import io.ktor.client.call.body
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import kotlinx.serialization.json.*
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,11 +26,33 @@ private val json = Json {
 
 @Singleton
 class AiRepository @Inject constructor(
-    private val functions: Functions
+    private val supabase: SupabaseClient
 ) {
+    /**
+     * The gateway JWT check is disabled for ES256 compatibility, so each
+     * Premium Edge Function validates this user token through Supabase Auth.
+     */
     private suspend fun callFunction(name: String, bodyObj: JsonObject): String {
-        val response = functions.invoke(name, body = bodyObj)
-        val text = response.body<String>()
+        val url = BuildConfig.SUPABASE_URL.trimEnd('/') + "/functions/v1/$name"
+        val accessToken = supabase.auth.currentSessionOrNull()?.accessToken
+            ?: throw IllegalStateException("Sign in again to use Premium features.")
+        val response = supabase.httpClient.post(url) {
+            header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+            header(HttpHeaders.Authorization, "Bearer $accessToken")
+            contentType(ContentType.Application.Json)
+            setBody(bodyObj)
+        }
+        val text = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            val gatewayMsg = runCatching {
+                json.parseToJsonElement(text).jsonObject["message"]?.jsonPrimitive?.content
+                    ?: json.parseToJsonElement(text).jsonObject["error"]?.jsonPrimitive?.content
+            }.getOrNull()
+            throw IllegalStateException(
+                gatewayMsg?.takeIf { it.isNotBlank() }
+                    ?: "AI request failed (${response.status.value})"
+            )
+        }
         throwIfFunctionError(text)
         return text
     }
@@ -205,15 +236,25 @@ class AiRepository @Inject constructor(
 
     private fun friendlyAiError(e: Exception): String {
         val raw = e.message?.trim().orEmpty()
+        val cause = e.cause?.message?.trim().orEmpty()
+        val combined = listOf(raw, cause).filter { it.isNotBlank() }.joinToString(" — ")
         return when {
-            raw.contains("GEMINI_API_KEY", ignoreCase = true) ||
-                raw.contains("not configured", ignoreCase = true) ->
+            combined.contains("UNSUPPORTED_TOKEN_ALGORITHM", ignoreCase = true) ||
+                combined.contains("ES256", ignoreCase = true) ->
+                "AI auth is misconfigured on the server. Please try again shortly."
+            combined.contains("GEMINI_API_KEY", ignoreCase = true) ||
+                combined.contains("not configured", ignoreCase = true) ->
                 "AI is not configured on the server. Please try again later."
-            raw.contains("timed out", ignoreCase = true) ->
+            combined.contains("timed out", ignoreCase = true) ||
+                combined.contains("Timeout", ignoreCase = true) ->
                 "AI took too long. Please try again."
-            raw.contains("temporarily unavailable", ignoreCase = true) ->
+            combined.contains("temporarily unavailable", ignoreCase = true) ->
                 "AI is temporarily unavailable. Please try again in a minute."
-            raw.isNotBlank() && raw.length < 220 && !raw.contains("JsonDecoding") -> raw
+            combined.contains("Unable to resolve host", ignoreCase = true) ||
+                combined.contains("UnknownHost", ignoreCase = true) ->
+                "Couldn't reach Nexal servers. Check your connection and try again."
+            combined.isNotBlank() && combined.length < 220 && !combined.contains("JsonDecoding") ->
+                combined
             else -> "Couldn't generate a plan. Check your connection and try again."
         }
     }

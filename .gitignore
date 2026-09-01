@@ -47,3 +47,6 @@ tmpclaude-*
 
 .tools/
 preview-shots/
+
+# Private Sites checkout; deployable website source lives in /landing-site
+/website/

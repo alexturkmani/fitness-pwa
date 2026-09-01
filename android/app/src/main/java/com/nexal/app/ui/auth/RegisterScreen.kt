@@ -44,6 +44,7 @@ fun RegisterScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+    val metrics = rememberAdaptiveMetrics()
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -63,25 +64,30 @@ fun RegisterScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                        .verticalScroll(rememberScrollState())
+                        .padding(
+                            horizontal = metrics.horizontalPadding,
+                            vertical = metrics.verticalPadding
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Spacer(modifier = Modifier.height(metrics.sectionSpacing))
                     ScalePopIn(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             Icons.Default.MarkEmailRead,
                             contentDescription = null,
-                            modifier = Modifier.size(80.dp),
+                            modifier = Modifier.size(metrics.heroSize),
                             tint = BrandBlue
                         )
                     }
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(metrics.sectionSpacing))
                     FadeSlideIn(delayMs = 80) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 "Check Your Email",
                                 style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
@@ -95,7 +101,9 @@ fun RegisterScreen(
                                 uiState.registerEmail,
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
-                                color = BrandBlue
+                                color = BrandBlue,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
@@ -103,9 +111,9 @@ fun RegisterScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 16.dp)
+                                modifier = Modifier.fillMaxWidth()
                             )
-                            Spacer(modifier = Modifier.height(32.dp))
+                            Spacer(modifier = Modifier.height(metrics.sectionSpacing))
                             GradientButton(
                                 text = "Go to Sign In",
                                 onClick = onNavigateToLogin,
@@ -146,7 +154,11 @@ fun RegisterScreen(
                     .padding(scaffoldPadding)
                     .imePadding()
                     .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
+                    .padding(
+                        horizontal = metrics.horizontalPadding,
+                        vertical = metrics.verticalPadding
+                    )
+                    .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 FadeSlideIn {
@@ -155,29 +167,31 @@ fun RegisterScreen(
                             painter = painterResource(id = R.drawable.nexal_logo),
                             contentDescription = "Nexal",
                             modifier = Modifier
-                                .size(72.dp)
+                                .size(metrics.heroSize)
                                 .clip(RoundedCornerShape(16.dp))
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(if (metrics.isCompactHeight) 10.dp else 16.dp))
                         Text(
                             "Join Nexal",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = BrandBlue
+                            color = BrandBlue,
+                            textAlign = TextAlign.Center
                         )
                         Text(
                             "Start your fitness journey with AI",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(metrics.sectionSpacing))
 
                 ScalePopIn(delayMs = 80) {
                     FitCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(20.dp)) {
+                        Column(modifier = Modifier.padding(if (metrics.isCompactWidth) 16.dp else 20.dp)) {
                             OutlinedTextField(
                                 value = name,
                                 onValueChange = { name = it },
@@ -189,7 +203,7 @@ fun RegisterScreen(
                                 singleLine = true,
                                 shape = MaterialTheme.shapes.medium
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(metrics.fieldSpacing))
 
                             OutlinedTextField(
                                 value = email,
@@ -202,7 +216,7 @@ fun RegisterScreen(
                                 singleLine = true,
                                 shape = MaterialTheme.shapes.medium
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(metrics.fieldSpacing))
 
                             OutlinedTextField(
                                 value = password,
@@ -224,7 +238,7 @@ fun RegisterScreen(
                                 singleLine = true,
                                 shape = MaterialTheme.shapes.medium
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(metrics.fieldSpacing))
 
                             OutlinedTextField(
                                 value = confirmPassword,
@@ -249,9 +263,10 @@ fun RegisterScreen(
                                     uiState.error!!,
                                     color = ErrorRed,
                                     style = MaterialTheme.typography.bodySmall,
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(metrics.fieldSpacing))
                             }
 
                             GradientButton(
@@ -266,7 +281,7 @@ fun RegisterScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(metrics.sectionSpacing))
 
                 FadeSlideIn(delayMs = 160) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -280,19 +295,27 @@ fun RegisterScreen(
                             )
                             HorizontalDivider(modifier = Modifier.weight(1f))
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(metrics.fieldSpacing))
 
                         FitButton(
                             text = "Continue with Google",
                             onClick = { viewModel.signInWithGoogle(context) },
                             variant = ButtonVariant.SECONDARY,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            leading = {
+                                Image(
+                                    painter = painterResource(R.drawable.ic_google),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         )
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(metrics.sectionSpacing))
 
                         Row(
                             horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
                                 "Already have an account? ",

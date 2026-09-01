@@ -6,8 +6,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,45 +58,26 @@ fun NexalNavHost(
             AuthNavHost(navController = navController)
         }
         is AuthState.Authenticated -> {
-            if (!state.hasAccess) {
-                GatedFlowHost(profileRepository = profileRepository)
-            } else {
-                MainScaffold()
-            }
+            AuthenticatedFlowHost(
+                profileRepository = profileRepository,
+                isPremium = state.isPremium
+            )
         }
     }
 }
 
-/**
- * When the user is authenticated but has no access (no trial / no subscription),
- * show onboarding first (if not completed) then the paywall.
- */
 @Composable
-private fun GatedFlowHost(
-    profileRepository: ProfileRepository
+private fun AuthenticatedFlowHost(
+    profileRepository: ProfileRepository,
+    isPremium: Boolean
 ) {
     val profile by profileRepository.observeProfile().collectAsStateWithLifecycle(initialValue = null)
     val onboardingDone = profile?.onboardingCompleted == true
 
-    val gatedNavController = rememberNavController()
-    val startDest = if (onboardingDone) Screen.Paywall.route else Screen.Onboarding.route
-
-    NavHost(navController = gatedNavController, startDestination = startDest) {
-        composable(Screen.Onboarding.route) {
-            OnboardingScreen(
-                onComplete = {
-                    gatedNavController.navigate(Screen.Paywall.route) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
-                    }
-                }
-            )
-        }
-        composable(Screen.Paywall.route) {
-            PaywallScreen(
-                onBack = { /* can't skip paywall */ },
-                onSubscribed = { /* AuthState change triggers recomposition */ }
-            )
-        }
+    if (onboardingDone) {
+        MainScaffold(isPremium = isPremium)
+    } else {
+        OnboardingScreen(onComplete = { /* Profile flow opens the core app. */ })
     }
 }
 
@@ -153,7 +136,7 @@ private fun AuthNavHost(navController: NavHostController) {
 }
 
 @Composable
-private fun MainScaffold() {
+private fun MainScaffold(isPremium: Boolean) {
     val mainNavController = rememberNavController()
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -199,7 +182,9 @@ private fun MainScaffold() {
                     onNavigateToMeals = { mainNavController.navigate(Screen.Meals.route) },
                     onNavigateToDiary = { mainNavController.navigate(Screen.Nutrition.route) },
                     onNavigateToOnboarding = { mainNavController.navigate(Screen.Onboarding.route) },
-                    onNavigateToProfile = { mainNavController.navigate(Screen.Profile.route) }
+                    onNavigateToProfile = { mainNavController.navigate(Screen.Profile.route) },
+                    onUpgrade = { mainNavController.navigate(Screen.Paywall.route) },
+                    isPremium = isPremium
                 )
             }
             composable(
@@ -211,9 +196,7 @@ private fun MainScaffold() {
             ) {
                 OnboardingScreen(
                     onComplete = {
-                        mainNavController.navigate(Screen.Paywall.route) {
-                            popUpTo(Screen.Onboarding.route) { inclusive = true }
-                        }
+                        mainNavController.popBackStack()
                     }
                 )
             }
@@ -222,7 +205,9 @@ private fun MainScaffold() {
                     onNavigateToLog = { planId, dayId ->
                         mainNavController.navigate(Screen.WorkoutLog.createRoute(planId, dayId))
                     },
-                    onNavigateToCustom = { mainNavController.navigate(Screen.CustomWorkouts.route) }
+                    onNavigateToCustom = { mainNavController.navigate(Screen.CustomWorkouts.route) },
+                    onUpgrade = { mainNavController.navigate(Screen.Paywall.route) },
+                    isPremium = isPremium
                 )
             }
             composable(
@@ -254,11 +239,18 @@ private fun MainScaffold() {
                 )
             }
             composable(Screen.Meals.route) {
-                MealsScreen()
+                MealsScreen(
+                    isPremium = isPremium,
+                    onUpgrade = { mainNavController.navigate(Screen.Paywall.route) }
+                )
             }
             composable(Screen.Nutrition.route) {
                 NutritionScreen(
-                    onNavigateToScanner = { mainNavController.navigate(Screen.Scanner.route) }
+                    onNavigateToScanner = {
+                        mainNavController.navigate(
+                            if (isPremium) Screen.Scanner.route else Screen.Paywall.route
+                        )
+                    }
                 )
             }
             composable(
@@ -286,8 +278,7 @@ private fun MainScaffold() {
                     onNavigateToSubscription = {
                         mainNavController.navigate(Screen.Subscription.route)
                     },
-                    onBack = { mainNavController.popBackStack() },
-                    onSignedOut = { /* AuthState change triggers recomposition */ }
+                    onBack = { mainNavController.popBackStack() }
                 )
             }
             composable(
@@ -322,67 +313,73 @@ private fun NexalBottomBar(
     currentRoute: String?,
     onNavigate: (Screen) -> Unit
 ) {
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 0.dp
+    // Floating pill bar on a dark surface — one persistent high-contrast
+    // element, so the accent reads as "the action" everywhere in the app.
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+            .navigationBarsPadding()
     ) {
-        bottomNavItems.forEach { item ->
-            val selected = currentRoute == item.screen.route
-
-            if (item.isCenter) {
-                NavigationBarItem(
-                    selected = selected,
-                    onClick = { onNavigate(item.screen) },
-                    icon = {
+        Surface(
+            shape = RoundedCornerShape(30.dp),
+            color = HeroInk,
+            shadowElevation = 14.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(70.dp)
+                    .padding(horizontal = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                bottomNavItems.forEach { item ->
+                    val selected = currentRoute == item.screen.route
+                    if (item.isCenter) {
                         Box(
                             modifier = Modifier
-                                .size(48.dp)
+                                .size(52.dp)
                                 .clip(CircleShape)
-                                .background(BrandBlue),
+                                .background(AccentBright)
+                                .clickable { onNavigate(item.screen) },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 item.selectedIcon,
                                 contentDescription = item.label,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
+                                tint = HeroInk,
+                                modifier = Modifier.size(26.dp)
                             )
                         }
-                    },
-                    label = {
-                        Text(
-                            item.label,
-                            fontSize = 10.sp,
-                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        indicatorColor = Color.Transparent
-                    )
-                )
-            } else {
-                NavigationBarItem(
-                    selected = selected,
-                    onClick = { onNavigate(item.screen) },
-                    icon = {
-                        Icon(
-                            if (selected) item.selectedIcon else item.unselectedIcon,
-                            contentDescription = item.label
-                        )
-                    },
-                    label = {
-                        Text(
-                            item.label,
-                            fontSize = 10.sp,
-                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = BrandBlue,
-                        selectedTextColor = BrandBlue,
-                        indicatorColor = Emerald100
-                    )
-                )
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(18.dp))
+                                .clickable { onNavigate(item.screen) }
+                                .padding(vertical = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                if (selected) item.selectedIcon else item.unselectedIcon,
+                                contentDescription = item.label,
+                                tint = if (selected) AccentBright else Color.White.copy(alpha = 0.5f),
+                                modifier = Modifier.size(23.dp)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                item.label,
+                                fontSize = 10.sp,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (selected) AccentBright else Color.White.copy(alpha = 0.5f),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                    }
+                }
             }
         }
     }

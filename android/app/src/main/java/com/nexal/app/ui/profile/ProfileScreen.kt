@@ -25,12 +25,11 @@ import com.nexal.app.domain.model.UnitSystem
 import com.nexal.app.ui.components.*
 import com.nexal.app.ui.theme.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ProfileScreen(
     onNavigateToSubscription: () -> Unit,
     onBack: () -> Unit,
-    onSignedOut: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -186,17 +185,45 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = if (uiState.editing) ({ showGoalModal = true }) else null
                 ) {
-                    Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
-                            uiState.fitnessGoals.forEach { goal ->
-                                val fg = FitnessGoal.entries.find { it.name.lowercase() == goal }
-                                Surface(color = BrandBlue.copy(alpha = 0.15f), shape = MaterialTheme.shapes.small) {
-                                    Text(fg?.label ?: goal, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = BrandBlue)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val goalsToShow = if (uiState.editing) uiState.formGoals else uiState.fitnessGoals
+                        FlowRow(
+                            modifier = Modifier.weight(1f),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (goalsToShow.isEmpty()) {
+                                Text(
+                                    "None selected",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            } else {
+                                goalsToShow.forEach { goal ->
+                                    val fg = FitnessGoal.entries.find { it.name.lowercase() == goal }
+                                    Surface(color = BrandBlue.copy(alpha = 0.15f), shape = MaterialTheme.shapes.small) {
+                                        Text(
+                                            fg?.label ?: goal,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = BrandBlue,
+                                            maxLines = 1
+                                        )
+                                    }
                                 }
                             }
                         }
                         if (uiState.editing) {
-                            Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
                     }
                 }
@@ -380,7 +407,7 @@ fun ProfileScreen(
             // Sign out
             item {
                 OutlinedButton(
-                    onClick = { viewModel.signOut(); onSignedOut() },
+                    onClick = { viewModel.signOut() },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {

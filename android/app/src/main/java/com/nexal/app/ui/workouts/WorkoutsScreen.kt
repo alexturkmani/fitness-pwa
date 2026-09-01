@@ -28,6 +28,8 @@ import com.nexal.app.ui.theme.*
 fun WorkoutsScreen(
     onNavigateToLog: (planId: String, dayId: String) -> Unit,
     onNavigateToCustom: () -> Unit,
+    onUpgrade: () -> Unit,
+    isPremium: Boolean,
     viewModel: WorkoutsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -35,10 +37,10 @@ fun WorkoutsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Workouts", fontWeight = FontWeight.Bold) },
+                title = { Text("Workouts", style = MaterialTheme.typography.headlineMedium) },
                 actions = {
                     TextButton(onClick = onNavigateToCustom) {
-                        Text("Custom", color = Emerald500)
+                        Text("Custom", color = Accent)
                     }
                 }
             )
@@ -48,9 +50,13 @@ fun WorkoutsScreen(
             EmptyState(
                 icon = Icons.Default.FitnessCenter,
                 title = "No Workout Plan",
-                description = "Generate an AI-powered workout plan tailored to your goals.",
-                actionLabel = "Generate Plan",
-                onAction = { viewModel.generatePlan() },
+                description = if (isPremium) {
+                    "Generate an AI-powered workout plan tailored to your goals."
+                } else {
+                    "Log your own workouts free, or unlock a personalized AI plan."
+                },
+                actionLabel = if (isPremium) "Generate Plan" else "Unlock AI Plan",
+                onAction = { if (isPremium) viewModel.generatePlan() else onUpgrade() },
                 modifier = Modifier.padding(paddingValues),
                 error = uiState.error
             )
@@ -115,7 +121,7 @@ fun WorkoutsScreen(
                                     )
                                 },
                                 colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = Emerald500,
+                                    selectedContainerColor = Accent,
                                     selectedLabelColor = androidx.compose.ui.graphics.Color.White
                                 )
                             )
@@ -138,9 +144,9 @@ fun WorkoutsScreen(
                     } else {
                         item {
                             Text(
-                                selectedDay.dayLabel,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                selectedDay.dayLabel.uppercase(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
@@ -171,7 +177,7 @@ fun WorkoutsScreen(
                                         Text(
                                             exercise.notes!!,
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = Emerald500
+                                            color = Accent
                                         )
                                     }
                                 }
@@ -256,7 +262,7 @@ private fun WorkoutLogCard(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.CheckCircle, null, tint = Emerald500, modifier = Modifier.size(24.dp))
+            Icon(Icons.Default.CheckCircle, null, tint = Accent, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(dayLabel, fontWeight = FontWeight.SemiBold)
@@ -276,7 +282,7 @@ private fun WorkoutLogCard(
                     Text(
                         "${log.duration}min",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Emerald500
+                        color = Accent
                     )
                 }
             }
@@ -298,7 +304,7 @@ private fun WorkoutLogDetailModal(
         title = "$dayLabel — ${log.date.take(10)}"
     ) {
         if (log.duration != null && log.duration > 0) {
-            Text("Duration: ${log.duration} minutes", style = MaterialTheme.typography.bodyMedium, color = Emerald500)
+            Text("Duration: ${log.duration} minutes", style = MaterialTheme.typography.bodyMedium, color = Accent)
             Spacer(modifier = Modifier.height(12.dp))
         }
         log.exercises.forEach { exercise ->
@@ -316,7 +322,7 @@ private fun WorkoutLogDetailModal(
                         fontWeight = FontWeight.Medium
                     )
                     if (set.completed) {
-                        Icon(Icons.Default.Check, null, tint = Emerald500, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Check, null, tint = Accent, modifier = Modifier.size(16.dp))
                     } else {
                         Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
                     }

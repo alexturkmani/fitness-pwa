@@ -12,8 +12,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
@@ -50,7 +52,8 @@ fun FitButton(
     variant: ButtonVariant = ButtonVariant.PRIMARY,
     enabled: Boolean = true,
     loading: Boolean = false,
-    icon: ImageVector? = null
+    icon: ImageVector? = null,
+    leading: (@Composable () -> Unit)? = null
 ) {
     val shape = RoundedCornerShape(16.dp)
 
@@ -67,7 +70,7 @@ fun FitButton(
                 ),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
             ) {
-                ButtonContent(text, loading, icon)
+                ButtonContent(text, loading, icon, leading)
             }
         }
         ButtonVariant.SECONDARY -> {
@@ -81,7 +84,7 @@ fun FitButton(
                 ),
                 border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
             ) {
-                ButtonContent(text, loading, icon)
+                ButtonContent(text, loading, icon, leading)
             }
         }
         ButtonVariant.GHOST -> {
@@ -90,7 +93,7 @@ fun FitButton(
                 modifier = modifier.height(52.dp),
                 enabled = enabled && !loading,
             ) {
-                ButtonContent(text, loading, icon)
+                ButtonContent(text, loading, icon, leading)
             }
         }
     }
@@ -100,7 +103,8 @@ fun FitButton(
 private fun RowScope.ButtonContent(
     text: String,
     loading: Boolean,
-    icon: ImageVector?
+    icon: ImageVector?,
+    leading: (@Composable () -> Unit)?
 ) {
     if (loading) {
         CircularProgressIndicator(
@@ -109,6 +113,9 @@ private fun RowScope.ButtonContent(
             strokeWidth = 2.dp
         )
         Spacer(modifier = Modifier.width(8.dp))
+    } else if (leading != null) {
+        leading()
+        Spacer(modifier = Modifier.width(10.dp))
     } else if (icon != null) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
         Spacer(modifier = Modifier.width(8.dp))
@@ -168,15 +175,12 @@ fun FitCard(
         modifier = modifier.then(
             if (onClick != null) Modifier.clickable { onClick() } else Modifier
         ),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        border = BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
-        ),
+        // Separation comes from radius and whitespace, not a border + shadow.
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         content = content
     )
 }
@@ -191,6 +195,7 @@ fun FitModal(
     content: @Composable ColumnScope.() -> Unit
 ) {
     if (isOpen) {
+        val metrics = rememberAdaptiveMetrics()
         Dialog(
             onDismissRequest = onDismiss,
             properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -199,7 +204,9 @@ fun FitModal(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
+                        .padding(metrics.horizontalPadding)
+                        .widthIn(max = 520.dp)
+                        .heightIn(max = (metrics.screenHeightDp * 0.85f).dp),
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface
@@ -224,7 +231,13 @@ fun FitModal(
                         }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
-                        content()
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f, fill = false)
+                                .verticalScroll(rememberScrollState()),
+                            content = content
+                        )
                     }
                 }
             }
@@ -289,14 +302,21 @@ fun EmptyState(
     loading: Boolean = false,
     error: String? = null
 ) {
-    FadeSlideIn(modifier = modifier) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        FadeSlideIn(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
             Box(
                 modifier = Modifier
                     .size(88.dp)
@@ -316,14 +336,16 @@ fun EmptyState(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
             if (!error.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(12.dp))
@@ -342,6 +364,7 @@ fun EmptyState(
                     loading = loading,
                     modifier = Modifier.fillMaxWidth(0.72f)
                 )
+            }
             }
         }
     }
@@ -427,7 +450,9 @@ fun CalorieRing(
     modifier: Modifier = Modifier,
     size: Dp = 168.dp,
     stroke: Dp = 14.dp,
-    ringColor: Color = MacroCalorie
+    ringColor: Color = MacroCalorie,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface,
+    labelColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     val remaining = (goal - consumed).coerceAtLeast(0)
     val progress = if (goal > 0) (consumed.toFloat() / goal).coerceIn(0f, 1f) else 0f
@@ -462,13 +487,13 @@ fun CalorieRing(
                 "$remaining",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = valueColor,
                 maxLines = 1
             )
             Text(
                 "cal left",
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = labelColor,
                 fontSize = 12.sp,
                 maxLines = 1
             )

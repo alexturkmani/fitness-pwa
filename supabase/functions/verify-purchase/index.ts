@@ -8,7 +8,27 @@ const GOOGLE_SERVICE_ACCOUNT_JSON = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON")!
 
 // Get Google OAuth2 access token from service account
 async function getGoogleAccessToken(): Promise<string> {
-  const sa = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
+  // The `!` above is compile-time only. Without this check a missing secret
+  // surfaces as `"undefined" is not valid JSON`, which says nothing about the
+  // actual cause and sends you looking in the app instead of the config.
+  if (!GOOGLE_SERVICE_ACCOUNT_JSON) {
+    throw new Error(
+      "GOOGLE_SERVICE_ACCOUNT_JSON is not set. Add it in Supabase " +
+        "(Edge Functions -> Secrets) with the Play service account key.",
+    );
+  }
+
+  let sa: { client_email: string; private_key: string };
+  try {
+    sa = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
+  } catch {
+    throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON is set but is not valid JSON.");
+  }
+  if (!sa.client_email || !sa.private_key) {
+    throw new Error(
+      "GOOGLE_SERVICE_ACCOUNT_JSON is missing client_email or private_key.",
+    );
+  }
   const now = Math.floor(Date.now() / 1000);
 
   // Create JWT header and claim set
@@ -92,16 +112,30 @@ serve(async (req) => {
     if (!verifyResponse.ok) {
       const errorText = await verifyResponse.text();
       console.error("Google Play verification failed:", errorText);
-      return errorResponse("Purchase verification failed", 400);
+      // Surface a short Google error so the app can show something actionable
+      // instead of a opaque JSON blob.
+      let detail = "Purchase verification failed";
+      try {
+        const parsed = JSON.parse(errorText);
+        detail = parsed?.error?.message || parsed?.message || detail;
+      } catch {
+        if (errorText && errorText.length < 200) detail = errorText;
+      }
+      return errorResponse(detail, 400);
     }
 
     const purchaseData = await verifyResponse.json();
-    const subscriptionState = purchaseData.subscriptionState;
-    // SUBSCRIPTION_STATE_ACTIVE = "SUBSCRIPTION_STATE_ACTIVE"
-    const isActive = subscriptionState === "SUBSCRIPTION_STATE_ACTIVE" ||
-                     subscriptionState === "SUBSCRIPTION_STATE_IN_GRACE_PERIOD";
-    const expiryTime = purchaseData.lineItems?.[0]?.expiryTime;
+    const subscriptionState = purchaseData.subscriptionState as string | undefined;
+    const expiryTime = purchaseData.lineItems?.[0]?.expiryTime as string | undefined;
     const autoRenewing = purchaseData.lineItems?.[0]?.autoRenewingPlan != null;
+    const expiryMs = expiryTime ? Date.parse(expiryTime) : NaN;
+    const notExpired = Number.isFinite(expiryMs) ? expiryMs > Date.now() : false;
+
+    // Active, grace, or canceled-but-still-in-period (user canceled, access until expiry).
+    const isActive =
+      subscriptionState === "SUBSCRIPTION_STATE_ACTIVE" ||
+      subscriptionState === "SUBSCRIPTION_STATE_IN_GRACE_PERIOD" ||
+      (subscriptionState === "SUBSCRIPTION_STATE_CANCELED" && notExpired);
 
     // Upsert subscription in database
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);

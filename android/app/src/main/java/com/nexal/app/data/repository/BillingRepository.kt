@@ -21,7 +21,8 @@ class BillingRepository @Inject constructor(
 ) : PurchasesUpdatedListener {
 
     companion object {
-        const val PRODUCT_ID = "nexal_premium"
+        // Must match Play Console subscription product ID
+        const val PRODUCT_ID = "nexal"
     }
 
     private val _connectionState = MutableStateFlow(false)
@@ -66,6 +67,10 @@ class BillingRepository @Inject constructor(
                 val purchase = purchases?.firstOrNull()
                 if (purchase != null) {
                     _purchaseEvents.trySend(PurchaseResult.Success(purchase))
+                } else {
+                    // OK but no purchase to act on — still emit so collectors can
+                    // clear their loading state instead of waiting forever.
+                    _purchaseEvents.trySend(PurchaseResult.Cancelled)
                 }
             }
             BillingResponseCode.USER_CANCELED -> {
@@ -107,26 +112,32 @@ class BillingRepository @Inject constructor(
         }
     }
 
-    fun getPriceText(planType: PlanType = PlanType.MONTHLY): String {
-        val details = productDetails ?: return when (planType) {
-            PlanType.MONTHLY -> "$12.99/month"
-            PlanType.YEARLY -> "$110.00/year"
-        }
+    /**
+     * Localized price from Play Billing (e.g. "A$19.99"). Never hardcode USD —
+     * Play policy requires currency to match the purchase flow.
+     */
+    fun getFormattedPrice(planType: PlanType = PlanType.MONTHLY): String? {
+        val offer = getOfferForPlan(planType) ?: return null
+        return offer.pricingPhases.pricingPhaseList.lastOrNull()?.formattedPrice
+    }
+
+    fun getPeriodLabel(planType: PlanType = PlanType.MONTHLY): String {
         val offer = getOfferForPlan(planType)
-        val pricingPhase = offer?.pricingPhases?.pricingPhaseList?.lastOrNull()
-        return if (pricingPhase != null) {
-            val price = pricingPhase.formattedPrice
-            val period = when (pricingPhase.billingPeriod) {
-                "P1M" -> "/month"
-                "P1Y" -> "/year"
-                "P1W" -> "/week"
-                else -> ""
+        val billingPeriod = offer?.pricingPhases?.pricingPhaseList?.lastOrNull()?.billingPeriod
+        return when (billingPeriod) {
+            "P1M" -> "/month"
+            "P1Y" -> "/year"
+            "P1W" -> "/week"
+            else -> when (planType) {
+                PlanType.MONTHLY -> "/month"
+                PlanType.YEARLY -> "/year"
             }
-            "$price$period"
-        } else when (planType) {
-            PlanType.MONTHLY -> "$12.99/month"
-            PlanType.YEARLY -> "$110.00/year"
         }
+    }
+
+    fun getPriceText(planType: PlanType = PlanType.MONTHLY): String {
+        val price = getFormattedPrice(planType) ?: return "—"
+        return "$price${getPeriodLabel(planType)}"
     }
 
     fun hasFreeTrial(planType: PlanType = PlanType.MONTHLY): Boolean {
@@ -143,9 +154,13 @@ class BillingRepository @Inject constructor(
             PlanType.MONTHLY -> "P1M"
             PlanType.YEARLY -> "P1Y"
         }
-        return offers.find { offer ->
+        val matching = offers.filter { offer ->
             offer.pricingPhases.pricingPhaseList.any { it.billingPeriod == targetPeriod }
-        } ?: offers.firstOrNull()
+        }
+        // Prefer offers that include a free trial phase (e.g. free-trial-14d)
+        return matching.firstOrNull { offer ->
+            offer.pricingPhases.pricingPhaseList.any { it.priceAmountMicros == 0L }
+        } ?: matching.firstOrNull() ?: offers.firstOrNull()
     }
 
     fun launchPurchaseFlow(activity: Activity, planType: PlanType = PlanType.MONTHLY): Boolean {

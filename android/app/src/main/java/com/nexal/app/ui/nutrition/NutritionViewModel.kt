@@ -3,8 +3,10 @@ package com.nexal.app.ui.nutrition
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nexal.app.data.repository.AiRepository
+import com.nexal.app.data.repository.AuthRepository
 import com.nexal.app.data.repository.NutritionRepository
 import com.nexal.app.data.repository.ProfileRepository
+import com.nexal.app.domain.model.AuthState
 import com.nexal.app.domain.model.FoodLogEntry
 import com.nexal.app.domain.model.FoodSource
 import com.nexal.app.domain.model.MacroNutrients
@@ -64,14 +66,16 @@ data class NutritionUiState(
     val cardioTypes: List<String> = getCardioTypes(),
     val userWeightKg: Double = 70.0,
     val recentFoods: List<RecentFood> = emptyList(),
-    val addSlot: MealSlot = MealSlot.BREAKFAST
+    val addSlot: MealSlot = MealSlot.BREAKFAST,
+    val isPremium: Boolean = false
 )
 
 @HiltViewModel
 class NutritionViewModel @Inject constructor(
     private val nutritionRepo: NutritionRepository,
     private val profileRepo: ProfileRepository,
-    private val aiRepo: AiRepository
+    private val aiRepo: AiRepository,
+    private val authRepo: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NutritionUiState(selectedDate = todayFormatted()))
@@ -88,6 +92,13 @@ class NutritionViewModel @Inject constructor(
         observeWaterLogs()
         observeCardioLogs()
         refreshRecentFoods()
+        viewModelScope.launch {
+            authRepo.authState.collect { auth ->
+                _uiState.update {
+                    it.copy(isPremium = (auth as? AuthState.Authenticated)?.isPremium == true)
+                }
+            }
+        }
     }
 
     fun entriesFor(slot: MealSlot): List<FoodLogEntry> =
@@ -297,6 +308,8 @@ class NutritionViewModel @Inject constructor(
 
         lookupJob?.cancel()
         _uiState.update { it.copy(autoFillState = AutoFillState()) }
+        if (!_uiState.value.isPremium) return
+
         if (currentFoodName.length >= 2) {
             lookupJob = viewModelScope.launch {
                 delay(800)

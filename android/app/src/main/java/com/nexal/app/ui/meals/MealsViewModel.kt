@@ -3,6 +3,7 @@ package com.nexal.app.ui.meals
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nexal.app.data.repository.AiRepository
+import com.nexal.app.data.repository.AuthRepository
 import com.nexal.app.data.repository.NutritionRepository
 import com.nexal.app.data.repository.ProfileRepository
 import com.nexal.app.domain.model.*
@@ -21,14 +22,17 @@ data class MealsUiState(
     val selectedFood: Pair<String, FoodItem>? = null,
     val substitutions: List<MealSubstitution> = emptyList(),
     val subLoading: Boolean = false,
-    val toast: String? = null
+    val toast: String? = null,
+    /** Meal IDs logged to diary this session (drives + → ✓). */
+    val addedMealIds: Set<String> = emptySet()
 )
 
 @HiltViewModel
 class MealsViewModel @Inject constructor(
     private val nutritionRepo: NutritionRepository,
     private val profileRepo: ProfileRepository,
-    private val aiRepo: AiRepository
+    private val aiRepo: AiRepository,
+    private val authRepo: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MealsUiState())
@@ -44,6 +48,10 @@ class MealsViewModel @Inject constructor(
 
     fun generatePlan(allergies: List<String>) {
         viewModelScope.launch {
+            if (!hasPremiumAccess()) {
+                _uiState.update { it.copy(error = "Premium is required to generate AI meal plans.") }
+                return@launch
+            }
             _uiState.update { it.copy(isLoading = true, error = null) }
             val profile = profileRepo.getProfile()
             if (profile == null) {
@@ -71,27 +79,50 @@ class MealsViewModel @Inject constructor(
     }
 
     fun addMealToLog(meal: Meal) {
-        viewModelScope.launch {
-            val slot = when {
-                meal.name.contains("breakfast", ignoreCase = true) -> MealSlot.BREAKFAST
-                meal.name.contains("lunch", ignoreCase = true) -> MealSlot.LUNCH
-                meal.name.contains("dinner", ignoreCase = true) -> MealSlot.DINNER
-                else -> MealSlot.SNACK
-            }
-            val entry = FoodLogEntry(
-                id = generateId(),
-                date = todayFormatted(),
-                foodName = meal.name,
-                servingSize = "1 serving",
-                quantity = 1,
-                macros = meal.totalMacros,
-                source = FoodSource.MEAL_PLAN,
-                mealSlot = slot,
-                createdAt = todayFormatted()
-            )
-            nutritionRepo.addFoodLogEntry(entry)
-            _uiState.update { it.copy(toast = "${meal.name} added to Diary · ${slot.label}") }
+        val key = mealKey(meal)
+        if (key in _uiState.value.addedMealIds) return
+
+        // Optimistic UI: flip + → ✓ and toast immediately
+        val slot = when {
+            meal.name.contains("breakfast", ignoreCase = true) -> MealSlot.BREAKFAST
+            meal.name.contains("lunch", ignoreCase = true) -> MealSlot.LUNCH
+            meal.name.contains("dinner", ignoreCase = true) -> MealSlot.DINNER
+            else -> MealSlot.SNACK
         }
+        _uiState.update {
+            it.copy(
+                toast = "${meal.name} added to Diary · ${slot.label}",
+                addedMealIds = it.addedMealIds + key
+            )
+        }
+
+        viewModelScope.launch {
+            try {
+                val entry = FoodLogEntry(
+                    id = generateId(),
+                    date = todayFormatted(),
+                    foodName = meal.name,
+                    servingSize = "1 serving",
+                    quantity = 1,
+                    macros = meal.totalMacros,
+                    source = FoodSource.MEAL_PLAN,
+                    mealSlot = slot,
+                    createdAt = todayFormatted()
+                )
+                nutritionRepo.addFoodLogEntry(entry)
+            } catch (_: Exception) {
+                _uiState.update {
+                    it.copy(
+                        toast = "Couldn't add ${meal.name}. Try again.",
+                        addedMealIds = it.addedMealIds - key
+                    )
+                }
+            }
+        }
+    }
+
+    companion object {
+        fun mealKey(meal: Meal): String = meal.id.ifBlank { meal.name }
     }
 
     fun selectFoodForSub(mealName: String, food: FoodItem) {
@@ -101,6 +132,10 @@ class MealsViewModel @Inject constructor(
     fun getSubstitutions(reason: String) {
         val selected = _uiState.value.selectedFood ?: return
         viewModelScope.launch {
+            if (!hasPremiumAccess()) {
+                _uiState.update { it.copy(error = "Premium is required for AI substitutions.") }
+                return@launch
+            }
             _uiState.update { it.copy(subLoading = true) }
             when (val result = aiRepo.getMealSubstitutions(
                 mealName = selected.first,
@@ -171,4 +206,7 @@ class MealsViewModel @Inject constructor(
     fun clearToast() {
         _uiState.update { it.copy(toast = null) }
     }
+
+    private fun hasPremiumAccess(): Boolean =
+        (authRepo.authState.value as? AuthState.Authenticated)?.isPremium == true
 }

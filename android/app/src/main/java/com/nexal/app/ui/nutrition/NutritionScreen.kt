@@ -57,8 +57,21 @@ fun NutritionScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
+    var justAddedSlot by remember { mutableStateOf<MealSlot?>(null) }
+
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(bottom = 80.dp)
+            ) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = SuccessGreen,
+                    contentColor = Color.White
+                )
+            }
+        },
         topBar = {
             TopAppBar(
                 title = {
@@ -162,11 +175,11 @@ fun NutritionScreen(
                     FadeSlideIn(delayMs = 80) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
-                                "Recent",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
+                                "RECENT",
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            var justAddedKeys by remember { mutableStateOf(setOf<String>()) }
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -174,10 +187,13 @@ fun NutritionScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 uiState.recentFoods.take(12).forEach { food ->
+                                    val key = "${food.foodName}|${food.servingSize}"
                                     RecentFoodChip(
                                         food = food,
+                                        added = key in justAddedKeys,
                                         onClick = {
                                             viewModel.quickAddRecent(food, uiState.addSlot)
+                                            justAddedKeys = justAddedKeys + key
                                         }
                                     )
                                 }
@@ -196,6 +212,7 @@ fun NutritionScreen(
                             slot = slot,
                             entries = slotEntries,
                             slotCalories = slotCalories,
+                            justAdded = justAddedSlot == slot,
                             onAddFood = { openAddFor(slot) },
                             onDeleteEntry = { viewModel.removeEntry(it) }
                         )
@@ -237,12 +254,21 @@ fun NutritionScreen(
             AddFoodModal(
                 onDismiss = { showAddModal = false },
                 onAdd = { name, serving, cal, protein, carbs, fats ->
+                    val slot = uiState.addSlot
                     viewModel.addManualEntry(name, serving, cal, protein, carbs, fats)
                     showAddModal = false
+                    justAddedSlot = slot
                 },
                 onFieldChange = viewModel::onFoodFieldChange,
                 autoFillState = uiState.autoFillState
             )
+        }
+
+        LaunchedEffect(justAddedSlot) {
+            if (justAddedSlot != null) {
+                kotlinx.coroutines.delay(1800)
+                justAddedSlot = null
+            }
         }
 
         if (showCardioModal) {
@@ -259,7 +285,10 @@ fun NutritionScreen(
 
     uiState.toast?.let { message ->
         LaunchedEffect(message) {
-            snackbarHostState.showSnackbar(message)
+            snackbarHostState.showSnackbar(
+                message = message,
+                duration = SnackbarDuration.Short
+            )
             viewModel.clearToast()
         }
     }
@@ -270,6 +299,7 @@ private fun MealSlotCard(
     slot: MealSlot,
     entries: List<FoodLogEntry>,
     slotCalories: Int,
+    justAdded: Boolean,
     onAddFood: () -> Unit,
     onDeleteEntry: (String) -> Unit
 ) {
@@ -319,12 +349,36 @@ private fun MealSlotCard(
                 }
             }
 
-            FitButton(
-                text = "+ Add food",
-                onClick = onAddFood,
-                variant = ButtonVariant.GHOST,
-                modifier = Modifier.fillMaxWidth()
-            )
+            if (justAdded) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 10.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        tint = SuccessGreen,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        "Added to ${slot.label}",
+                        color = SuccessGreen,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            } else {
+                FitButton(
+                    text = "+ Add food",
+                    onClick = onAddFood,
+                    variant = ButtonVariant.GHOST,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }
@@ -382,31 +436,47 @@ private fun DiaryFoodRow(
 @Composable
 private fun RecentFoodChip(
     food: RecentFood,
+    added: Boolean,
     onClick: () -> Unit
 ) {
     Surface(
         onClick = onClick,
+        enabled = !added,
         shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = if (added) SuccessGreen.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
+        border = BorderStroke(
+            1.dp,
+            if (added) SuccessGreen.copy(alpha = 0.45f) else MaterialTheme.colorScheme.outlineVariant
+        ),
         tonalElevation = 0.dp
     ) {
-        Column(
+        Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(
-                food.foodName,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                "${food.macros.calories} cal",
-                style = MaterialTheme.typography.labelSmall,
-                color = BrandBlue
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    food.foodName,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    if (added) "Added" else "${food.macros.calories} cal",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (added) SuccessGreen else BrandBlue
+                )
+            }
+            if (added) {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = "Added",
+                    tint = SuccessGreen,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
     }
 }
@@ -436,7 +506,7 @@ private fun WaterSection(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.WaterDrop, null, tint = Cyan500, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.WaterDrop, null, tint = Accent, modifier = Modifier.size(18.dp))
                     Text(
                         "Water",
                         style = MaterialTheme.typography.titleSmall,
@@ -458,21 +528,45 @@ private fun WaterSection(
             LinearProgressIndicator(
                 progress = { waterPercent },
                 modifier = Modifier.fillMaxWidth().height(6.dp),
-                color = Cyan500,
+                color = Accent,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 strokeCap = StrokeCap.Round
             )
             Spacer(modifier = Modifier.height(10.dp))
+            var lastAddedMl by remember { mutableStateOf<Int?>(null) }
+            LaunchedEffect(lastAddedMl) {
+                if (lastAddedMl != null) {
+                    kotlinx.coroutines.delay(1200)
+                    lastAddedMl = null
+                }
+            }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(150, 250, 350, 500).forEach { ml ->
+                    val added = lastAddedMl == ml
                     OutlinedButton(
-                        onClick = { onAddWater(ml) },
+                        onClick = {
+                            onAddWater(ml)
+                            lastAddedMl = ml
+                        },
                         modifier = Modifier.weight(1f),
                         contentPadding = PaddingValues(4.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Cyan500),
-                        border = BorderStroke(1.dp, Cyan500.copy(alpha = 0.45f))
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = if (added) SuccessGreen else Accent
+                        ),
+                        border = BorderStroke(
+                            1.dp,
+                            if (added) SuccessGreen else Accent.copy(alpha = 0.45f)
+                        )
                     ) {
-                        Text("${ml}ml", style = MaterialTheme.typography.labelSmall)
+                        if (added) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = "Added",
+                                modifier = Modifier.size(14.dp)
+                            )
+                        } else {
+                            Text("${ml}ml", style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                 }
             }

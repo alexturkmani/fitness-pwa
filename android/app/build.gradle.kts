@@ -24,8 +24,8 @@ android {
         applicationId = "com.nexal.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 126
-        versionName = "1.4.1"
+        versionCode = 140
+        versionName = "1.5.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -40,6 +40,10 @@ android {
         // Deep link host for password reset
         val deepLinkHost = supabaseUrl.removePrefix("https://").removePrefix("http://")
         manifestPlaceholders["deepLinkHost"] = deepLinkHost
+
+        // Overridden in debug so the two installs are distinguishable on the
+        // launcher — same icon otherwise, which is impossible to tell apart.
+        manifestPlaceholders["appLabel"] = "Nexal"
     }
 
     signingConfigs {
@@ -57,6 +61,11 @@ android {
     buildTypes {
         debug {
             isMinifyEnabled = false
+            // Separate id so debug builds install alongside the Play release
+            // instead of colliding with it (different signing key).
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            manifestPlaceholders["appLabel"] = "Nexal DEV"
         }
         release {
             isMinifyEnabled = true
@@ -135,6 +144,7 @@ dependencies {
 
     // Google Play Billing (Play requires 8.0.0+ from 31 Aug 2026)
     implementation("com.android.billingclient:billing-ktx:8.0.0")
+    implementation("com.google.android.play:review-ktx:2.0.2")
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")

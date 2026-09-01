@@ -2,13 +2,16 @@ import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import {
   callGemini, generateId, jsonResponse, errorResponse, corsHeaders,
   calculateMacroTargets, calculateDailyWaterIntake, calculateTDEE,
-  normalizeProfile,
+  normalizeProfile, requirePremium,
 } from "../_shared/helpers.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders() });
 
   try {
+    const premiumError = await requirePremium(req);
+    if (premiumError) return premiumError;
+
     const body = await req.json();
     const profile = normalizeProfile(body.profile);
     const allergies = body.allergies;

@@ -1,10 +1,15 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
-import { callGemini, jsonResponse, errorResponse, corsHeaders } from "../_shared/helpers.ts";
+import {
+  callGemini, jsonResponse, errorResponse, corsHeaders, requirePremium,
+} from "../_shared/helpers.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders() });
 
   try {
+    const premiumError = await requirePremium(req);
+    if (premiumError) return premiumError;
+
     const { foodName, servingSize } = await req.json();
     if (!foodName) return errorResponse("Food name is required", 400);
 
