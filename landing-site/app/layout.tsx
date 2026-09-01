@@ -5,6 +5,7 @@ import './sections.css';
 export const metadata: Metadata = {
   title: 'Nexal — AI Workout & Meal Planner',
   description: 'Track meals and workouts for free. Unlock personalized AI workout and meal plans with Nexal Premium.',
+  icons: { icon: '/nexal-mark.png', apple: '/nexal-mark.png' },
   openGraph: {
     title: 'Nexal — Build the body. Own the journey.',
     description: 'Your meals, workouts and progress—connected in one intelligent fitness app.',

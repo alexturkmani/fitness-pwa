@@ -1,9 +1,18 @@
 const playStoreUrl = "https://play.google.com/store/apps/details?id=com.nexal.app";
 
-function BrandMark() { return <span className="brand-mark" aria-hidden="true"><span /><span /></span>; }
+function BrandMark() { return <span className="brand-mark" aria-hidden="true"><img src="/nexal-mark.png" alt="" /></span>; }
+
+function GooglePlayMark() {
+  return <svg className="google-play-mark" viewBox="0 0 32 36" aria-hidden="true">
+    <path fill="#00d7fe" d="M1.8 1.6 18.9 18 1.9 34.5A4 4 0 0 1 .7 31.6V4.4c0-1 .4-2 1.1-2.8Z"/>
+    <path fill="#00f076" d="m18.9 18 5.4-5.2L5.2 1.9C4 1.2 2.8 1 1.8 1.6L18.9 18Z"/>
+    <path fill="#ffdc00" d="m18.9 18-17 16.5c1 .6 2.2.4 3.4-.3l19-10.9-5.4-5.3Z"/>
+    <path fill="#ff3a44" d="m29.4 15.7-5.1-2.9-5.4 5.2 5.4 5.3 5.1-3c2-1.1 2-3.4 0-4.6Z"/>
+  </svg>;
+}
 
 function PlayButton({ compact = false }: { compact?: boolean }) {
-  return <a className={`play-button ${compact ? "compact" : ""}`} href={playStoreUrl}><span className="play-triangle" aria-hidden="true" /><span><small>GET IT ON</small><strong>Google Play</strong></span></a>;
+  return <a className={`play-button ${compact ? "compact" : ""}`} href={playStoreUrl} aria-label="Get Nexal on Google Play"><GooglePlayMark/><span><small>GET IT ON</small><strong>Google Play</strong></span></a>;
 }
 
 function PhonePreview() {
