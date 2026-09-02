@@ -76,12 +76,17 @@ fun WorkoutsScreen(
                 uiState.error?.let { err ->
                     item {
                         FitCard(modifier = Modifier.fillMaxWidth()) {
-                            Text(
-                                err,
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(12.dp)
-                            )
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                                if (!isPremium && err.contains("Premium", ignoreCase = true)) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Button(onClick = onUpgrade, modifier = Modifier.fillMaxWidth()) {
+                                        Icon(Icons.Default.WorkspacePremium, contentDescription = null)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("View Premium Plans")
+                                    }
+                                }
+                            }
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                     }

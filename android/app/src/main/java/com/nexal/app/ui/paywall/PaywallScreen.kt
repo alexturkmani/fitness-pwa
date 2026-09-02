@@ -49,6 +49,9 @@ fun PaywallScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val selectedPriceText =
+        if (uiState.selectedPlan == PlanType.MONTHLY) uiState.monthlyPriceText
+        else uiState.yearlyPriceText
 
     LaunchedEffect(uiState.isActive, uiState.purchaseCompleted) {
         if (uiState.isActive || uiState.purchaseCompleted) onSubscribed()
@@ -60,6 +63,33 @@ fun PaywallScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+            Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 14.dp, tonalElevation = 4.dp) {
+                Column(
+                    modifier = Modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    GradientButton(
+                        text = when {
+                            !uiState.pricesLoaded -> "Loading subscription options…"
+                            uiState.hasFreeTrial -> "Start 14-Day Free Trial"
+                            else -> "Subscribe to Nexal Premium"
+                        },
+                        onClick = { context.findActivity()?.let { viewModel.purchase(it) } },
+                        modifier = Modifier.fillMaxWidth(),
+                        loading = uiState.isLoading,
+                        enabled = uiState.pricesLoaded && !uiState.isLoading
+                    )
+                    Spacer(modifier = Modifier.height(5.dp))
+                    Text(
+                        if (uiState.pricesLoaded) "$selectedPriceText · Cancel anytime" else "Plans and pricing will appear here",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        },
         topBar = {
             TopAppBar(
                 title = { },
@@ -253,9 +283,6 @@ fun PaywallScreen(
                         enabled = uiState.pricesLoaded && !uiState.isLoading
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    val selectedPriceText =
-                        if (uiState.selectedPlan == PlanType.MONTHLY) uiState.monthlyPriceText
-                        else uiState.yearlyPriceText
                     Text(
                         if (uiState.hasFreeTrial) {
                             "14 days free, then $selectedPriceText. Cancel anytime in Google Play before the trial ends to avoid being charged."

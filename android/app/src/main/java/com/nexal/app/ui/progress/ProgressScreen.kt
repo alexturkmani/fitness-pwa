@@ -2,6 +2,7 @@ package com.nexal.app.ui.progress
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -377,8 +378,17 @@ private fun MomentumHero(
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(118.dp)) {
                     ActivityOrb(modifier = Modifier.fillMaxSize(), progress = momentum / 100f)
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("$momentum%", style = MaterialTheme.typography.headlineMedium, color = Color.White)
-                        Text("score", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.55f))
+                        Surface(color = AccentBright, shape = RoundedCornerShape(999.dp)) {
+                            Text(
+                                "$momentum%",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = HeroInk,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                            )
+                        }
+                        Spacer(Modifier.height(5.dp))
+                        Text("MOMENTUM", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.82f))
                     }
                 }
                 Spacer(Modifier.width(20.dp))

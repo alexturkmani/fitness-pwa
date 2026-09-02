@@ -150,22 +150,22 @@ fun MealsScreen(
                                 shape = RoundedCornerShape(14.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Row(
+                                Column(
                                     modifier = Modifier.padding(14.dp),
-                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        Icons.Default.Warning,
-                                        null,
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Text(
-                                        error,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onErrorContainer
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
+                                    }
+                                    if (!isPremium && error.contains("Premium", ignoreCase = true)) {
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Button(onClick = onUpgrade, modifier = Modifier.fillMaxWidth()) {
+                                            Icon(Icons.Default.WorkspacePremium, contentDescription = null)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("View Premium Plans")
+                                        }
+                                    }
                                 }
                             }
                         }
