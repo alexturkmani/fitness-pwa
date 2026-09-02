@@ -1,6 +1,23 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { jsonResponse, errorResponse, corsHeaders } from "../_shared/helpers.ts";
+
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+}
+
+function jsonResponse(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders(), "Content-Type": "application/json" },
+  });
+}
+
+function errorResponse(message: string, status = 500) {
+  return jsonResponse({ error: message }, status);
+}
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -125,9 +142,16 @@ serve(async (req) => {
     }
 
     const purchaseData = await verifyResponse.json();
+    const lineItems = Array.isArray(purchaseData.lineItems) ? purchaseData.lineItems : [];
+    if (!lineItems.some((item: { productId?: string }) => item.productId === productId)) {
+      return errorResponse("Purchase does not match this subscription", 400);
+    }
     const subscriptionState = purchaseData.subscriptionState as string | undefined;
-    const expiryTime = purchaseData.lineItems?.[0]?.expiryTime as string | undefined;
-    const autoRenewing = purchaseData.lineItems?.[0]?.autoRenewingPlan != null;
+    const purchasedItem = lineItems.find(
+      (item: { productId?: string }) => item.productId === productId,
+    );
+    const expiryTime = purchasedItem?.expiryTime as string | undefined;
+    const autoRenewing = purchasedItem?.autoRenewingPlan != null;
     const expiryMs = expiryTime ? Date.parse(expiryTime) : NaN;
     const notExpired = Number.isFinite(expiryMs) ? expiryMs > Date.now() : false;
 

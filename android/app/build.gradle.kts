@@ -24,8 +24,8 @@ android {
         applicationId = "com.nexal.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 144
-        versionName = "1.6.1"
+        versionCode = 145
+        versionName = "1.6.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

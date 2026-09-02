@@ -142,6 +142,28 @@ private fun MainScaffold(isPremium: Boolean) {
     val currentRoute = navBackStackEntry?.destination?.route
 
     val showBottomBar = currentRoute in bottomNavItems.map { it.screen.route }
+    val navigateTopLevel: (Screen) -> Unit = { screen ->
+        if (screen == Screen.Dashboard) {
+            // Home is a destination, not a saved tab stack. Always collapse any
+            // meal/workout/detail history back to the real dashboard instance.
+            if (!mainNavController.popBackStack(Screen.Dashboard.route, inclusive = false) &&
+                currentRoute != Screen.Dashboard.route
+            ) {
+                mainNavController.navigate(Screen.Dashboard.route) {
+                    launchSingleTop = true
+                }
+            }
+        } else if (currentRoute != screen.route) {
+            mainNavController.navigate(screen.route) {
+                popUpTo(Screen.Dashboard.route) {
+                    inclusive = false
+                    saveState = false
+                }
+                launchSingleTop = true
+                restoreState = false
+            }
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -153,16 +175,7 @@ private fun MainScaffold(isPremium: Boolean) {
             ) {
                 NexalBottomBar(
                     currentRoute = currentRoute,
-                    onNavigate = { screen ->
-                        if (currentRoute == screen.route) return@NexalBottomBar
-                        mainNavController.navigate(screen.route) {
-                            popUpTo(Screen.Dashboard.route) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
+                    onNavigate = navigateTopLevel
                 )
             }
         }
@@ -178,9 +191,9 @@ private fun MainScaffold(isPremium: Boolean) {
         ) {
             composable(Screen.Dashboard.route) {
                 DashboardScreen(
-                    onNavigateToWorkouts = { mainNavController.navigate(Screen.Workouts.route) },
-                    onNavigateToMeals = { mainNavController.navigate(Screen.Meals.route) },
-                    onNavigateToDiary = { mainNavController.navigate(Screen.Nutrition.route) },
+                    onNavigateToWorkouts = { navigateTopLevel(Screen.Workouts) },
+                    onNavigateToMeals = { navigateTopLevel(Screen.Meals) },
+                    onNavigateToDiary = { navigateTopLevel(Screen.Nutrition) },
                     onNavigateToOnboarding = { mainNavController.navigate(Screen.Onboarding.route) },
                     onNavigateToProfile = { mainNavController.navigate(Screen.Profile.route) },
                     onUpgrade = { mainNavController.navigate(Screen.Paywall.route) },

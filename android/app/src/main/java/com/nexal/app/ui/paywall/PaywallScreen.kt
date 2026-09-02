@@ -228,7 +228,7 @@ fun PaywallScreen(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            PlanCard(
+                            if (PlanType.MONTHLY in uiState.availablePlans) PlanCard(
                                 label = "Monthly",
                                 price = uiState.monthlyPrice,
                                 period = uiState.monthlyPeriod,
@@ -237,7 +237,7 @@ fun PaywallScreen(
                                 onClick = { viewModel.selectPlan(PlanType.MONTHLY) },
                                 modifier = Modifier.fillMaxWidth()
                             )
-                            PlanCard(
+                            if (PlanType.YEARLY in uiState.availablePlans) PlanCard(
                                 label = "Yearly",
                                 price = uiState.yearlyPrice,
                                 period = uiState.yearlyPeriod,
@@ -252,7 +252,7 @@ fun PaywallScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            PlanCard(
+                            if (PlanType.MONTHLY in uiState.availablePlans) PlanCard(
                                 label = "Monthly",
                                 price = uiState.monthlyPrice,
                                 period = uiState.monthlyPeriod,
@@ -261,7 +261,7 @@ fun PaywallScreen(
                                 onClick = { viewModel.selectPlan(PlanType.MONTHLY) },
                                 modifier = Modifier.weight(1f)
                             )
-                            PlanCard(
+                            if (PlanType.YEARLY in uiState.availablePlans) PlanCard(
                                 label = "Yearly",
                                 price = uiState.yearlyPrice,
                                 period = uiState.yearlyPeriod,

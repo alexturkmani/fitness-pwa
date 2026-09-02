@@ -74,6 +74,8 @@ class WorkoutsViewModel @Inject constructor(
 
     fun generatePlan() {
         viewModelScope.launch {
+            // Keep this gate synchronized with the server's status + expiry rule.
+            authRepo.refreshUserInfo()
             val auth = authRepo.authState.value as? AuthState.Authenticated
             if (auth?.isPremium != true) {
                 _uiState.update { it.copy(error = "Premium is required to generate AI workout plans.") }

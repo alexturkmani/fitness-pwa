@@ -24,6 +24,10 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.put
 import javax.inject.Inject
 
@@ -40,7 +44,8 @@ data class SubscriptionUiState(
     val yearlyPeriod: String = "/year",
     val monthlyPriceText: String = "—",
     val yearlyPriceText: String = "—",
-    val pricesLoaded: Boolean = false
+    val pricesLoaded: Boolean = false,
+    val availablePlans: Set<PlanType> = emptySet()
 )
 
 @HiltViewModel
@@ -84,7 +89,15 @@ class SubscriptionViewModel @Inject constructor(
             billingRepository.purchaseEvents.collect { result ->
                 when (result) {
                     is PurchaseResult.Success -> {
-                        verifyAndAcknowledge(result.purchase.purchaseToken)
+                        verifyAndAcknowledge(result.purchase)
+                    }
+                    is PurchaseResult.Pending -> {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = "Your payment is pending in Google Play. Premium will unlock automatically when it completes."
+                            )
+                        }
                     }
                     is PurchaseResult.Cancelled -> {
                         _uiState.update { it.copy(isLoading = false) }
@@ -97,9 +110,10 @@ class SubscriptionViewModel @Inject constructor(
         }
     }
 
-    private fun verifyAndAcknowledge(purchaseToken: String) {
+    private fun verifyAndAcknowledge(purchase: com.android.billingclient.api.Purchase) {
         viewModelScope.launch {
             try {
+                val purchaseToken = purchase.purchaseToken
                 // Must send the signed-in user JWT so the server can attach the
                 // Play purchase to this account. Gateway JWT verify is off for
                 // this function (ES256 user tokens); the function still calls getUser().
@@ -116,12 +130,27 @@ class SubscriptionViewModel @Inject constructor(
                         put("packageName", "com.nexal.app")
                     })
                 }
+                val responseBody = response.bodyAsText()
                 if (!response.status.isSuccess()) {
-                    throw IllegalStateException(friendlyVerifyError(response.bodyAsText(), response.status.value))
+                    throw IllegalStateException(friendlyVerifyError(responseBody, response.status.value))
                 }
-                billingRepository.acknowledgePurchase(purchaseToken)
+                val subscriptionActive = runCatching {
+                    Json.parseToJsonElement(responseBody).jsonObject["subscriptionActive"]
+                        ?.jsonPrimitive?.booleanOrNull
+                }.getOrNull() == true
+                if (!subscriptionActive) {
+                    throw IllegalStateException("Google Play does not report this subscription as active yet. Tap Restore purchases after payment completes.")
+                }
+                if (!purchase.isAcknowledged && !billingRepository.acknowledgePurchase(purchaseToken)) {
+                    throw IllegalStateException("Purchase verified, but Google Play acknowledgement failed. Tap Restore purchases.")
+                }
                 authRepository.refreshUserInfo()
-                _uiState.update { it.copy(isLoading = false, purchaseCompleted = true, error = null) }
+                val entitlementActive = (authRepository.authState.value as? AuthState.Authenticated)
+                    ?.subscriptionActive == true
+                if (!entitlementActive) {
+                    throw IllegalStateException("Purchase verified, but Premium is still syncing. Tap Restore purchases.")
+                }
+                _uiState.update { it.copy(isLoading = false, purchaseCompleted = true, isActive = true, error = null) }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -199,7 +228,7 @@ class SubscriptionViewModel @Inject constructor(
                     }
                     return@launch
                 }
-                verifyAndAcknowledge(active.purchaseToken)
+                verifyAndAcknowledge(active)
             } catch (e: Exception) {
                 if (!silent) {
                     _uiState.update {
@@ -217,7 +246,15 @@ class SubscriptionViewModel @Inject constructor(
     private fun refreshPrices() {
         val monthly = billingRepository.getFormattedPrice(PlanType.MONTHLY)
         val yearly = billingRepository.getFormattedPrice(PlanType.YEARLY)
+        val availablePlans = PlanType.entries.filterTo(mutableSetOf()) {
+            billingRepository.isPlanAvailable(it)
+        }
         _uiState.update {
+            val selectedPlan = if (it.selectedPlan in availablePlans) {
+                it.selectedPlan
+            } else {
+                availablePlans.firstOrNull() ?: it.selectedPlan
+            }
             it.copy(
                 monthlyPrice = monthly ?: "—",
                 yearlyPrice = yearly ?: "—",
@@ -225,8 +262,10 @@ class SubscriptionViewModel @Inject constructor(
                 yearlyPeriod = billingRepository.getPeriodLabel(PlanType.YEARLY),
                 monthlyPriceText = billingRepository.getPriceText(PlanType.MONTHLY),
                 yearlyPriceText = billingRepository.getPriceText(PlanType.YEARLY),
-                pricesLoaded = monthly != null && yearly != null,
-                hasFreeTrial = billingRepository.hasFreeTrial(it.selectedPlan)
+                pricesLoaded = availablePlans.isNotEmpty(),
+                availablePlans = availablePlans,
+                selectedPlan = selectedPlan,
+                hasFreeTrial = billingRepository.hasFreeTrial(selectedPlan)
             )
         }
     }

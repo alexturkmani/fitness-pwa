@@ -12,11 +12,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nexal.app.ui.components.*
 import com.nexal.app.ui.theme.*
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -134,7 +136,7 @@ fun ProgressScreen(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     val delta = recent.last().second - recent.first().second
                                     Text(
-                                        (if (delta >= 0) "+" else "") + String.format("%.1f", delta) + " kg",
+                                        (if (delta >= 0) "+" else "") + String.format(Locale.getDefault(), "%.1f", delta) + " kg",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = if (delta <= 0) SuccessGreen else WarningAmber,
                                         modifier = Modifier.padding(bottom = 5.dp)
@@ -374,8 +376,12 @@ private fun MomentumHero(
                 color = Color.White.copy(alpha = 0.62f)
             )
             Spacer(Modifier.height(20.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(118.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(110.dp)) {
                     ActivityOrb(modifier = Modifier.fillMaxSize(), progress = momentum / 100f)
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Surface(color = AccentBright, shape = RoundedCornerShape(999.dp)) {
@@ -391,12 +397,26 @@ private fun MomentumHero(
                         Text("MOMENTUM", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.82f))
                     }
                 }
-                Spacer(Modifier.width(20.dp))
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    MomentumMetric("WORKOUTS", "$workouts this week")
-                    MomentumMetric("NUTRITION", if (averageCalories > 0) "$averageCalories cal daily" else "Start logging")
-                    MomentumMetric("WEIGHT TREND", if (weightChange == 0.0) "Building baseline" else "${if (weightChange > 0) "+" else ""}${"%.1f".format(weightChange)} kg")
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "This week's score",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Built from workouts, nutrition and your weight trend.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.72f)
+                    )
                 }
+            }
+            Spacer(Modifier.height(18.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                MomentumMetric("WORKOUTS", "$workouts this week")
+                MomentumMetric("NUTRITION", if (averageCalories > 0) "$averageCalories cal daily" else "Start logging")
+                MomentumMetric("WEIGHT TREND", if (weightChange == 0.0) "Building baseline" else "${if (weightChange > 0) "+" else ""}${String.format(Locale.getDefault(), "%.1f", weightChange)} kg")
             }
         }
     }
@@ -404,9 +424,26 @@ private fun MomentumHero(
 
 @Composable
 private fun MomentumMetric(label: String, value: String) {
-    Column {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = AccentBright)
-        Text(value, style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.SemiBold)
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.White.copy(alpha = 0.08f),
+        shape = RoundedCornerShape(14.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = AccentBright)
+            Text(
+                value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.End,
+                modifier = Modifier.padding(start = 12.dp).weight(1f)
+            )
+        }
     }
 }
 

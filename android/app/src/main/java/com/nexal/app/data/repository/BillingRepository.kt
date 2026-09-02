@@ -6,7 +6,7 @@ import com.android.billingclient.api.*
 import com.android.billingclient.api.BillingClient.BillingResponseCode
 import com.android.billingclient.api.BillingClient.ProductType
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
@@ -28,8 +28,13 @@ class BillingRepository @Inject constructor(
     private val _connectionState = MutableStateFlow(false)
     val connectionState: StateFlow<Boolean> = _connectionState.asStateFlow()
 
-    private val _purchaseEvents = Channel<PurchaseResult>(Channel.BUFFERED)
-    val purchaseEvents: Flow<PurchaseResult> = _purchaseEvents.receiveAsFlow()
+    // Purchase callbacks are app-wide events. A SharedFlow broadcasts them to every
+    // active paywall instead of letting an older ViewModel consume the only event.
+    private val _purchaseEvents = MutableSharedFlow<PurchaseResult>(
+        extraBufferCapacity = 8,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val purchaseEvents: SharedFlow<PurchaseResult> = _purchaseEvents.asSharedFlow()
 
     private var productDetails: ProductDetails? = null
 
@@ -66,18 +71,24 @@ class BillingRepository @Inject constructor(
             BillingResponseCode.OK -> {
                 val purchase = purchases?.firstOrNull()
                 if (purchase != null) {
-                    _purchaseEvents.trySend(PurchaseResult.Success(purchase))
+                    when (purchase.purchaseState) {
+                        Purchase.PurchaseState.PURCHASED ->
+                            _purchaseEvents.tryEmit(PurchaseResult.Success(purchase))
+                        Purchase.PurchaseState.PENDING ->
+                            _purchaseEvents.tryEmit(PurchaseResult.Pending)
+                        else -> _purchaseEvents.tryEmit(PurchaseResult.Cancelled)
+                    }
                 } else {
                     // OK but no purchase to act on — still emit so collectors can
                     // clear their loading state instead of waiting forever.
-                    _purchaseEvents.trySend(PurchaseResult.Cancelled)
+                    _purchaseEvents.tryEmit(PurchaseResult.Cancelled)
                 }
             }
             BillingResponseCode.USER_CANCELED -> {
-                _purchaseEvents.trySend(PurchaseResult.Cancelled)
+                _purchaseEvents.tryEmit(PurchaseResult.Cancelled)
             }
             else -> {
-                _purchaseEvents.trySend(
+                _purchaseEvents.tryEmit(
                     PurchaseResult.Error(result.debugMessage ?: "Purchase failed")
                 )
             }
@@ -148,6 +159,8 @@ class BillingRepository @Inject constructor(
         }
     }
 
+    fun isPlanAvailable(planType: PlanType): Boolean = getOfferForPlan(planType) != null
+
     private fun getOfferForPlan(planType: PlanType): ProductDetails.SubscriptionOfferDetails? {
         val offers = productDetails?.subscriptionOfferDetails ?: return null
         val targetPeriod = when (planType) {
@@ -160,7 +173,7 @@ class BillingRepository @Inject constructor(
         // Prefer offers that include a free trial phase (e.g. free-trial-14d)
         return matching.firstOrNull { offer ->
             offer.pricingPhases.pricingPhaseList.any { it.priceAmountMicros == 0L }
-        } ?: matching.firstOrNull() ?: offers.firstOrNull()
+        } ?: matching.firstOrNull()
     }
 
     fun launchPurchaseFlow(activity: Activity, planType: PlanType = PlanType.MONTHLY): Boolean {
@@ -228,6 +241,7 @@ class BillingRepository @Inject constructor(
 
 sealed class PurchaseResult {
     data class Success(val purchase: Purchase) : PurchaseResult()
+    data object Pending : PurchaseResult()
     data object Cancelled : PurchaseResult()
     data class Error(val message: String) : PurchaseResult()
 }

@@ -18,12 +18,15 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Serializable
 data class SubscriptionRow(
-    val status: String = "inactive"
+    val status: String = "inactive",
+    @SerialName("expiry_time") val expiryTime: String? = null
 )
 
 @Singleton
@@ -89,7 +92,8 @@ class AuthRepository @Inject constructor(
             val result = postgrest.from("user_subscriptions")
                 .select { filter { eq("user_id", userId) } }
                 .decodeSingleOrNull<SubscriptionRow>()
-            result?.status == "active"
+            val expiry = result?.expiryTime?.let { runCatching { Instant.parse(it) }.getOrNull() }
+            result?.status == "active" && (expiry == null || expiry.isAfter(Instant.now()))
         } catch (_: Exception) {
             false
         }

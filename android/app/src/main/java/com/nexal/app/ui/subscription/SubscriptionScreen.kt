@@ -161,24 +161,28 @@ fun SubscriptionScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            PlanOption(
-                                label = "Monthly",
-                                price = uiState.monthlyPrice,
-                                period = uiState.monthlyPeriod,
-                                selected = uiState.selectedPlan == PlanType.MONTHLY,
-                                badge = null,
-                                onClick = { viewModel.selectPlan(PlanType.MONTHLY) },
-                                modifier = Modifier.weight(1f)
-                            )
-                            PlanOption(
-                                label = "Yearly",
-                                price = uiState.yearlyPrice,
-                                period = uiState.yearlyPeriod,
-                                selected = uiState.selectedPlan == PlanType.YEARLY,
-                                badge = "Best value",
-                                onClick = { viewModel.selectPlan(PlanType.YEARLY) },
-                                modifier = Modifier.weight(1f)
-                            )
+                            if (PlanType.MONTHLY in uiState.availablePlans) {
+                                PlanOption(
+                                    label = "Monthly",
+                                    price = uiState.monthlyPrice,
+                                    period = uiState.monthlyPeriod,
+                                    selected = uiState.selectedPlan == PlanType.MONTHLY,
+                                    badge = null,
+                                    onClick = { viewModel.selectPlan(PlanType.MONTHLY) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            if (PlanType.YEARLY in uiState.availablePlans) {
+                                PlanOption(
+                                    label = "Yearly",
+                                    price = uiState.yearlyPrice,
+                                    period = uiState.yearlyPeriod,
+                                    selected = uiState.selectedPlan == PlanType.YEARLY,
+                                    badge = "Best value",
+                                    onClick = { viewModel.selectPlan(PlanType.YEARLY) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
