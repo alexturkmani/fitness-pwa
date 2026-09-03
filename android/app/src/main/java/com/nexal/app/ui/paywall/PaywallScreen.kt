@@ -31,6 +31,7 @@ import com.nexal.app.ui.components.*
 import com.nexal.app.data.repository.PlanType
 import com.nexal.app.ui.subscription.SubscriptionViewModel
 import com.nexal.app.ui.theme.*
+import kotlinx.coroutines.delay
 
 // LocalContext is not always the Activity itself — it can be a themed wrapper,
 // where a direct cast would throw.
@@ -52,6 +53,17 @@ fun PaywallScreen(
     val selectedPriceText =
         if (uiState.selectedPlan == PlanType.MONTHLY) uiState.monthlyPriceText
         else uiState.yearlyPriceText
+    val devPricingFallback = com.nexal.app.BuildConfig.DEBUG &&
+        uiState.pricingChecked && !uiState.pricesLoaded
+    var automaticRetryCount by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(uiState.pricingChecked, uiState.pricesLoaded) {
+        if (uiState.pricingChecked && !uiState.pricesLoaded && automaticRetryCount < 2) {
+            delay(1_500)
+            automaticRetryCount++
+            viewModel.retryPricing()
+        }
+    }
 
     LaunchedEffect(uiState.isActive, uiState.purchaseCompleted) {
         if (uiState.isActive || uiState.purchaseCompleted) onSubscribed()
@@ -71,18 +83,26 @@ fun PaywallScreen(
                 ) {
                     GradientButton(
                         text = when {
-                            !uiState.pricesLoaded -> "Loading subscription options…"
+                            devPricingFallback -> "Continue with Dev Premium"
+                            !uiState.pricesLoaded -> "Connecting to Google Play..."
                             uiState.hasFreeTrial -> "Start 14-Day Free Trial"
                             else -> "Subscribe to Nexal Premium"
                         },
-                        onClick = { context.findActivity()?.let { viewModel.purchase(it) } },
+                        onClick = {
+                            if (devPricingFallback) viewModel.skipForDev()
+                            else context.findActivity()?.let { viewModel.purchase(it) }
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         loading = uiState.isLoading,
-                        enabled = uiState.pricesLoaded && !uiState.isLoading
+                        enabled = (uiState.pricesLoaded || devPricingFallback) && !uiState.isLoading
                     )
                     Spacer(modifier = Modifier.height(5.dp))
                     Text(
-                        if (uiState.pricesLoaded) "$selectedPriceText · Cancel anytime" else "Plans and pricing will appear here",
+                        when {
+                            uiState.pricesLoaded -> "$selectedPriceText. Cancel anytime"
+                            devPricingFallback -> "Testing access only. No payment will be made."
+                            else -> "Secure billing through Google Play"
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -276,11 +296,18 @@ fun PaywallScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     GradientButton(
-                        text = if (uiState.hasFreeTrial) "Start 14-Day Free Trial" else "Subscribe",
-                        onClick = { context.findActivity()?.let { viewModel.purchase(it) } },
+                        text = when {
+                            devPricingFallback -> "Continue with Dev Premium"
+                            uiState.hasFreeTrial -> "Start 14-Day Free Trial"
+                            else -> "Subscribe"
+                        },
+                        onClick = {
+                            if (devPricingFallback) viewModel.skipForDev()
+                            else context.findActivity()?.let { viewModel.purchase(it) }
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         loading = uiState.isLoading,
-                        enabled = uiState.pricesLoaded && !uiState.isLoading
+                        enabled = (uiState.pricesLoaded || devPricingFallback) && !uiState.isLoading
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -293,10 +320,10 @@ fun PaywallScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
-                    if (!uiState.pricesLoaded) {
+                    if (!uiState.pricesLoaded && !devPricingFallback) {
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            "Loading local prices from Google Play…",
+                            if (uiState.pricingChecked) "Could not load Google Play pricing." else "Loading local prices from Google Play...",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center

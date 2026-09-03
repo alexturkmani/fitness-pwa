@@ -234,37 +234,39 @@ fun ProfileScreen(
             item {
                 FitCard {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("Rotation period", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Plan length", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             if (uiState.editing) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     listOf(6, 8).forEach { w ->
                                         FilterChip(
                                             selected = uiState.formIntervalWeeks == w,
                                             onClick = { viewModel.updateFormField("intervalWeeks", w.toString()) },
-                                            label = { Text("$w wks") }
+                                            label = { Text("$w weeks") },
+                                            modifier = Modifier.weight(1f)
                                         )
                                     }
                                 }
                             } else {
-                                Text("${uiState.intervalWeeks} weeks", fontWeight = FontWeight.Medium)
+                                Text("${uiState.intervalWeeks} week training cycle", fontWeight = FontWeight.SemiBold)
                             }
                         }
                         HorizontalDivider()
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("Gym days / week", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Training days each week", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             if (uiState.editing) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     (3..7).forEach { d ->
                                         FilterChip(
                                             selected = uiState.formGymDays == d,
                                             onClick = { viewModel.updateFormField("gymDays", d.toString()) },
-                                            label = { Text("$d") }
+                                            label = { Text("$d") },
+                                            modifier = Modifier.weight(1f)
                                         )
                                     }
                                 }
                             } else {
-                                Text("${uiState.gymDaysPerWeek} days", fontWeight = FontWeight.Medium)
+                                Text("${uiState.gymDaysPerWeek} gym days per week", fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
@@ -315,21 +317,25 @@ fun ProfileScreen(
             item { Text("Unit System", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold) }
             item {
                 FitCard {
-                    Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("Preferred Units", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("Preferred units", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (uiState.editing) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 UnitSystem.entries.forEach { u ->
                                     FilterChip(
                                         selected = uiState.formUnitSystem == u.name,
                                         onClick = { viewModel.updateFormField("unitSystem", u.name) },
-                                        label = { Text(u.label) }
+                                        label = { Text(if (u == UnitSystem.METRIC) "Metric (kg, cm)" else "Imperial (lb, in)") },
+                                        modifier = Modifier.weight(1f)
                                     )
                                 }
                             }
                         } else {
                             val u = UnitSystem.entries.find { it.name == uiState.unitSystem }
-                            Text(u?.label ?: uiState.unitSystem, fontWeight = FontWeight.Medium)
+                            Text(
+                                if (u == UnitSystem.IMPERIAL) "Imperial: pounds and inches" else "Metric: kilograms and centimetres",
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
                 }

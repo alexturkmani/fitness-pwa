@@ -38,13 +38,14 @@ data class SubscriptionUiState(
     val isLoading: Boolean = false,
     val purchaseCompleted: Boolean = false,
     val selectedPlan: PlanType = PlanType.MONTHLY,
-    val monthlyPrice: String = "—",
-    val yearlyPrice: String = "—",
+    val monthlyPrice: String = "Unavailable",
+    val yearlyPrice: String = "Unavailable",
     val monthlyPeriod: String = "/month",
     val yearlyPeriod: String = "/year",
-    val monthlyPriceText: String = "—",
-    val yearlyPriceText: String = "—",
+    val monthlyPriceText: String = "Unavailable",
+    val yearlyPriceText: String = "Unavailable",
     val pricesLoaded: Boolean = false,
+    val pricingChecked: Boolean = false,
     val availablePlans: Set<PlanType> = emptySet()
 )
 
@@ -256,17 +257,26 @@ class SubscriptionViewModel @Inject constructor(
                 availablePlans.firstOrNull() ?: it.selectedPlan
             }
             it.copy(
-                monthlyPrice = monthly ?: "—",
-                yearlyPrice = yearly ?: "—",
+                monthlyPrice = monthly ?: "Unavailable",
+                yearlyPrice = yearly ?: "Unavailable",
                 monthlyPeriod = billingRepository.getPeriodLabel(PlanType.MONTHLY),
                 yearlyPeriod = billingRepository.getPeriodLabel(PlanType.YEARLY),
                 monthlyPriceText = billingRepository.getPriceText(PlanType.MONTHLY),
                 yearlyPriceText = billingRepository.getPriceText(PlanType.YEARLY),
                 pricesLoaded = availablePlans.isNotEmpty(),
+                pricingChecked = true,
                 availablePlans = availablePlans,
                 selectedPlan = selectedPlan,
                 hasFreeTrial = billingRepository.hasFreeTrial(selectedPlan)
             )
+        }
+    }
+
+    fun retryPricing() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(pricingChecked = false, error = null) }
+            billingRepository.queryProductDetails()
+            refreshPrices()
         }
     }
 

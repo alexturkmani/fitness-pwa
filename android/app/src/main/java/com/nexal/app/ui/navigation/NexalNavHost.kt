@@ -196,6 +196,7 @@ private fun MainScaffold(isPremium: Boolean) {
                     onNavigateToDiary = { navigateTopLevel(Screen.Nutrition) },
                     onNavigateToOnboarding = { mainNavController.navigate(Screen.Onboarding.route) },
                     onNavigateToProfile = { mainNavController.navigate(Screen.Profile.route) },
+                    onNavigateToSubscription = { mainNavController.navigate(Screen.Subscription.route) },
                     onUpgrade = { mainNavController.navigate(Screen.Paywall.route) },
                     isPremium = isPremium
                 )

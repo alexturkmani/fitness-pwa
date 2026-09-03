@@ -44,6 +44,7 @@ fun DashboardScreen(
     onNavigateToDiary: () -> Unit,
     onNavigateToOnboarding: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToSubscription: () -> Unit,
     onUpgrade: () -> Unit,
     isPremium: Boolean,
     viewModel: DashboardViewModel = hiltViewModel()
@@ -371,7 +372,7 @@ fun DashboardScreen(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                QuickAction(Modifier.weight(1f), "Log food", Icons.Default.Restaurant, onNavigateToDiary)
+                QuickAction(Modifier.weight(1f), "Premium AI", Icons.Default.WorkspacePremium, onNavigateToSubscription)
                 QuickAction(Modifier.weight(1f), "Train", Icons.Default.FitnessCenter, onNavigateToWorkouts)
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -379,8 +380,8 @@ fun DashboardScreen(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                QuickAction(Modifier.weight(1f), "Profile", Icons.Default.Person, onNavigateToProfile)
                 QuickAction(Modifier.weight(1f), "Goals", Icons.Default.Flag, onNavigateToProfile)
+                QuickAction(Modifier.weight(1f), "Profile", Icons.Default.Person, onNavigateToProfile)
             }
         }
 

@@ -147,7 +147,7 @@ class BillingRepository @Inject constructor(
     }
 
     fun getPriceText(planType: PlanType = PlanType.MONTHLY): String {
-        val price = getFormattedPrice(planType) ?: return "—"
+        val price = getFormattedPrice(planType) ?: return "Unavailable"
         return "$price${getPeriodLabel(planType)}"
     }
 

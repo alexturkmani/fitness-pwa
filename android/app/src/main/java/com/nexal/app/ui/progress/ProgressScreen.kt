@@ -382,19 +382,24 @@ private fun MomentumHero(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(110.dp)) {
-                    ActivityOrb(modifier = Modifier.fillMaxSize(), progress = momentum / 100f)
+                    ActivityOrb(
+                        modifier = Modifier.fillMaxSize(),
+                        progress = momentum / 100f,
+                        trackColor = Color.White.copy(alpha = 0.12f)
+                    )
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Surface(color = AccentBright, shape = RoundedCornerShape(999.dp)) {
-                            Text(
-                                "$momentum%",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = HeroInk,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
-                            )
-                        }
-                        Spacer(Modifier.height(5.dp))
-                        Text("MOMENTUM", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.82f))
+                        Text(
+                            "$momentum%",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                        Text(
+                            "SCORE",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = AccentBright
+                        )
                     }
                 }
                 Column(modifier = Modifier.weight(1f)) {

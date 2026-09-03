@@ -191,48 +191,34 @@ fun LineTrendChart(
 @Composable
 fun ActivityOrb(
     modifier: Modifier = Modifier,
-    progress: Float = 0.68f
+    progress: Float = 0.68f,
+    trackColor: Color = AccentWash
 ) {
     Canvas(modifier = modifier) {
         val c = Offset(size.width / 2f, size.height / 2f)
         val r = size.minDimension / 2f
 
-        drawCircle(color = AccentWash, radius = r * 0.92f, center = c)
-
-        // Outer arc carries the progress value
-        val stroke = r * 0.16f
+        val stroke = r * 0.13f
+        val arcRadius = r * 0.79f
+        val arcTopLeft = Offset(c.x - arcRadius, c.y - arcRadius)
+        val arcSize = Size(arcRadius * 2f, arcRadius * 2f)
+        drawArc(
+            color = trackColor,
+            startAngle = -90f,
+            sweepAngle = 360f,
+            useCenter = false,
+            topLeft = arcTopLeft,
+            size = arcSize,
+            style = Stroke(width = stroke)
+        )
         drawArc(
             brush = Brush.sweepGradient(listOf(AccentBright, Accent, AccentBright)),
             startAngle = -90f,
             sweepAngle = 360f * progress.coerceIn(0f, 1f),
             useCenter = false,
-            topLeft = Offset(c.x - r * 0.78f, c.y - r * 0.78f),
-            size = Size(r * 1.56f, r * 1.56f),
+            topLeft = arcTopLeft,
+            size = arcSize,
             style = Stroke(width = stroke)
         )
-
-        // Inner counter-arc for depth
-        drawArc(
-            color = Accent.copy(alpha = 0.28f),
-            startAngle = 140f,
-            sweepAngle = 150f,
-            useCenter = false,
-            topLeft = Offset(c.x - r * 0.5f, c.y - r * 0.5f),
-            size = Size(r, r),
-            style = Stroke(width = stroke * 0.5f)
-        )
-
-        // Orbiting dots
-        listOf(0.0 to 0.78f, 2.1 to 0.55f, 4.3 to 0.68f).forEach { (angle, dist) ->
-            val a = angle
-            drawCircle(
-                color = AccentBright,
-                radius = r * 0.075f,
-                center = Offset(
-                    c.x + (r * dist * kotlin.math.cos(a)).toFloat(),
-                    c.y + (r * dist * kotlin.math.sin(a)).toFloat()
-                )
-            )
-        }
     }
 }
