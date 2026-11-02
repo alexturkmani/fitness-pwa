@@ -187,7 +187,12 @@ class SubscriptionViewModel @Inject constructor(
                 }
                 // If the flow never launches, onPurchasesUpdated is never called and
                 // nothing would clear isLoading — the button would spin forever.
-                val launched = billingRepository.launchPurchaseFlow(activity, _uiState.value.selectedPlan)
+                val userId = (authRepository.authState.value as? AuthState.Authenticated)?.userId
+                if (userId == null) {
+                    _uiState.update { it.copy(isLoading = false, error = "Please sign in again, then try subscribing.") }
+                    return@launch
+                }
+                val launched = billingRepository.launchPurchaseFlow(activity, userId, _uiState.value.selectedPlan)
                 if (!launched) {
                     _uiState.update {
                         it.copy(

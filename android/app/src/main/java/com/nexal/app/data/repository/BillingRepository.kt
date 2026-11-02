@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -23,6 +24,12 @@ class BillingRepository @Inject constructor(
     companion object {
         // Must match Play Console subscription product ID
         const val PRODUCT_ID = "nexal"
+
+        /** SHA-256 hex of the Supabase user id; must match obfuscatedAccountId() in _shared/googlePlay.ts. */
+        fun obfuscatedAccountId(userId: String): String =
+            MessageDigest.getInstance("SHA-256")
+                .digest(userId.toByteArray(Charsets.UTF_8))
+                .joinToString("") { "%02x".format(it) }
     }
 
     private val _connectionState = MutableStateFlow(false)
@@ -176,7 +183,11 @@ class BillingRepository @Inject constructor(
         } ?: matching.firstOrNull()
     }
 
-    fun launchPurchaseFlow(activity: Activity, planType: PlanType = PlanType.MONTHLY): Boolean {
+    fun launchPurchaseFlow(
+        activity: Activity,
+        userId: String,
+        planType: PlanType = PlanType.MONTHLY
+    ): Boolean {
         val details = productDetails ?: return false
         val offer = getOfferForPlan(planType) ?: return false
 
@@ -185,8 +196,11 @@ class BillingRepository @Inject constructor(
             .setOfferToken(offer.offerToken)
             .build()
 
+        // Binds the purchase to this account so verify-purchase can reject the
+        // same token being redeemed by another login.
         val flowParams = BillingFlowParams.newBuilder()
             .setProductDetailsParamsList(listOf(productDetailsParams))
+            .setObfuscatedAccountId(obfuscatedAccountId(userId))
             .build()
 
         val result = billingClient.launchBillingFlow(activity, flowParams)
