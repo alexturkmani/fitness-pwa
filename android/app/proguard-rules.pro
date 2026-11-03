@@ -1,16 +1,13 @@
 # Add project specific ProGuard rules here.
 
-# Retrofit
+# Line numbers in Play Console crash reports (deobfuscated with the bundled mapping)
+-keepattributes SourceFile, LineNumberTable
+-renamesourcefileattribute SourceFile
+
 -keepattributes Signature, InnerClasses, EnclosingMethod
 -keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
--keepclassmembers,allowshrinking,allowobfuscation interface * {
-    @retrofit2.http.* <methods>;
-}
 -dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
 -dontwarn javax.annotation.**
--dontwarn kotlin.Unit
--dontwarn retrofit2.KotlinExtensions
--dontwarn retrofit2.KotlinExtensions$*
 
 # Kotlinx Serialization
 -keepattributes *Annotation*, InnerClasses
@@ -24,9 +21,6 @@
 # Room
 -keep class * extends androidx.room.RoomDatabase
 -dontwarn androidx.room.paging.**
-
-# RevenueCat
--keep class com.revenuecat.purchases.** { *; }
 
 # Credential Manager (Google Sign-In)
 -keep class androidx.credentials.** { *; }
@@ -55,10 +49,6 @@
 -dontwarn dagger.hilt.**
 -keep class dagger.hilt.** { *; }
 -keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
-
-# EncryptedSharedPreferences
--keep class androidx.security.crypto.** { *; }
--dontwarn androidx.security.crypto.**
 
 # OkHttp
 -dontwarn okhttp3.**
