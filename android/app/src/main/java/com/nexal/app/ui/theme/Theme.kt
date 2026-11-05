@@ -12,31 +12,33 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
-private val SoftDarkSurface = Color(0xFF121914)
-private val SoftDarkVariant = Color(0xFF1A241D)
-private val SoftDarkOutline = Color(0xFF344239)
+private val SoftDarkSurface = Color(0xFF141518)
+private val SoftDarkVariant = Color(0xFF1D1F23)
+private val SoftDarkOutline = Color(0xFF34373C)
 
 private val LightColorScheme = lightColorScheme(
-    primary = Accent,
+    primary = Ink,
     onPrimary = Color.White,
-    primaryContainer = AccentWash,
-    onPrimaryContainer = AccentDeep,
-    secondary = Emerald500,
+    primaryContainer = Color(0xFFECECEA),
+    onPrimaryContainer = Ink,
+    secondary = Slate600,
     onSecondary = Color.White,
-    secondaryContainer = Emerald100,
-    onSecondaryContainer = Emerald900,
+    secondaryContainer = Color(0xFFECECEA),
+    onSecondaryContainer = Ink,
     tertiary = MacroFat,
     onTertiary = Color.White,
     background = Cream,
     onBackground = Ink,
     surface = CreamSurface,
     onSurface = Ink,
-    surfaceVariant = Color(0xFFE9ECE5),
+    surfaceVariant = Color(0xFFECECEA),
     onSurfaceVariant = Slate600,
     outline = Slate300,
     outlineVariant = Slate200,
@@ -45,14 +47,14 @@ private val LightColorScheme = lightColorScheme(
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = AccentBright,
-    onPrimary = Color(0xFF04231A),
-    primaryContainer = Color(0xFF06503B),
-    onPrimaryContainer = AccentWash,
-    secondary = Cyan400,
-    onSecondary = Cyan900,
-    secondaryContainer = Cyan800,
-    onSecondaryContainer = Emerald100,
+    primary = Color(0xFFF2F3F5),
+    onPrimary = Slate900,
+    primaryContainer = Color(0xFF26282D),
+    onPrimaryContainer = Slate100,
+    secondary = Slate300,
+    onSecondary = Slate900,
+    secondaryContainer = Color(0xFF26282D),
+    onSecondaryContainer = Slate100,
     tertiary = Color(0xFFFF8FA3),
     onTertiary = Color(0xFF5C1224),
     background = Slate950,
@@ -76,29 +78,29 @@ val NexalShapes = Shapes(
 )
 
 object ThemeState {
-    /** null = not loaded yet; default diary experience is light */
-    var isDarkMode: MutableState<Boolean?> = mutableStateOf(false)
+    /** null = not loaded yet; the photo-led design defaults to dark */
+    var isDarkMode: MutableState<Boolean?> = mutableStateOf(true)
 
     private const val PREFS_NAME = "nexal_theme"
     private const val KEY_DARK = "is_dark_mode"
-    private const val KEY_LIGHT_DIARY_V1 = "light_diary_default_v1"
+    private const val KEY_GLASS_DARK_V1 = "glass_dark_default_v1"
 
     fun initialize(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        // One-time: ship light diary as the default look for this redesign.
-        if (!prefs.getBoolean(KEY_LIGHT_DIARY_V1, false)) {
-            isDarkMode.value = false
+        // One-time: move everyone to dark for this redesign; the toggle still works after.
+        if (!prefs.getBoolean(KEY_GLASS_DARK_V1, false)) {
+            isDarkMode.value = true
             prefs.edit()
-                .putBoolean(KEY_DARK, false)
-                .putBoolean(KEY_LIGHT_DIARY_V1, true)
+                .putBoolean(KEY_DARK, true)
+                .putBoolean(KEY_GLASS_DARK_V1, true)
                 .apply()
             return
         }
-        isDarkMode.value = prefs.getBoolean(KEY_DARK, false)
+        isDarkMode.value = prefs.getBoolean(KEY_DARK, true)
     }
 
     fun toggle(context: Context) {
-        val newValue = !(isDarkMode.value ?: false)
+        val newValue = !(isDarkMode.value ?: true)
         isDarkMode.value = newValue
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit().putBoolean(KEY_DARK, newValue).apply()
@@ -107,7 +109,7 @@ object ThemeState {
 
 @Composable
 fun NexalTheme(
-    darkTheme: Boolean = ThemeState.isDarkMode.value ?: false,
+    darkTheme: Boolean = ThemeState.isDarkMode.value ?: true,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
@@ -132,3 +134,13 @@ fun NexalTheme(
         content = content
     )
 }
+
+/** The bright macro colours fade out on the light theme, so darken them for text and icons there. */
+@Composable
+fun readable(color: Color): Color =
+    if (MaterialTheme.colorScheme.background.luminance() > 0.5f) lerp(color, Ink, 0.55f) else color
+
+/** The accent line colour: lime on dark surfaces, the deeper brand green where lime would vanish on white. */
+@Composable
+fun limeEdge(): Color =
+    if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Accent else AccentBright

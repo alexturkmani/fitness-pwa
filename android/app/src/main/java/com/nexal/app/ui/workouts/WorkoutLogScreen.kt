@@ -131,89 +131,75 @@ private fun SetRow(
 
     FitCard(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // Set number
             Text(
                 "Set ${set.setNumber}",
                 style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.width(40.dp)
+                modifier = Modifier.width(34.dp)
             )
 
             // Weight input with steppers
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                 Text("Weight (kg)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    IconButton(onClick = { 
+                Spacer(modifier = Modifier.height(4.dp))
+                StepperField(
+                    text = weightText,
+                    onTextChange = { v ->
+                        weightText = v
+                        v.toDoubleOrNull()?.let { onWeightChange(it) }
+                    },
+                    onMinus = {
                         val newW = (set.weight - 2.5).coerceAtLeast(0.0)
                         weightText = newW.toString().removeSuffix(".0")
                         onWeightChange(newW)
-                    }, modifier = Modifier.size(28.dp)) {
-                        Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp))
-                    }
-                    OutlinedTextField(
-                        value = weightText,
-                        onValueChange = { v ->
-                            weightText = v
-                            v.toDoubleOrNull()?.let { onWeightChange(it) }
-                        },
-                        modifier = Modifier.width(64.dp).height(48.dp),
-                        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center, fontSize = 13.sp),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                    )
-                    IconButton(onClick = {
+                    },
+                    onPlus = {
                         val newW = set.weight + 2.5
                         weightText = newW.toString().removeSuffix(".0")
                         onWeightChange(newW)
-                    }, modifier = Modifier.size(28.dp)) {
-                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
-                    }
-                }
+                    },
+                    label = "weight, set ${set.setNumber}",
+                    keyboardType = KeyboardType.Decimal
+                )
             }
 
             // Reps input with steppers
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                 Text("Reps", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    IconButton(onClick = {
+                Spacer(modifier = Modifier.height(4.dp))
+                StepperField(
+                    text = repsText,
+                    onTextChange = { v ->
+                        repsText = v
+                        v.toIntOrNull()?.let { onRepsChange(it) }
+                    },
+                    onMinus = {
                         val newR = (set.reps - 1).coerceAtLeast(0)
                         repsText = if (newR > 0) newR.toString() else ""
                         onRepsChange(newR)
-                    }, modifier = Modifier.size(28.dp)) {
-                        Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp))
-                    }
-                    OutlinedTextField(
-                        value = repsText,
-                        onValueChange = { v ->
-                            repsText = v
-                            v.toIntOrNull()?.let { onRepsChange(it) }
-                        },
-                        modifier = Modifier.width(56.dp).height(48.dp),
-                        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center, fontSize = 13.sp),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                    )
-                    IconButton(onClick = {
+                    },
+                    onPlus = {
                         val newR = set.reps + 1
                         repsText = newR.toString()
                         onRepsChange(newR)
-                    }, modifier = Modifier.size(28.dp)) {
-                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
-                    }
-                }
+                    },
+                    label = "reps, set ${set.setNumber}",
+                    keyboardType = KeyboardType.Number
+                )
             }
 
             // Complete checkbox + rest timer
-            Checkbox(
+            RoundCheck(
                 checked = set.completed,
                 onCheckedChange = {
                     onToggleComplete()
                     if (!set.completed) onRestTimer()
                 },
-                colors = CheckboxDefaults.colors(checkedColor = BrandBlue)
+                description = "Set ${set.setNumber} complete"
             )
         }
     }
@@ -235,27 +221,16 @@ private fun RestTimer(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Rest Timer", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = BrandBlue)
+            Text("Rest Timer", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.height(12.dp))
 
             // Circular timer
+            val ringTrack = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
             Box(contentAlignment = Alignment.Center, modifier = Modifier.size(100.dp)) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
-                    val stroke = Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round)
-                    // Background circle
-                    drawArc(
-                        color = Color.LightGray.copy(alpha = 0.3f),
-                        startAngle = -90f, sweepAngle = 360f,
-                        useCenter = false, style = stroke
-                    )
-                    // Progress arc
-                    drawArc(
-                        color = BrandBlue,
-                        startAngle = -90f, sweepAngle = 360f * progress,
-                        useCenter = false, style = stroke
-                    )
+                    drawProgressRing(progress, 8.dp.toPx(), ringTrack, AccentBright.copy(alpha = 0.45f), AccentBright)
                 }
-                Text(
+                RollingNumber(
                     "${remainingSeconds}s",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold

@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
@@ -49,15 +50,7 @@ fun LoginScreen(
         if (uiState.loginSuccess) onLoginSuccess()
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Emerald50, Slate50, CreamSurface)
-                )
-            )
-    ) {
+    PhotoBackdrop(photo = com.nexal.app.R.drawable.bg_hiit) {
         AdaptiveScrollScreen {
             metrics ->
             FadeSlideIn(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -74,7 +67,7 @@ fun LoginScreen(
                         "Nexal",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = BrandBlue
+                        color = Color.White
                     )
                     Text(
                         "Your AI fitness diary",
@@ -88,13 +81,13 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(metrics.sectionSpacing))
 
             ScalePopIn(delayMs = 80) {
-                FitCard(modifier = Modifier.fillMaxWidth()) {
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(if (metrics.isCompactWidth) 16.dp else 20.dp)) {
                         OutlinedTextField(
                             value = email,
                             onValueChange = { email = it },
                             label = { Text("Email") },
-                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = BrandBlue) },
+                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = GlassText) },
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Email,
@@ -112,7 +105,7 @@ fun LoginScreen(
                             value = password,
                             onValueChange = { password = it },
                             label = { Text("Password") },
-                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = BrandBlue) },
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = GlassText) },
                             trailingIcon = {
                                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                     Icon(
@@ -141,7 +134,7 @@ fun LoginScreen(
                             onClick = onNavigateToForgotPassword,
                             modifier = Modifier.align(Alignment.End)
                         ) {
-                            Text("Forgot password?", color = BrandBlue)
+                            Text("Forgot password?", color = Color.White)
                         }
 
                         if (uiState.error != null) {
@@ -211,7 +204,7 @@ fun LoginScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         TextButton(onClick = onNavigateToRegister) {
-                            Text("Sign Up", color = BrandBlue, fontWeight = FontWeight.Bold)
+                            Text("Sign Up", color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

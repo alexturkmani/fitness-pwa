@@ -37,6 +37,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.graphics.lerp
 import com.nexal.app.ui.theme.*
 import kotlinx.coroutines.delay
 
@@ -133,30 +136,29 @@ fun GradientButton(
     enabled: Boolean = true,
     loading: Boolean = false,
 ) {
+    val source = remember { MutableInteractionSource() }
+    val scheme = MaterialTheme.colorScheme
+    val ink = if (enabled) scheme.surface else Color.White
     Box(
         modifier = modifier
-            .height(52.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(
-                brush = Brush.horizontalGradient(
-                    colors = if (enabled) listOf(BrandBlueDark, BrandBlue)
-                    else listOf(Slate300, Slate400)
-                )
-            )
-            .clickable(enabled = enabled && !loading) { onClick() },
+            .pressScale(source, 0.97f)
+            .height(54.dp)
+            .clip(CircleShape)
+            .background(if (enabled) scheme.onSurface else Slate600)
+            .clickable(source, ripple(), enabled = enabled && !loading) { onClick() },
         contentAlignment = Alignment.Center
     ) {
         if (loading) {
             CircularProgressIndicator(
                 modifier = Modifier.size(20.dp),
-                color = Color.White,
+                color = ink,
                 strokeWidth = 2.dp
             )
         } else {
             Text(
                 text = text,
-                color = Color.White,
-                fontWeight = FontWeight.SemiBold,
+                color = ink,
+                fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.labelLarge
             )
         }
@@ -171,18 +173,24 @@ fun FitCard(
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
-        modifier = modifier.then(
-            if (onClick != null) Modifier.clickable { onClick() } else Modifier
-        ),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-        // Separation comes from radius and whitespace, not a border + shadow.
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        content = content
-    )
+    val scheme = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(24.dp)
+    val source = remember { MutableInteractionSource() }
+    val fill = Brush.verticalGradient(listOf(lerp(scheme.surface, scheme.onSurface, 0.05f), scheme.surface))
+    val lime = limeEdge()
+    val edge = Brush.verticalGradient(listOf(lime.copy(alpha = 0.55f), lime.copy(alpha = 0.08f)))
+    CompositionLocalProvider(LocalContentColor provides scheme.onSurface) {
+        Column(
+            modifier = modifier
+                .then(if (onClick != null) Modifier.pressScale(source) else Modifier)
+                .clip(shape)
+                .background(fill)
+                .liquidSheen(24.dp, strength = 0.7f)
+                .border(BorderStroke(1.dp, edge), shape)
+                .then(if (onClick != null) Modifier.clickable(source, ripple()) { onClick() } else Modifier),
+            content = content
+        )
+    }
 }
 
 // ─── FitModal ────────────────────────────────────────────────────────────────
@@ -429,15 +437,7 @@ fun MacroProgressBar(
             )
         }
         Spacer(modifier = Modifier.height(6.dp))
-        LinearProgressIndicator(
-            progress = { animated },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            color = color,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-        )
+        GlowBar(progress = animated, color = color)
     }
 }
 
@@ -457,38 +457,18 @@ fun CalorieRing(
     val remaining = (goal - consumed).coerceAtLeast(0)
     val progress = if (goal > 0) (consumed.toFloat() / goal).coerceIn(0f, 1f) else 0f
     val animated by animateFloatAsState(progress, tween(900), label = "calRing")
+    val trackColor = valueColor.copy(alpha = 0.12f)
 
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val strokePx = stroke.toPx()
-            val arcSize = Size(this.size.minDimension - strokePx, this.size.minDimension - strokePx)
-            val topLeft = Offset(strokePx / 2f, strokePx / 2f)
-            drawArc(
-                color = Color.Gray.copy(alpha = 0.14f),
-                startAngle = -90f,
-                sweepAngle = 360f,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = strokePx, cap = StrokeCap.Round)
-            )
-            drawArc(
-                color = ringColor,
-                startAngle = -90f,
-                sweepAngle = 360f * animated,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = strokePx, cap = StrokeCap.Round)
-            )
+            drawProgressRing(animated, stroke.toPx(), trackColor, ringColor.copy(alpha = 0.45f), ringColor)
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
+            RollingNumber(
                 "$remaining",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = valueColor,
-                maxLines = 1
+                color = valueColor
             )
             Text(
                 "cal left",
@@ -522,6 +502,13 @@ fun MacroChip(
             "of ${goal}g",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        GlowBar(
+            progress = if (goal > 0) current.toFloat() / goal else 0f,
+            modifier = Modifier.width(56.dp),
+            color = color,
+            height = 5.dp
         )
     }
 }

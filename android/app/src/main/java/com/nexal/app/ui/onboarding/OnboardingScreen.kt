@@ -62,14 +62,7 @@ fun OnboardingScreen(
                 .padding(paddingValues)
                 .imePadding()
         ) {
-            LinearProgressIndicator(
-                progress = { (uiState.currentStep + 1) / 3f },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp),
-                color = BrandBlue,
-                trackColor = Emerald50
-            )
+            GlowBar(progress = (uiState.currentStep + 1) / 3f, height = 6.dp)
 
             AnimatedContent(
                 targetState = uiState.currentStep,
@@ -108,7 +101,7 @@ fun OnboardingScreen(
                     }
 
                     Surface(
-                        tonalElevation = 2.dp,
+                        tonalElevation = 0.dp,
                         shadowElevation = 4.dp
                     ) {
                         Column(
@@ -125,7 +118,7 @@ fun OnboardingScreen(
                                 Text(
                                     uiState.statusMessage.ifBlank { "Building your personalized plans…" },
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = BrandBlue,
+                                    color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Medium,
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
@@ -193,7 +186,7 @@ private fun PersonalInfoStep(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Gender.entries.forEach { gender ->
-                    FilterChip(
+                    PillChip(
                         selected = state.gender == gender,
                         onClick = { viewModel.updateGender(gender) },
                         label = {
@@ -202,11 +195,7 @@ private fun PersonalInfoStep(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Emerald50,
-                            selectedLabelColor = BrandBlue
-                        )
+                        }
                     )
                 }
             }
@@ -250,14 +239,10 @@ private fun PersonalInfoStep(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 UnitSystem.entries.forEach { unit ->
-                    FilterChip(
+                    PillChip(
                         selected = state.unitSystem == unit,
                         onClick = { viewModel.updateUnitSystem(unit) },
-                        label = { Text(unit.label, maxLines = 1) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Emerald50,
-                            selectedLabelColor = BrandBlue
-                        )
+                        label = { Text(unit.label, maxLines = 1) }
                     )
                 }
             }
@@ -311,10 +296,10 @@ private fun GoalsAndExperienceStep(
             onClick = { viewModel.toggleGoal(goal) },
             compact = metrics.useCompactOptions,
             trailing = {
-                Checkbox(
+                RoundCheck(
                     checked = selected,
                     onCheckedChange = { viewModel.toggleGoal(goal) },
-                    colors = CheckboxDefaults.colors(checkedColor = BrandBlue)
+                    description = goal.label
                 )
             }
         )
@@ -366,7 +351,7 @@ private fun TrainingSetupStep(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 3.dp)
-                .then(if (selected) Modifier.border(2.dp, BrandBlue, RoundedCornerShape(16.dp)) else Modifier),
+                .then(if (selected) Modifier.border(2.dp, limeEdge(), RoundedCornerShape(16.dp)) else Modifier),
             onClick = { viewModel.updateTrainingLocation(loc) }
         ) {
             Row(
@@ -376,7 +361,7 @@ private fun TrainingSetupStep(
                 Icon(
                     icon,
                     null,
-                    tint = if (selected) BrandBlue else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(if (metrics.useCompactOptions) 24.dp else 28.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
@@ -392,7 +377,7 @@ private fun TrainingSetupStep(
                         )
                     }
                 }
-                if (selected) Icon(Icons.Default.CheckCircle, null, tint = BrandBlue)
+                if (selected) Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -411,7 +396,7 @@ private fun TrainingSetupStep(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 3.dp)
-                .then(if (selected) Modifier.border(2.dp, BrandBlue, RoundedCornerShape(16.dp)) else Modifier),
+                .then(if (selected) Modifier.border(2.dp, limeEdge(), RoundedCornerShape(16.dp)) else Modifier),
             onClick = { viewModel.updateWorkoutStyle(style) }
         ) {
             Row(
@@ -433,7 +418,7 @@ private fun TrainingSetupStep(
                 RadioButton(
                     selected = selected,
                     onClick = { viewModel.updateWorkoutStyle(style) },
-                    colors = RadioButtonDefaults.colors(selectedColor = BrandBlue)
+                    colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
                 )
             }
         }
@@ -441,23 +426,21 @@ private fun TrainingSetupStep(
 
     Spacer(modifier = Modifier.height(metrics.sectionSpacing))
 
-    Text(
-        "Gym Days Per Week: ${state.gymDaysPerWeek}",
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-    Slider(
-        value = state.gymDaysPerWeek.toFloat(),
-        onValueChange = { viewModel.updateGymDays(it.toInt()) },
-        valueRange = 3f..7f,
-        steps = 3,
-        colors = SliderDefaults.colors(thumbColor = BrandBlue, activeTrackColor = BrandBlue)
-    )
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text("3 days", style = MaterialTheme.typography.bodySmall)
-        Text("7 days", style = MaterialTheme.typography.bodySmall)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("Gym Days Per Week", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        RollingNumber(
+            "${state.gymDaysPerWeek}",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
     }
+    Spacer(modifier = Modifier.height(8.dp))
+    StepSlider(value = state.gymDaysPerWeek, onValueChange = { viewModel.updateGymDays(it) }, range = 3..7)
 
     Spacer(modifier = Modifier.height(16.dp))
 
@@ -483,14 +466,10 @@ private fun TrainingSetupStep(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         listOf(6, 8).forEach { weeks ->
-            FilterChip(
+            PillChip(
                 selected = state.intervalWeeks == weeks,
                 onClick = { viewModel.updateIntervalWeeks(weeks) },
-                label = { Text("$weeks weeks") },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = Emerald50,
-                    selectedLabelColor = BrandBlue
-                )
+                label = { Text("$weeks weeks") }
             )
         }
     }
@@ -509,7 +488,7 @@ private fun SelectableOptionCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = if (compact) 2.dp else 3.dp)
-            .then(if (selected) Modifier.border(2.dp, BrandBlue, RoundedCornerShape(16.dp)) else Modifier),
+            .then(if (selected) Modifier.border(2.dp, limeEdge(), RoundedCornerShape(16.dp)) else Modifier),
         onClick = onClick
     ) {
         Row(
@@ -537,7 +516,7 @@ private fun SelectableOptionCard(
             if (trailing != null) {
                 trailing()
             } else if (selected) {
-                Icon(Icons.Default.CheckCircle, null, tint = BrandBlue)
+                Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
             }
         }
     }

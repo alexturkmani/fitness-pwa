@@ -136,18 +136,18 @@ fun SubscriptionScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        FeatureCard("AI Workouts", "Personalized plans", Icons.Default.FitnessCenter, BrandBlue, Modifier.weight(1f))
-                        FeatureCard("AI Meal Plans", "Macro-optimized", Icons.Default.Restaurant, Cyan500, Modifier.weight(1f))
+                        FeatureCard("AI Workouts", "Personalized plans", Icons.Default.FitnessCenter, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
+                        FeatureCard("AI Meal Plans", "Macro-optimized", Icons.Default.Restaurant, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        FeatureCard("Scanner", "Barcode lookup", Icons.Default.QrCodeScanner, MacroCarbs, Modifier.weight(1f))
-                        FeatureCard("Progress", "Charts & trends", Icons.Default.BarChart, MacroFat, Modifier.weight(1f))
+                        FeatureCard("Scanner", "Barcode lookup", Icons.Default.QrCodeScanner, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
+                        FeatureCard("Progress", "Charts & trends", Icons.Default.BarChart, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        FeatureCard("Substitutions", "AI food swaps", Icons.Default.SwapHoriz, BrandBlueDark, Modifier.weight(1f))
-                        FeatureCard("Custom", "Your exercises", Icons.Default.Edit, Cyan600, Modifier.weight(1f))
+                        FeatureCard("Substitutions", "AI food swaps", Icons.Default.SwapHoriz, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
+                        FeatureCard("Custom", "Your exercises", Icons.Default.Edit, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
                     }
                 }
             }
@@ -207,8 +207,8 @@ fun SubscriptionScreen(
                             onClick = { viewModel.manageSubscription() },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = BrandBlue),
-                            border = BorderStroke(1.5.dp, BrandBlue)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
                         ) {
                             Icon(Icons.Default.Settings, null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
@@ -282,8 +282,8 @@ private fun PlanOption(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val borderColor = if (selected) BrandBlue else MaterialTheme.colorScheme.outlineVariant
-    val bgColor = if (selected) BrandBlue.copy(alpha = 0.08f) else Color.Transparent
+    val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+    val bgColor = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent
 
     Surface(
         shape = RoundedCornerShape(16.dp),
@@ -306,7 +306,7 @@ private fun PlanOption(
                     price,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = if (selected) BrandBlue else MaterialTheme.colorScheme.onSurface
+                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     period,
@@ -317,7 +317,7 @@ private fun PlanOption(
 
             if (badge != null) {
                 Surface(
-                    color = BrandBlue,
+                    color = MaterialTheme.colorScheme.primary,
                     shape = RoundedCornerShape(bottomStart = 8.dp, topEnd = 16.dp),
                     modifier = Modifier.align(Alignment.TopEnd)
                 ) {

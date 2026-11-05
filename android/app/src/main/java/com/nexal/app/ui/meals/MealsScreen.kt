@@ -46,6 +46,7 @@ fun MealsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         snackbarHost = {
             SnackbarHost(snackbarHostState) { data ->
                 Snackbar(
@@ -58,6 +59,9 @@ fun MealsScreen(
         },
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent
+                ),
                 title = {
                     Text("Food Diary", style = MaterialTheme.typography.headlineMedium)
                 },
@@ -69,7 +73,7 @@ fun MealsScreen(
                         IconButton(
                             onClick = { if (isPremium) showAllergyModal = true else onUpgrade() }
                         ) {
-                            Icon(Icons.Default.Refresh, "New plan", tint = BrandBlue)
+                            Icon(Icons.Default.Refresh, "New plan", tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
@@ -121,7 +125,7 @@ fun MealsScreen(
                                     "${plan.dailyTotals.calories}",
                                     style = MaterialTheme.typography.displaySmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = BrandBlue
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
                                     "calories planned",
@@ -188,10 +192,10 @@ fun MealsScreen(
                                             modifier = Modifier
                                                 .size(40.dp)
                                                 .clip(RoundedCornerShape(12.dp))
-                                                .background(Accent.copy(alpha = 0.15f)),
+                                                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            Icon(Icons.Default.WaterDrop, null, tint = Accent, modifier = Modifier.size(20.dp))
+                                            Icon(Icons.Default.WaterDrop, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                                         }
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
@@ -202,7 +206,7 @@ fun MealsScreen(
                                             Text(
                                                 "Recommended: ${waterMl} ml (${"%.1f".format(waterMl / 1000.0)}L)",
                                                 style = MaterialTheme.typography.bodySmall,
-                                                color = Accent
+                                                color = MaterialTheme.colorScheme.primary
                                             )
                                         }
                                     }
@@ -221,7 +225,7 @@ fun MealsScreen(
                                         Text(
                                             "Coach Notes",
                                             style = MaterialTheme.typography.labelMedium,
-                                            color = BrandBlue,
+                                            color = MaterialTheme.colorScheme.primary,
                                             fontWeight = FontWeight.SemiBold
                                         )
                                         Spacer(modifier = Modifier.height(6.dp))
@@ -376,7 +380,7 @@ private fun MealCard(
                         if (added) "Added to diary · ${meal.totalMacros.calories} cal"
                         else "${meal.totalMacros.calories} cal",
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (added) SuccessGreen else BrandBlue
+                        color = if (added) SuccessGreen else MaterialTheme.colorScheme.primary
                     )
                 }
                 AddConfirmIconButton(
@@ -424,7 +428,7 @@ private fun MealCard(
                             Icon(
                                 Icons.Default.SwapHoriz,
                                 contentDescription = "Substitute",
-                                tint = BrandBlue,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -494,14 +498,10 @@ private fun AllergySelectionModal(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 COMMON_ALLERGIES.forEach { allergy ->
-                    FilterChip(
+                    PillChip(
                         selected = allergy in allergies,
                         onClick = { onToggleAllergy(allergy) },
-                        label = { Text(allergy) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Accent,
-                            selectedLabelColor = BrandBlue
-                        )
+                        label = { Text(allergy) }
                     )
                 }
             }
@@ -626,9 +626,9 @@ private fun SubstitutionModal(
                 )
                 IconButton(onClick = onSearch, enabled = !isLoading) {
                     if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = BrandBlue)
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
                     } else {
-                        Icon(Icons.Default.Send, contentDescription = "Search", tint = BrandBlue)
+                        Icon(Icons.Default.Send, contentDescription = "Search", tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -654,7 +654,7 @@ private fun SubstitutionModal(
                                 Text(
                                     "${sub.macros?.calories ?: "–"} cal",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = BrandBlue
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                             sub.servingSize?.let {

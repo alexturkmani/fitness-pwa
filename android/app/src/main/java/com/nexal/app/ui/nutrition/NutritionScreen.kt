@@ -29,6 +29,8 @@ import com.nexal.app.domain.model.MealSlot
 import com.nexal.app.domain.model.UnitSystem
 import com.nexal.app.domain.model.WaterLogEntry
 import com.nexal.app.ui.components.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.nexal.app.ui.theme.*
 import com.nexal.app.util.formatWater
 import kotlinx.coroutines.flow.filter
@@ -82,14 +84,14 @@ fun NutritionScreen(
                         Icon(
                             Icons.Default.QrCodeScanner,
                             contentDescription = "Scan barcode",
-                            tint = BrandBlue
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     IconButton(onClick = { viewModel.copyYesterday() }) {
                         Icon(
                             Icons.Default.ContentCopy,
                             contentDescription = "Copy yesterday",
-                            tint = BrandBlue
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -98,8 +100,8 @@ fun NutritionScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { openAddFor(uiState.addSlot) },
-                containerColor = BrandBlue,
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add food")
             }
@@ -161,9 +163,9 @@ fun NutritionScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceEvenly
                             ) {
-                                MacroChip("Protein", uiState.dayTotals.protein, uiState.proteinTarget, MacroProtein)
-                                MacroChip("Carbs", uiState.dayTotals.carbs, uiState.carbsTarget, MacroCarbs)
-                                MacroChip("Fat", uiState.dayTotals.fats, uiState.fatsTarget, MacroFat)
+                                MacroChip("Protein", uiState.dayTotals.protein, uiState.proteinTarget, readable(MacroProtein))
+                                MacroChip("Carbs", uiState.dayTotals.carbs, uiState.carbsTarget, readable(MacroCarbs))
+                                MacroChip("Fat", uiState.dayTotals.fats, uiState.fatsTarget, readable(MacroFat))
                             }
                         }
                     }
@@ -319,7 +321,7 @@ private fun MealSlotCard(
                     "$slotCalories cal",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium,
-                    color = if (slotCalories > 0) BrandBlue else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (slotCalories > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -417,9 +419,9 @@ private fun DiaryFoodRow(
                 overflow = TextOverflow.Ellipsis
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("P ${entry.macros.protein}g", style = MaterialTheme.typography.labelSmall, color = MacroProtein)
-                Text("C ${entry.macros.carbs}g", style = MaterialTheme.typography.labelSmall, color = MacroCarbs)
-                Text("F ${entry.macros.fats}g", style = MaterialTheme.typography.labelSmall, color = MacroFat)
+                Text("P ${entry.macros.protein}g", style = MaterialTheme.typography.labelSmall, color = readable(MacroProtein))
+                Text("C ${entry.macros.carbs}g", style = MaterialTheme.typography.labelSmall, color = readable(MacroCarbs))
+                Text("F ${entry.macros.fats}g", style = MaterialTheme.typography.labelSmall, color = readable(MacroFat))
             }
         }
         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
@@ -466,7 +468,7 @@ private fun RecentFoodChip(
                 Text(
                     if (added) "Added" else "${food.macros.calories} cal",
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (added) SuccessGreen else BrandBlue
+                    color = if (added) SuccessGreen else MaterialTheme.colorScheme.primary
                 )
             }
             if (added) {
@@ -506,7 +508,7 @@ private fun WaterSection(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.WaterDrop, null, tint = Accent, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.WaterDrop, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                     Text(
                         "Water",
                         style = MaterialTheme.typography.titleSmall,
@@ -525,13 +527,7 @@ private fun WaterSection(
             } else {
                 0f
             }
-            LinearProgressIndicator(
-                progress = { waterPercent },
-                modifier = Modifier.fillMaxWidth().height(6.dp),
-                color = Accent,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                strokeCap = StrokeCap.Round
-            )
+            GlowBar(progress = waterPercent)
             Spacer(modifier = Modifier.height(10.dp))
             var lastAddedMl by remember { mutableStateOf<Int?>(null) }
             LaunchedEffect(lastAddedMl) {
@@ -543,19 +539,17 @@ private fun WaterSection(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(150, 250, 350, 500).forEach { ml ->
                     val added = lastAddedMl == ml
-                    OutlinedButton(
+                    FilledTonalButton(
                         onClick = {
                             onAddWater(ml)
                             lastAddedMl = ml
                         },
                         modifier = Modifier.weight(1f),
+                        shape = CircleShape,
                         contentPadding = PaddingValues(4.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = if (added) SuccessGreen else Accent
-                        ),
-                        border = BorderStroke(
-                            1.dp,
-                            if (added) SuccessGreen else Accent.copy(alpha = 0.45f)
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = if (added) 0.28f else 0.13f),
+                            contentColor = MaterialTheme.colorScheme.primary
                         )
                     ) {
                         if (added) {
@@ -621,7 +615,7 @@ private fun CardioSection(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.DirectionsRun, null, tint = MacroFat, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.DirectionsRun, null, tint = readable(MacroFat), modifier = Modifier.size(18.dp))
                     Text(
                         "Cardio",
                         style = MaterialTheme.typography.titleSmall,
@@ -629,15 +623,15 @@ private fun CardioSection(
                     )
                 }
                 TextButton(onClick = onAdd, contentPadding = PaddingValues(horizontal = 8.dp)) {
-                    Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp), tint = BrandBlue)
-                    Text("Add", color = BrandBlue)
+                    Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                    Text("Add", color = MaterialTheme.colorScheme.primary)
                 }
             }
             if (cardioCaloriesToday > 0) {
                 Text(
                     "Burnt: $cardioCaloriesToday cal",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MacroFat
+                    color = readable(MacroFat)
                 )
             }
             if (cardioEntries.isEmpty()) {
@@ -666,20 +660,19 @@ private fun DayCalendarCell(
     isToday: Boolean,
     onClick: () -> Unit
 ) {
-    val borderColor = if (isSelected) BrandBlue else MaterialTheme.colorScheme.outlineVariant
-    val textColor = if (isToday) BrandBlue else MaterialTheme.colorScheme.onSurfaceVariant
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+    val textColor = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     val ringColor = when {
         calPercent > 1f -> MaterialTheme.colorScheme.error
-        calPercent > 0f -> BrandBlue
+        calPercent > 0f -> MaterialTheme.colorScheme.primary
         else -> MaterialTheme.colorScheme.outlineVariant
     }
 
     Surface(
         onClick = onClick,
-        color = if (isSelected) BrandBlue.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
-        shape = MaterialTheme.shapes.medium,
-        border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, borderColor),
-        tonalElevation = if (isSelected) 1.dp else 0.dp
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, if (isSelected) limeEdge() else borderColor)
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp).width(44.dp),
@@ -698,9 +691,10 @@ private fun DayCalendarCell(
                 color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(4.dp))
+            val emptyRing = MaterialTheme.colorScheme.outlineVariant
             Canvas(modifier = Modifier.size(22.dp)) {
                 val stroke = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
-                drawArc(color = Slate200, startAngle = -90f, sweepAngle = 360f, useCenter = false, style = stroke)
+                drawArc(color = emptyRing, startAngle = -90f, sweepAngle = 360f, useCenter = false, style = stroke)
                 drawArc(
                     color = ringColor,
                     startAngle = -90f,
@@ -779,18 +773,18 @@ private fun AddFoodModal(
 
             if (autoFillState.isLoading) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = BrandBlue)
-                    Text("Estimating nutrition info...", style = MaterialTheme.typography.bodySmall, color = BrandBlue)
+                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
+                    Text("Estimating nutrition info...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                 }
             }
 
             if (autoFillState.autoFilled && !autoFillState.isLoading) {
-                Surface(color = BrandBlue.copy(alpha = 0.1f), shape = MaterialTheme.shapes.small) {
+                Surface(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), shape = MaterialTheme.shapes.small) {
                     Text(
                         "Nutrition auto-filled from AI estimate. You can adjust values.",
                         modifier = Modifier.padding(8.dp),
                         style = MaterialTheme.typography.bodySmall,
-                        color = BrandBlue
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }

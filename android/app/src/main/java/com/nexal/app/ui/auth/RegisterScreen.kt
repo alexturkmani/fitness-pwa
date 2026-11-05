@@ -17,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -52,11 +51,7 @@ fun RegisterScreen(
     var passwordVisible by remember { mutableStateOf(false) }
 
     if (uiState.registerSuccess) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(Emerald50, Slate50, CreamSurface)))
-        ) {
+        PhotoBackdrop(R.drawable.bg_hiit) {
             Scaffold(
                 containerColor = androidx.compose.ui.graphics.Color.Transparent
             ) { innerPadding ->
@@ -77,11 +72,11 @@ fun RegisterScreen(
                             Icons.Default.MarkEmailRead,
                             contentDescription = null,
                             modifier = Modifier.size(metrics.heroSize),
-                            tint = BrandBlue
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     Spacer(modifier = Modifier.height(metrics.sectionSpacing))
-                    FadeSlideIn(delayMs = 80) {
+                    FadeSlideIn(delayMs = 80, horizontalAlignment = Alignment.CenterHorizontally) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 "Check Your Email",
@@ -101,7 +96,7 @@ fun RegisterScreen(
                                 uiState.registerEmail,
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
-                                color = BrandBlue,
+                                color = MaterialTheme.colorScheme.primary,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -127,11 +122,7 @@ fun RegisterScreen(
         return
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Emerald50, Slate50, CreamSurface)))
-    ) {
+    PhotoBackdrop(R.drawable.bg_hiit) {
         Scaffold(
             containerColor = androidx.compose.ui.graphics.Color.Transparent,
             topBar = {
@@ -161,7 +152,7 @@ fun RegisterScreen(
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                FadeSlideIn {
+                FadeSlideIn(horizontalAlignment = Alignment.CenterHorizontally) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Image(
                             painter = painterResource(id = R.drawable.nexal_logo),
@@ -175,7 +166,7 @@ fun RegisterScreen(
                             "Join Nexal",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = BrandBlue,
+                            color = MaterialTheme.colorScheme.primary,
                             textAlign = TextAlign.Center
                         )
                         Text(
@@ -196,7 +187,7 @@ fun RegisterScreen(
                                 value = name,
                                 onValueChange = { name = it },
                                 label = { Text("Name") },
-                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = BrandBlue) },
+                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                 modifier = Modifier.fillMaxWidth(),
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                                 keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
@@ -209,7 +200,7 @@ fun RegisterScreen(
                                 value = email,
                                 onValueChange = { email = it },
                                 label = { Text("Email") },
-                                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = BrandBlue) },
+                                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                 modifier = Modifier.fillMaxWidth(),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                                 keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
@@ -222,7 +213,7 @@ fun RegisterScreen(
                                 value = password,
                                 onValueChange = { password = it },
                                 label = { Text("Password") },
-                                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = BrandBlue) },
+                                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                 trailingIcon = {
                                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                         Icon(
@@ -244,7 +235,7 @@ fun RegisterScreen(
                                 value = confirmPassword,
                                 onValueChange = { confirmPassword = it },
                                 label = { Text("Confirm Password") },
-                                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = BrandBlue) },
+                                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                 modifier = Modifier.fillMaxWidth(),
                                 visualTransformation = PasswordVisualTransformation(),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
@@ -283,7 +274,7 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(metrics.sectionSpacing))
 
-                FadeSlideIn(delayMs = 160) {
+                FadeSlideIn(delayMs = 160, horizontalAlignment = Alignment.CenterHorizontally) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             HorizontalDivider(modifier = Modifier.weight(1f))
@@ -323,7 +314,7 @@ fun RegisterScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             TextButton(onClick = onNavigateToLogin) {
-                                Text("Sign In", color = BrandBlue, fontWeight = FontWeight.Bold)
+                                Text("Sign In", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                             }
                         }
                     }

@@ -7,6 +7,8 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nexal.app.data.repository.RewardRepository
+import com.nexal.app.data.repository.RewardType
 import com.nexal.app.data.repository.WorkoutRepository
 import com.nexal.app.domain.model.*
 import com.nexal.app.util.generateId
@@ -30,6 +32,7 @@ data class WorkoutLogUiState(
 @HiltViewModel
 class WorkoutLogViewModel @Inject constructor(
     private val workoutRepo: WorkoutRepository,
+    private val rewards: RewardRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -131,6 +134,10 @@ class WorkoutLogViewModel @Inject constructor(
                 createdAt = todayFormatted()
             )
             workoutRepo.saveLog(log)
+            // Saving an empty log isn't a finished workout.
+            if (log.exercises.any { exercise -> exercise.sets.any { it.completed } }) {
+                rewards.award(RewardType.WORKOUT, dedupeKey = "${log.date}:$dayId")
+            }
         }
     }
 

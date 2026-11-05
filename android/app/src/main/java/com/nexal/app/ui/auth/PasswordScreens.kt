@@ -14,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -24,9 +23,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nexal.app.R
 import com.nexal.app.ui.components.FadeSlideIn
 import com.nexal.app.ui.components.FitCard
 import com.nexal.app.ui.components.GradientButton
+import com.nexal.app.ui.components.PhotoBackdrop
 import com.nexal.app.ui.components.ScalePopIn
 import com.nexal.app.ui.components.rememberAdaptiveMetrics
 import com.nexal.app.ui.theme.*
@@ -41,11 +42,7 @@ fun ForgotPasswordScreen(
     val metrics = rememberAdaptiveMetrics()
     var email by remember { mutableStateOf("") }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Emerald50, Slate50, CreamSurface)))
-    ) {
+    PhotoBackdrop(R.drawable.bg_hiit) {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
@@ -73,16 +70,16 @@ fun ForgotPasswordScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (uiState.forgotPasswordSent) {
-                    ScalePopIn {
+                    ScalePopIn(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             Icons.Default.Email,
                             null,
                             modifier = Modifier.size(metrics.heroSize),
-                            tint = BrandBlue
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     Spacer(modifier = Modifier.height(metrics.sectionSpacing))
-                    FadeSlideIn(delayMs = 80) {
+                    FadeSlideIn(delayMs = 80, horizontalAlignment = Alignment.CenterHorizontally) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 "Check Your Email",
@@ -101,7 +98,7 @@ fun ForgotPasswordScreen(
                         }
                     }
                 } else {
-                    FadeSlideIn {
+                    FadeSlideIn(horizontalAlignment = Alignment.CenterHorizontally) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 "Forgot your password?",
@@ -128,7 +125,7 @@ fun ForgotPasswordScreen(
                                     value = email,
                                     onValueChange = { email = it },
                                     label = { Text("Email") },
-                                    leadingIcon = { Icon(Icons.Default.Email, null, tint = BrandBlue) },
+                                    leadingIcon = { Icon(Icons.Default.Email, null, tint = MaterialTheme.colorScheme.primary) },
                                     modifier = Modifier.fillMaxWidth(),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                                     singleLine = true,
@@ -179,11 +176,7 @@ fun ResetPasswordScreen(
         if (uiState.resetPasswordSuccess) onSuccess()
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Emerald50, Slate50, CreamSurface)))
-    ) {
+    PhotoBackdrop(R.drawable.bg_hiit) {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
@@ -205,7 +198,7 @@ fun ResetPasswordScreen(
                     ),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                FadeSlideIn {
+                FadeSlideIn(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         "Create a new password",
                         style = MaterialTheme.typography.headlineSmall,

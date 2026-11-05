@@ -30,6 +30,7 @@ sealed class Screen(val route: String) {
     data object Profile : Screen("profile")
     data object Subscription : Screen("subscription")
     data object Paywall : Screen("paywall")
+    data object Fasting : Screen("fasting")
 }
 
 data class BottomNavItem(

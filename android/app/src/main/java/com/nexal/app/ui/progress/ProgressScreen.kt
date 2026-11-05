@@ -35,9 +35,9 @@ fun ProgressScreen(
                 title = { Text("Progress", fontWeight = FontWeight.Bold) },
                 actions = {
                     TextButton(onClick = { showWeightModal = true }) {
-                        Icon(Icons.Default.MonitorWeight, contentDescription = null, modifier = Modifier.size(18.dp), tint = BrandBlue)
+                        Icon(Icons.Default.MonitorWeight, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Log Weight", color = BrandBlue)
+                        Text("Log Weight", color = MaterialTheme.colorScheme.primary)
                     }
                 }
             )
@@ -62,14 +62,14 @@ fun ProgressScreen(
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         StatCard(
                             icon = Icons.Default.FitnessCenter,
-                            iconColor = Accent,
+                            iconColor = MaterialTheme.colorScheme.onSurface,
                             label = "Workouts This Week",
                             value = "${uiState.weeklyWorkouts}",
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
                             icon = Icons.Default.LocalFireDepartment,
-                            iconColor = Accent,
+                            iconColor = MaterialTheme.colorScheme.onSurface,
                             label = "Avg Daily Calories",
                             value = "${uiState.avgDailyCalories}",
                             modifier = Modifier.weight(1f)
@@ -82,7 +82,7 @@ fun ProgressScreen(
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         StatCard(
                             icon = Icons.Default.MonitorWeight,
-                            iconColor = Accent,
+                            iconColor = MaterialTheme.colorScheme.onSurface,
                             label = "Current Weight",
                             value = "${uiState.currentWeight} kg",
                             modifier = Modifier.weight(1f)
@@ -150,8 +150,8 @@ fun ProgressScreen(
                                 if (uiState.targetWeight > 0) {
                                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text("Target", style = MaterialTheme.typography.bodySmall, color = BrandBlue)
-                                        Text("${uiState.targetWeight} kg", style = MaterialTheme.typography.bodySmall, color = BrandBlue, fontWeight = FontWeight.Medium)
+                                        Text("Target", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                        Text("${uiState.targetWeight} kg", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                                     }
                                 }
                             }
@@ -303,7 +303,7 @@ fun ProgressScreen(
                                     ) {
                                         Text(day, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                            Text("$calories cal", style = MaterialTheme.typography.bodySmall, color = MacroFat)
+                                            Text("$calories cal", style = MaterialTheme.typography.bodySmall, color = readable(MacroFat))
                                             Text("${duration} min", style = MaterialTheme.typography.bodySmall, color = Cyan500)
                                         }
                                     }
@@ -311,7 +311,7 @@ fun ProgressScreen(
                                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text("Avg", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("${uiState.avgCardioCalories} cal/day", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = MacroFat)
+                                    Text("${uiState.avgCardioCalories} cal/day", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = readable(MacroFat))
                                 }
                             }
                         }
@@ -367,7 +367,7 @@ private fun MomentumHero(
         color = HeroInk
     ) {
         Column(modifier = Modifier.padding(22.dp)) {
-            Text("YOUR MOMENTUM", style = MaterialTheme.typography.labelSmall, color = AccentBright)
+            Text("YOUR MOMENTUM", style = MaterialTheme.typography.labelSmall, color = Color.White)
             Spacer(Modifier.height(6.dp))
             Text("Progress, made visible.", style = MaterialTheme.typography.headlineSmall, color = Color.White)
             Text(
@@ -398,7 +398,7 @@ private fun MomentumHero(
                             "SCORE",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = AccentBright
+                            color = Color.White
                         )
                     }
                 }
@@ -439,7 +439,7 @@ private fun MomentumMetric(label: String, value: String) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(label, style = MaterialTheme.typography.labelSmall, color = AccentBright)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White)
             Text(
                 value,
                 style = MaterialTheme.typography.bodyMedium,
@@ -462,13 +462,16 @@ private fun StatCard(
     modifier: Modifier = Modifier
 ) {
     FitCard(modifier = modifier) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(16.dp))
-                Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = valueColor)
+        Column(modifier = Modifier.padding(14.dp)) {
+            IconBadge(icon, tint = readable(iconColor), size = 32.dp)
+            Spacer(modifier = Modifier.height(10.dp))
+            RollingNumber(
+                value,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = valueColor
+            )
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

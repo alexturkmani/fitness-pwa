@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -24,7 +25,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nexal.app.ui.theme.Accent
 import com.nexal.app.ui.theme.AccentBright
-import com.nexal.app.ui.theme.AccentWash
+import com.nexal.app.ui.theme.limeEdge
 import kotlin.math.max
 
 /**
@@ -54,32 +55,37 @@ fun WeeklyBarChart(
                 label = "bar$index"
             )
             val isToday = index == todayIndex
+            val hasValue = value > 0
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
                     modifier = Modifier
-                        .width(26.dp)
+                        .width(22.dp)
                         .height(barHeight),
                     contentAlignment = Alignment.BottomCenter
                 ) {
-                    // Track
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .clip(RoundedCornerShape(13.dp))
-                            .background(AccentWash)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                     )
-                    // Value — minimum sliver so an empty day is still legible
+                    // Value: a small sliver keeps an empty day legible
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .fillMaxHeight(max(animated, 0.04f))
-                            .clip(RoundedCornerShape(13.dp))
+                            .fillMaxHeight(max(animated, 0.05f))
+                            .clip(RoundedCornerShape(10.dp))
                             .background(
-                                if (isToday) {
-                                    Brush.verticalGradient(listOf(AccentBright, Accent))
-                                } else {
-                                    Brush.verticalGradient(listOf(Accent, Accent))
+                                when {
+                                    isToday && hasValue -> Brush.verticalGradient(listOf(AccentBright, AccentBright.copy(alpha = 0.45f)))
+                                    hasValue -> Brush.verticalGradient(
+                                        listOf(
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                                        )
+                                    )
+                                    else -> SolidColor(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f))
                                 }
                             )
                     )
@@ -89,7 +95,7 @@ fun WeeklyBarChart(
                     label,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isToday) Accent else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isToday) limeEdge() else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -108,6 +114,7 @@ fun LineTrendChart(
     labels: List<String> = emptyList()
 ) {
     if (points.size < 2) return
+    val line = limeEdge()
     val lo = points.min()
     val hi = points.max()
     val pad = ((hi - lo) * 0.25f).takeIf { it > 0f } ?: 1f
@@ -144,15 +151,15 @@ fun LineTrendChart(
             drawPath(
                 path = fill,
                 brush = Brush.verticalGradient(
-                    listOf(Accent.copy(alpha = 0.28f), Accent.copy(alpha = 0f))
+                    listOf(line.copy(alpha = 0.22f), line.copy(alpha = 0f))
                 )
             )
-            drawPath(path = path, color = Accent, style = Stroke(width = 6f))
+            drawPath(path = path, color = line, style = Stroke(width = 6f))
 
             points.forEachIndexed { i, v ->
                 val isLast = i == points.lastIndex
                 drawCircle(
-                    color = if (isLast) AccentBright else Accent,
+                    color = line,
                     radius = if (isLast) 11f else 6f,
                     center = Offset(px(i), py(v))
                 )
@@ -192,7 +199,7 @@ fun LineTrendChart(
 fun ActivityOrb(
     modifier: Modifier = Modifier,
     progress: Float = 0.68f,
-    trackColor: Color = AccentWash
+    trackColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
 ) {
     Canvas(modifier = modifier) {
         val c = Offset(size.width / 2f, size.height / 2f)

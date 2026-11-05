@@ -76,7 +76,7 @@ fun PaywallScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 14.dp, tonalElevation = 4.dp) {
+            Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 14.dp) {
                 Column(
                     modifier = Modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -191,7 +191,7 @@ fun PaywallScreen(
                         Text(
                             "NEXAL PREMIUM",
                             style = MaterialTheme.typography.labelSmall,
-                            color = AccentBright,
+                            color = Color.White,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -223,12 +223,12 @@ fun PaywallScreen(
                         .padding(horizontal = metrics.horizontalPadding),
                     verticalArrangement = Arrangement.spacedBy(if (metrics.isCompactHeight) 8.dp else 12.dp)
                 ) {
-                    PaywallFeature(Icons.Default.FitnessCenter, "AI Workout Plans", "Personalized training tailored to your goals", Accent, metrics.useCompactOptions)
-                    PaywallFeature(Icons.Default.Restaurant, "AI Meal Plans", "Macro-optimized nutrition for your preferences", Accent, metrics.useCompactOptions)
-                    PaywallFeature(Icons.Default.QrCodeScanner, "Barcode Scanner", "Instant nutrition info and AI assessment", Accent, metrics.useCompactOptions)
+                    PaywallFeature(Icons.Default.FitnessCenter, "AI Workout Plans", "Personalized training tailored to your goals", MaterialTheme.colorScheme.onSurface, metrics.useCompactOptions)
+                    PaywallFeature(Icons.Default.Restaurant, "AI Meal Plans", "Macro-optimized nutrition for your preferences", MaterialTheme.colorScheme.onSurface, metrics.useCompactOptions)
+                    PaywallFeature(Icons.Default.QrCodeScanner, "Barcode Scanner", "Instant nutrition info and AI assessment", MaterialTheme.colorScheme.onSurface, metrics.useCompactOptions)
                     if (!metrics.isCompactHeight) {
-                        PaywallFeature(Icons.Default.BarChart, "Progress Analytics", "Track weight, volume, and nutrition trends", Accent, false)
-                        PaywallFeature(Icons.Default.SwapHoriz, "Smart Substitutions", "AI alternatives that match your macros", Accent, false)
+                        PaywallFeature(Icons.Default.BarChart, "Progress Analytics", "Track weight, volume, and nutrition trends", MaterialTheme.colorScheme.onSurface, false)
+                        PaywallFeature(Icons.Default.SwapHoriz, "Smart Substitutions", "AI alternatives that match your macros", MaterialTheme.colorScheme.onSurface, false)
                     }
                 }
             }
@@ -339,7 +339,7 @@ fun PaywallScreen(
                     ) {
                         Text(
                             "Restore purchases",
-                            color = BrandBlue,
+                            color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -398,8 +398,8 @@ private fun PlanCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val borderColor = if (selected) Accent else MaterialTheme.colorScheme.outlineVariant
-    val bgColor = if (selected) AccentWash else MaterialTheme.colorScheme.surface
+    val borderColor = if (selected) limeEdge() else MaterialTheme.colorScheme.outlineVariant
+    val bgColor = MaterialTheme.colorScheme.surface
 
     Surface(
         shape = RoundedCornerShape(24.dp),
@@ -415,13 +415,13 @@ private fun PlanCard(
                 Text(
                     label.uppercase(),
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (selected) AccentDeep else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     price,
                     style = MaterialTheme.typography.headlineMedium,
-                    color = if (selected) AccentDeep else MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     period,
@@ -432,7 +432,7 @@ private fun PlanCard(
 
             if (badge != null) {
                 Surface(
-                    color = Accent,
+                    color = MaterialTheme.colorScheme.primary,
                     shape = RoundedCornerShape(bottomStart = 12.dp, topEnd = 24.dp),
                     modifier = Modifier.align(Alignment.TopEnd)
                 ) {

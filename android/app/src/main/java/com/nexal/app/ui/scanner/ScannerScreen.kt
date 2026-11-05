@@ -224,13 +224,13 @@ fun ScannerScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Surface(
-                                    color = BrandBlue.copy(alpha = 0.1f),
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                                     shape = MaterialTheme.shapes.large
                                 ) {
                                     Icon(
                                         Icons.Default.CameraAlt,
                                         contentDescription = null,
-                                        tint = BrandBlue,
+                                        tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.padding(20.dp).size(36.dp)
                                     )
                                 }
@@ -354,10 +354,10 @@ private fun ProductResultCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ScannerMacroChip("${product.macros.calories}", "Calories", MacroCalorie, Modifier.weight(1f))
-                ScannerMacroChip("${product.macros.protein}g", "Protein", MacroProtein, Modifier.weight(1f))
-                ScannerMacroChip("${product.macros.carbs}g", "Carbs", MacroCarbs, Modifier.weight(1f))
-                ScannerMacroChip("${product.macros.fats}g", "Fats", MacroFat, Modifier.weight(1f))
+                ScannerMacroChip("${product.macros.calories}", "Calories", readable(MacroCalorie), Modifier.weight(1f))
+                ScannerMacroChip("${product.macros.protein}g", "Protein", readable(MacroProtein), Modifier.weight(1f))
+                ScannerMacroChip("${product.macros.carbs}g", "Carbs", readable(MacroCarbs), Modifier.weight(1f))
+                ScannerMacroChip("${product.macros.fats}g", "Fats", readable(MacroFat), Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -437,7 +437,7 @@ private fun AiAssessmentCard(
             Text(
                 "AI Assessment",
                 style = MaterialTheme.typography.titleSmall,
-                color = BrandBlue,
+                color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -464,7 +464,7 @@ private fun AiAssessmentCard(
                             }
                             alt.macros?.let { macros ->
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Text("${macros.protein}g protein", style = MaterialTheme.typography.bodySmall, color = MacroProtein)
+                                    Text("${macros.protein}g protein", style = MaterialTheme.typography.bodySmall, color = readable(MacroProtein))
                                     Text("${macros.calories} cal", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }

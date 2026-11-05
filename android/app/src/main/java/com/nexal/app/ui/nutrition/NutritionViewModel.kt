@@ -6,6 +6,8 @@ import com.nexal.app.data.repository.AiRepository
 import com.nexal.app.data.repository.AuthRepository
 import com.nexal.app.data.repository.NutritionRepository
 import com.nexal.app.data.repository.ProfileRepository
+import com.nexal.app.data.repository.RewardRepository
+import com.nexal.app.data.repository.RewardType
 import com.nexal.app.domain.model.AuthState
 import com.nexal.app.domain.model.FoodLogEntry
 import com.nexal.app.domain.model.FoodSource
@@ -75,7 +77,8 @@ class NutritionViewModel @Inject constructor(
     private val nutritionRepo: NutritionRepository,
     private val profileRepo: ProfileRepository,
     private val aiRepo: AiRepository,
-    private val authRepo: AuthRepository
+    private val authRepo: AuthRepository,
+    private val rewards: RewardRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NutritionUiState(selectedDate = todayFormatted()))
@@ -249,6 +252,7 @@ class NutritionViewModel @Inject constructor(
             nutritionRepo.addFoodLogEntry(entry)
             _uiState.update { it.copy(toast = "$name added to ${slot.label}") }
             refreshRecentFoods()
+            if (_uiState.value.selectedDate == todayFormatted()) rewards.award(RewardType.MEAL)
         }
     }
 
@@ -364,6 +368,10 @@ class NutritionViewModel @Inject constructor(
                 )
             )
             _uiState.update { it.copy(toast = "Water logged") }
+            val state = _uiState.value
+            if (state.selectedDate == todayFormatted() && state.waterTotalMl + amountMl >= state.waterGoalMl) {
+                rewards.award(RewardType.WATER)
+            }
         }
     }
 
@@ -402,6 +410,7 @@ class NutritionViewModel @Inject constructor(
                 )
             )
             _uiState.update { it.copy(toast = "$type logged · $calories cal") }
+            if (_uiState.value.selectedDate == todayFormatted()) rewards.award(RewardType.CARDIO)
         }
     }
 

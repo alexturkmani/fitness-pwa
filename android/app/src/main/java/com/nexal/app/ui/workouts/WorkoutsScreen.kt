@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,13 +35,18 @@ fun WorkoutsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val photoLabel = uiState.days.find { it.id == uiState.selectedDayId }?.dayLabel.orEmpty()
+
+    PhotoBackdrop(photo = workoutPhotoFor(photoLabel)) {
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 title = { Text("Workouts", style = MaterialTheme.typography.headlineMedium) },
                 actions = {
                     TextButton(onClick = onNavigateToCustom) {
-                        Text("Custom", color = Accent)
+                        Text("Custom", color = Color.White)
                     }
                 }
             )
@@ -75,7 +81,7 @@ fun WorkoutsScreen(
             ) {
                 uiState.error?.let { err ->
                     item {
-                        FitCard(modifier = Modifier.fillMaxWidth()) {
+                        GlassCard(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                                 if (!isPremium && err.contains("Premium", ignoreCase = true)) {
@@ -96,9 +102,9 @@ fun WorkoutsScreen(
                 if (uiState.aiNotes.isNotBlank()) {
                     item {
                         FadeSlideIn {
-                            FitCard(modifier = Modifier.fillMaxWidth()) {
+                            GlassCard(modifier = Modifier.fillMaxWidth()) {
                                 Column(modifier = Modifier.padding(12.dp)) {
-                                    Text("AI Coach Notes", style = MaterialTheme.typography.labelMedium, color = BrandBlue)
+                                    Text("AI Coach Notes", style = MaterialTheme.typography.labelMedium, color = Color.White)
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(uiState.aiNotes, style = MaterialTheme.typography.bodySmall)
                                 }
@@ -116,7 +122,7 @@ fun WorkoutsScreen(
                     ) {
                         items(uiState.days) { day ->
                             val selected = day.id == uiState.selectedDayId
-                            FilterChip(
+                            PillChip(
                                 selected = selected,
                                 onClick = { viewModel.selectDay(day.id) },
                                 label = {
@@ -124,11 +130,7 @@ fun WorkoutsScreen(
                                         if (day.isRestDay) "Rest" else day.dayLabel,
                                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
                                     )
-                                },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = Accent,
-                                    selectedLabelColor = androidx.compose.ui.graphics.Color.White
-                                )
+                                }
                             )
                         }
                     }
@@ -157,7 +159,7 @@ fun WorkoutsScreen(
                         }
 
                         items(selectedDay.exercises) { exercise ->
-                            FitCard(modifier = Modifier.fillMaxWidth()) {
+                            GlassCard(modifier = Modifier.fillMaxWidth()) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Text(
                                         exercise.name,
@@ -182,7 +184,7 @@ fun WorkoutsScreen(
                                         Text(
                                             exercise.notes!!,
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = Accent
+                                            color = Color.White
                                         )
                                     }
                                 }
@@ -254,6 +256,7 @@ fun WorkoutsScreen(
             )
         }
     }
+    }
 }
 
 @Composable
@@ -262,12 +265,12 @@ private fun WorkoutLogCard(
     dayLabel: String,
     onClick: () -> Unit
 ) {
-    FitCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    GlassCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.CheckCircle, null, tint = Accent, modifier = Modifier.size(24.dp))
+            Icon(Icons.Default.CheckCircle, null, tint = AccentBright, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(dayLabel, fontWeight = FontWeight.SemiBold)
@@ -287,7 +290,7 @@ private fun WorkoutLogCard(
                     Text(
                         "${log.duration}min",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Accent
+                        color = Color.White
                     )
                 }
             }
@@ -309,7 +312,7 @@ private fun WorkoutLogDetailModal(
         title = "$dayLabel — ${log.date.take(10)}"
     ) {
         if (log.duration != null && log.duration > 0) {
-            Text("Duration: ${log.duration} minutes", style = MaterialTheme.typography.bodyMedium, color = Accent)
+            Text("Duration: ${log.duration} minutes", style = MaterialTheme.typography.bodyMedium, color = Color.White)
             Spacer(modifier = Modifier.height(12.dp))
         }
         log.exercises.forEach { exercise ->
@@ -327,7 +330,7 @@ private fun WorkoutLogDetailModal(
                         fontWeight = FontWeight.Medium
                     )
                     if (set.completed) {
-                        Icon(Icons.Default.Check, null, tint = Accent, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Check, null, tint = AccentBright, modifier = Modifier.size(16.dp))
                     } else {
                         Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
                     }
@@ -348,3 +351,4 @@ private fun WorkoutLogDetailModal(
         )
     }
 }
+

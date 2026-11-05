@@ -21,7 +21,6 @@ import com.nexal.app.domain.model.CustomSet
 import com.nexal.app.domain.model.CustomWorkoutLog
 import androidx.compose.ui.text.font.FontWeight
 import com.nexal.app.ui.components.*
-import com.nexal.app.ui.theme.BrandBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +45,7 @@ fun CustomWorkoutsScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showLogSheet = true },
-                containerColor = BrandBlue,
+                containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Log Workout")
@@ -136,7 +135,7 @@ fun CustomWorkoutCard(
             Text(
                 text = "${log.exercises.size} exercises",
                 style = MaterialTheme.typography.bodyMedium,
-                color = BrandBlue
+                color = MaterialTheme.colorScheme.primary
             )
 
             AnimatedVisibility(visible = expanded) {
@@ -180,20 +179,19 @@ fun CustomWorkoutSheet(
         onDismiss = onDismiss,
         title = "Log Custom Workout"
     ) {
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            item {
-                OutlinedTextField(
-                    value = workoutName,
-                    onValueChange = { workoutName = it },
-                    label = { Text("Workout Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-            }
+        // A plain Column: FitModal already scrolls, and a lazy list inside it crashes on open.
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedTextField(
+                value = workoutName,
+                onValueChange = { workoutName = it },
+                label = { Text("Workout Name") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
 
-            items(exercises.size) { index ->
+            exercises.forEachIndexed { index, exercise ->
                 ExerciseEditor(
-                    exercise = exercises[index],
+                    exercise = exercise,
                     onUpdate = { updated ->
                         exercises = exercises.toMutableList().also { it[index] = updated }
                     },
@@ -207,35 +205,31 @@ fun CustomWorkoutSheet(
                 )
             }
 
-            item {
-                TextButton(
-                    onClick = { exercises = exercises + EditableExercise() },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Add Exercise")
-                }
+            TextButton(
+                onClick = { exercises = exercises + EditableExercise() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Add Exercise")
             }
 
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                GradientButton(
-                    text = "Save Workout",
-                    onClick = {
-                        val logs = exercises.filter { it.name.isNotBlank() }.map { ex ->
-                            CustomExerciseLog(
-                                name = ex.name,
-                                sets = ex.sets.filter { it.reps > 0 }.map { s ->
-                                    CustomSet(weight = s.weight, reps = s.reps)
-                                }
-                            )
-                        }
-                        if (logs.isNotEmpty()) onSave(workoutName.ifBlank { "Custom Workout" }, logs)
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+            Spacer(modifier = Modifier.height(8.dp))
+            GradientButton(
+                text = "Save Workout",
+                onClick = {
+                    val logs = exercises.filter { it.name.isNotBlank() }.map { ex ->
+                        CustomExerciseLog(
+                            name = ex.name,
+                            sets = ex.sets.filter { it.reps > 0 }.map { s ->
+                                CustomSet(weight = s.weight, reps = s.reps)
+                            }
+                        )
+                    }
+                    if (logs.isNotEmpty()) onSave(workoutName.ifBlank { "Custom Workout" }, logs)
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

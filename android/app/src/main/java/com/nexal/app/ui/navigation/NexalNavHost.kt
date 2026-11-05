@@ -40,6 +40,12 @@ import com.nexal.app.ui.profile.ProfileScreen
 import com.nexal.app.ui.progress.ProgressScreen
 import com.nexal.app.ui.scanner.ScannerScreen
 import com.nexal.app.ui.subscription.SubscriptionScreen
+import com.nexal.app.R
+import com.nexal.app.ui.components.PhotoBackdrop
+import com.nexal.app.ui.fasting.FastingScreen
+import com.nexal.app.ui.rewards.RewardOverlay
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.graphics.Brush
 import com.nexal.app.ui.theme.*
 import com.nexal.app.ui.workouts.*
 
@@ -136,7 +142,7 @@ private fun AuthNavHost(navController: NavHostController) {
 }
 
 @Composable
-private fun MainScaffold(isPremium: Boolean) {
+internal fun MainScaffold(isPremium: Boolean) {
     val mainNavController = rememberNavController()
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -165,8 +171,14 @@ private fun MainScaffold(isPremium: Boolean) {
         }
     }
 
+    val fullBleedRoutes = remember {
+        setOf(Screen.Dashboard.route, Screen.Workouts.route, Screen.Meals.route, Screen.Fasting.route)
+    }
+
+    RewardOverlay()
+
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = if (currentRoute in fullBleedRoutes) Slate950 else MaterialTheme.colorScheme.background,
         bottomBar = {
             AnimatedVisibility(
                 visible = showBottomBar,
@@ -183,7 +195,11 @@ private fun MainScaffold(isPremium: Boolean) {
         NavHost(
             navController = mainNavController,
             startDestination = Screen.Dashboard.route,
-            modifier = Modifier.padding(paddingValues),
+            // Photo screens run under the status bar and place their own content below it.
+            modifier = Modifier.padding(
+                top = if (currentRoute in fullBleedRoutes) 0.dp else paddingValues.calculateTopPadding(),
+                bottom = paddingValues.calculateBottomPadding()
+            ),
             enterTransition = { tabEnterTransition() },
             exitTransition = { tabExitTransition() },
             popEnterTransition = { tabEnterTransition() },
@@ -197,9 +213,13 @@ private fun MainScaffold(isPremium: Boolean) {
                     onNavigateToOnboarding = { mainNavController.navigate(Screen.Onboarding.route) },
                     onNavigateToProfile = { mainNavController.navigate(Screen.Profile.route) },
                     onNavigateToSubscription = { mainNavController.navigate(Screen.Subscription.route) },
+                    onNavigateToFasting = { mainNavController.navigate(Screen.Fasting.route) },
                     onUpgrade = { mainNavController.navigate(Screen.Paywall.route) },
                     isPremium = isPremium
                 )
+            }
+            composable(Screen.Fasting.route) {
+                FastingScreen(onBack = { mainNavController.popBackStack() })
             }
             composable(
                 route = Screen.Onboarding.route,
@@ -253,10 +273,12 @@ private fun MainScaffold(isPremium: Boolean) {
                 )
             }
             composable(Screen.Meals.route) {
+                PhotoBackdrop(photo = R.drawable.bg_meals) {
                 MealsScreen(
                     isPremium = isPremium,
                     onUpgrade = { mainNavController.navigate(Screen.Paywall.route) }
                 )
+                }
             }
             composable(Screen.Nutrition.route) {
                 NutritionScreen(
@@ -338,6 +360,10 @@ private fun NexalBottomBar(
         Surface(
             shape = RoundedCornerShape(30.dp),
             color = HeroInk,
+            border = BorderStroke(
+                1.dp,
+                Brush.verticalGradient(listOf(AccentBright.copy(alpha = 0.55f), AccentBright.copy(alpha = 0.08f)))
+            ),
             shadowElevation = 14.dp,
             modifier = Modifier.fillMaxWidth()
         ) {

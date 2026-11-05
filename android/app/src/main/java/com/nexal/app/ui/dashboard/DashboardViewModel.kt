@@ -118,7 +118,7 @@ class DashboardViewModel @Inject constructor(
                         todayWorkout = when {
                             latestPlan == null -> null
                             todayWorkout?.isRestDay == true -> "Rest Day"
-                            else -> todayWorkout?.dayLabel
+                            else -> todayWorkout?.dayLabel ?: "Rest Day"
                         }
                     )
                 }

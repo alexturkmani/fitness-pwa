@@ -25,27 +25,27 @@ val Cyan800 = Color(0xFF115F42)
 val Cyan900 = Color(0xFF0E4E37)
 
 // Cool neutrals
-val Slate50 = Color(0xFFF4F5EF)
-val Slate100 = Color(0xFFE9ECE5)
-val Slate200 = Color(0xFFD7DDD5)
-val Slate300 = Color(0xFFBCC5BD)
-val Slate400 = Color(0xFF8A968D)
-val Slate500 = Color(0xFF667168)
-val Slate600 = Color(0xFF4C574F)
-val Slate700 = Color(0xFF354139)
-val Slate800 = Color(0xFF222B25)
-val Slate900 = Color(0xFF141B16)
-val Slate950 = Color(0xFF0B100D)
+val Slate50 = Color(0xFFF5F5F4)
+val Slate100 = Color(0xFFEAEBEC)
+val Slate200 = Color(0xFFD9DADC)
+val Slate300 = Color(0xFFBDBFC3)
+val Slate400 = Color(0xFF8E9198)
+val Slate500 = Color(0xFF6B6E75)
+val Slate600 = Color(0xFF4F5258)
+val Slate700 = Color(0xFF393B40)
+val Slate800 = Color(0xFF24262A)
+val Slate900 = Color(0xFF16171A)
+val Slate950 = Color(0xFF0A0B0D)
 
 // Surfaces
-val Cream = Color(0xFFF4F5EF)
-val CreamSurface = Color(0xFFFCFDF9)
-val Ink = Color(0xFF101713)
+val Cream = Color(0xFFF5F5F3)
+val CreamSurface = Color(0xFFFCFCFB)
+val Ink = Color(0xFF101113)
 
 // Classic diary macro colors
 val MacroProtein = Color(0xFFC9F755)
-val MacroCarbs = Color(0xFF28D58A)
-val MacroFat = Color(0xFF77DDB2)
+val MacroCarbs = Color(0xFFE6E8EB)
+val MacroFat = Color(0xFF9AA0A8)
 val MacroCalorie = Color(0xFFC9F755)
 
 // Semantic
@@ -63,7 +63,7 @@ val AccentDeep = Color(0xFF117B50)
 val AccentWash = Color(0xFFE5F7EC)
 
 // Near-black hero surface used for the one card that matters per screen
-val HeroInk = Color(0xFF121914)
+val HeroInk = Color(0xFF141518)
 
 val BrandBlue = Accent
 val BrandBlueDark = AccentDeep

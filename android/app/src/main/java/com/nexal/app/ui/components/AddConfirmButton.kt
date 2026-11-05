@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -35,8 +36,8 @@ fun AddConfirmIconButton(
         enabled = enabled && !added,
         modifier = modifier.size(44.dp),
         colors = IconButtonDefaults.filledIconButtonColors(
-            containerColor = BrandBlue,
-            contentColor = androidx.compose.ui.graphics.Color.White,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
             disabledContainerColor = SuccessGreen,
             disabledContentColor = androidx.compose.ui.graphics.Color.White
         )
