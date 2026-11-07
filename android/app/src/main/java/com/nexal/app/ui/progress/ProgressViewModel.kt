@@ -15,6 +15,9 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 
+/** The database returns newest first; Progress reads entries as a timeline. */
+internal fun oldestFirst(entries: List<WeightEntry>): List<WeightEntry> = entries.sortedBy { it.date }
+
 data class ProgressUiState(
     val weeklyWorkouts: Int = 0,
     val avgDailyCalories: Int = 0,
@@ -79,7 +82,7 @@ class ProgressViewModel @Inject constructor(
             }.collect { combined ->
 
                 val workoutLogs = combined.workoutLogs
-                val weightEntries = combined.weightEntries
+                val weightEntries = oldestFirst(combined.weightEntries)
                 val foodLogs = combined.foodLogs
                 val waterLogs = combined.waterLogs
                 val cardioLogs = combined.cardioLogs

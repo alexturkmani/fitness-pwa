@@ -27,6 +27,7 @@ import com.nexal.app.domain.model.MealSlot
 import com.nexal.app.domain.model.SetLog
 import com.nexal.app.domain.model.UserProfile
 import com.nexal.app.domain.model.WaterLogEntry
+import com.nexal.app.domain.model.WeightEntry
 import com.nexal.app.domain.model.WorkoutDay
 import com.nexal.app.domain.model.WorkoutLog
 import com.nexal.app.domain.model.WorkoutPlan
@@ -37,7 +38,11 @@ import com.nexal.app.ui.meals.MealsScreen
 import com.nexal.app.ui.navigation.MainScaffold
 import com.nexal.app.ui.nutrition.NutritionScreen
 import com.nexal.app.ui.onboarding.OnboardingScreen
+import com.nexal.app.data.repository.PlanType
+import com.nexal.app.ui.paywall.PaywallContent
+import com.nexal.app.ui.paywall.PaywallPrompt
 import com.nexal.app.ui.paywall.PaywallScreen
+import com.nexal.app.ui.subscription.SubscriptionUiState
 import com.nexal.app.ui.profile.ProfileScreen
 import com.nexal.app.ui.progress.ProgressScreen
 import com.nexal.app.ui.rewards.RewardOverlay
@@ -66,6 +71,7 @@ class PreviewActivity : ComponentActivity() {
     @Inject lateinit var nutrition: NutritionRepository
     @Inject lateinit var fasting: FastingRepository
     @Inject lateinit var rewards: RewardRepository
+    @Inject lateinit var paywallPrompt: PaywallPrompt
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,6 +81,7 @@ class PreviewActivity : ComponentActivity() {
         lifecycleScope.launch {
             seedSampleData()
             when (screen) {
+                "after_setup" -> paywallPrompt.queue()
                 "fasting" -> fasting.end()
                 "fasting_active" -> fasting.start("16_8", System.currentTimeMillis() - 9L * 3_600_000L - 1_260_000L)
                 "fasting_done" -> fasting.start("16_8", System.currentTimeMillis() - 16L * 3_600_000L - 60_000L)
@@ -86,6 +93,7 @@ class PreviewActivity : ComponentActivity() {
                         // The real app shell, with working navigation and its own reward overlay.
                         "app" -> MainScaffold(isPremium = true)
                         "free" -> MainScaffold(isPremium = false)
+                        "after_setup" -> MainScaffold(isPremium = false, paywallPrompt = paywallPrompt)
                         else -> {
                             SinglePage(screen)
                             RewardOverlay()
@@ -107,6 +115,20 @@ class PreviewActivity : ComponentActivity() {
             "profile" -> ProfileScreen(onNavigateToSubscription = {}, onBack = {})
             "subscription" -> SubscriptionScreen(onBack = {})
             "paywall" -> PaywallScreen(onBack = {}, onSubscribed = {})
+            "paywall_setup" -> PaywallScreen(onBack = {}, onSubscribed = {}, afterSetup = true)
+            "paywall_priced" -> PaywallContent(
+                state = SubscriptionUiState(
+                    hasFreeTrial = true, selectedPlan = PlanType.YEARLY,
+                    monthlyPrice = "$12.99", yearlyPrice = "$109.99",
+                    monthlyPriceText = "$12.99/month", yearlyPriceText = "$109.99/year",
+                    pricesLoaded = true, pricingChecked = true,
+                    availablePlans = setOf(PlanType.MONTHLY, PlanType.YEARLY),
+                    yearlyPerMonth = "$9.17", yearlySavingsPercent = 29,
+                    setupDays = 4, setupGoal = "Muscle Gain"
+                ),
+                afterSetup = true, devPricingFallback = false, onClose = {}, onSelectPlan = {},
+                onPurchase = {}, onRestore = {}, onDevSkip = {}
+            )
             "custom" -> CustomWorkoutsScreen(onBack = {})
             "workout_log" -> WorkoutLogScreen(planId = "preview-plan", dayId = "d1", onBack = {})
             "scanner" -> ScannerScreen(onBack = {})
@@ -163,6 +185,9 @@ class PreviewActivity : ComponentActivity() {
                 estimatedCaloriesBurnt = 240, createdAt = todayFormatted()
             )
         )
+        listOf("2026-10-01" to 74.2, "2026-10-20" to 73.1, todayFormatted() to 72.0).forEach { (date, kg) ->
+            nutrition.logWeight(WeightEntry(date = date, weight = kg))
+        }
         val oats = MacroNutrients(calories = 420, protein = 24, carbs = 58, fats = 10)
         nutrition.saveMealPlan(
             MealPlan(

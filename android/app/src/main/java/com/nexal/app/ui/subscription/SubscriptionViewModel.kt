@@ -7,8 +7,11 @@ import com.nexal.app.BuildConfig
 import com.nexal.app.data.repository.AuthRepository
 import com.nexal.app.data.repository.BillingRepository
 import com.nexal.app.data.repository.PlanType
+import com.nexal.app.data.repository.ProfileRepository
 import com.nexal.app.data.repository.PurchaseResult
 import com.nexal.app.domain.model.AuthState
+import com.nexal.app.ui.paywall.yearlyPerMonthText
+import com.nexal.app.ui.paywall.yearlySavingsPercent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -46,13 +49,18 @@ data class SubscriptionUiState(
     val yearlyPriceText: String = "Unavailable",
     val pricesLoaded: Boolean = false,
     val pricingChecked: Boolean = false,
-    val availablePlans: Set<PlanType> = emptySet()
+    val availablePlans: Set<PlanType> = emptySet(),
+    val yearlyPerMonth: String? = null,
+    val yearlySavingsPercent: Int? = null,
+    val setupDays: Int = 0,
+    val setupGoal: String? = null
 )
 
 @HiltViewModel
 class SubscriptionViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val billingRepository: BillingRepository,
+    private val profileRepository: ProfileRepository,
     private val supabase: SupabaseClient
 ) : ViewModel() {
 
@@ -62,7 +70,19 @@ class SubscriptionViewModel @Inject constructor(
     private val _events = Channel<SubscriptionEvent>(Channel.BUFFERED)
     val events: Flow<SubscriptionEvent> = _events.receiveAsFlow()
 
+    private var planChosen = false
+
     init {
+        viewModelScope.launch {
+            profileRepository.getProfile()?.let { profile ->
+                _uiState.update {
+                    it.copy(
+                        setupDays = profile.gymDaysPerWeek,
+                        setupGoal = profile.fitnessGoals.firstOrNull()?.label
+                    )
+                }
+            }
+        }
         viewModelScope.launch {
             authRepository.authState.collect { state ->
                 if (state is AuthState.Authenticated) {
@@ -165,6 +185,7 @@ class SubscriptionViewModel @Inject constructor(
     }
 
     fun selectPlan(planType: PlanType) {
+        planChosen = true
         _uiState.update {
             it.copy(
                 selectedPlan = planType,
@@ -252,14 +273,17 @@ class SubscriptionViewModel @Inject constructor(
     private fun refreshPrices() {
         val monthly = billingRepository.getFormattedPrice(PlanType.MONTHLY)
         val yearly = billingRepository.getFormattedPrice(PlanType.YEARLY)
+        val monthlyMicros = billingRepository.getPriceMicros(PlanType.MONTHLY)
+        val yearlyMicros = billingRepository.getPriceMicros(PlanType.YEARLY)
+        val yearlyCurrency = billingRepository.getCurrencyCode(PlanType.YEARLY)
         val availablePlans = PlanType.entries.filterTo(mutableSetOf()) {
             billingRepository.isPlanAvailable(it)
         }
         _uiState.update {
-            val selectedPlan = if (it.selectedPlan in availablePlans) {
-                it.selectedPlan
-            } else {
-                availablePlans.firstOrNull() ?: it.selectedPlan
+            val selectedPlan = when {
+                !planChosen && PlanType.YEARLY in availablePlans -> PlanType.YEARLY
+                it.selectedPlan in availablePlans -> it.selectedPlan
+                else -> availablePlans.firstOrNull() ?: it.selectedPlan
             }
             it.copy(
                 monthlyPrice = monthly ?: "Unavailable",
@@ -272,6 +296,12 @@ class SubscriptionViewModel @Inject constructor(
                 pricingChecked = true,
                 availablePlans = availablePlans,
                 selectedPlan = selectedPlan,
+                yearlyPerMonth = yearlyMicros?.let { micros ->
+                    yearlyCurrency?.let { code -> yearlyPerMonthText(micros, code) }
+                },
+                yearlySavingsPercent = if (monthlyMicros != null && yearlyMicros != null) {
+                    yearlySavingsPercent(monthlyMicros, yearlyMicros)
+                } else null,
                 hasFreeTrial = billingRepository.hasFreeTrial(selectedPlan)
             )
         }

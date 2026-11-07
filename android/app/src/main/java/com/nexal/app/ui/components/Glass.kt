@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,6 +76,7 @@ import com.nexal.app.R
 import com.nexal.app.ui.theme.AccentBright
 import com.nexal.app.ui.theme.HeroInk
 import com.nexal.app.ui.theme.Slate950
+import com.nexal.app.ui.theme.photoScreensShowing
 
 /** Text tones for anything drawn over a photo; never theme colours, the photo is always dark. */
 val GlassText = Color.White
@@ -188,6 +190,10 @@ fun PhotoBackdrop(
 ) {
     val sharp = ImageBitmap.imageResource(photo)
     val backdrop = remember(photo) { GlassBackdrop() }
+    DisposableEffect(Unit) {
+        photoScreensShowing.intValue++
+        onDispose { photoScreensShowing.intValue-- }
+    }
     LaunchedEffect(photo) {
         backdrop.image = withContext(Dispatchers.Default) { frostedCopy(photo, sharp) }
     }

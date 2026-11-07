@@ -35,6 +35,7 @@ import com.nexal.app.ui.dashboard.DashboardScreen
 import com.nexal.app.ui.meals.MealsScreen
 import com.nexal.app.ui.nutrition.NutritionScreen
 import com.nexal.app.ui.onboarding.OnboardingScreen
+import com.nexal.app.ui.paywall.PaywallPrompt
 import com.nexal.app.ui.paywall.PaywallScreen
 import com.nexal.app.ui.profile.ProfileScreen
 import com.nexal.app.ui.progress.ProgressScreen
@@ -66,6 +67,7 @@ fun NexalNavHost(
         is AuthState.Authenticated -> {
             AuthenticatedFlowHost(
                 profileRepository = profileRepository,
+                paywallPrompt = navVm.paywallPrompt,
                 isPremium = state.isPremium
             )
         }
@@ -75,13 +77,14 @@ fun NexalNavHost(
 @Composable
 private fun AuthenticatedFlowHost(
     profileRepository: ProfileRepository,
+    paywallPrompt: PaywallPrompt,
     isPremium: Boolean
 ) {
     val profile by profileRepository.observeProfile().collectAsStateWithLifecycle(initialValue = null)
     val onboardingDone = profile?.onboardingCompleted == true
 
     if (onboardingDone) {
-        MainScaffold(isPremium = isPremium)
+        MainScaffold(isPremium = isPremium, paywallPrompt = paywallPrompt)
     } else {
         OnboardingScreen(onComplete = { /* Profile flow opens the core app. */ })
     }
@@ -142,7 +145,7 @@ private fun AuthNavHost(navController: NavHostController) {
 }
 
 @Composable
-internal fun MainScaffold(isPremium: Boolean) {
+internal fun MainScaffold(isPremium: Boolean, paywallPrompt: PaywallPrompt? = null) {
     val mainNavController = rememberNavController()
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -172,7 +175,10 @@ internal fun MainScaffold(isPremium: Boolean) {
     }
 
     val fullBleedRoutes = remember {
-        setOf(Screen.Dashboard.route, Screen.Workouts.route, Screen.Meals.route, Screen.Fasting.route)
+        setOf(
+            Screen.Dashboard.route, Screen.Workouts.route, Screen.Meals.route, Screen.Fasting.route,
+            Screen.Paywall.route, Screen.PaywallSetup.route
+        )
     }
 
     RewardOverlay()
@@ -206,6 +212,11 @@ internal fun MainScaffold(isPremium: Boolean) {
             popExitTransition = { tabExitTransition() }
         ) {
             composable(Screen.Dashboard.route) {
+                LaunchedEffect(Unit) {
+                    if (paywallPrompt?.consume() == true && !isPremium) {
+                        mainNavController.navigate(Screen.PaywallSetup.route)
+                    }
+                }
                 DashboardScreen(
                     onNavigateToWorkouts = { navigateTopLevel(Screen.Workouts) },
                     onNavigateToMeals = { navigateTopLevel(Screen.Meals) },
@@ -338,6 +349,19 @@ internal fun MainScaffold(isPremium: Boolean) {
                 PaywallScreen(
                     onBack = { mainNavController.popBackStack() },
                     onSubscribed = { mainNavController.popBackStack() }
+                )
+            }
+            composable(
+                route = Screen.PaywallSetup.route,
+                enterTransition = { pushEnter() },
+                exitTransition = { pushExit() },
+                popEnterTransition = { popEnter() },
+                popExitTransition = { popExit() }
+            ) {
+                PaywallScreen(
+                    onBack = { mainNavController.popBackStack() },
+                    onSubscribed = { mainNavController.popBackStack() },
+                    afterSetup = true
                 )
             }
         }

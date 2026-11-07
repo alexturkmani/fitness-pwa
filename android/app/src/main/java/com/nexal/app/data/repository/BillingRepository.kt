@@ -139,6 +139,12 @@ class BillingRepository @Inject constructor(
         return offer.pricingPhases.pricingPhaseList.lastOrNull()?.formattedPrice
     }
 
+    fun getPriceMicros(planType: PlanType): Long? =
+        getOfferForPlan(planType)?.pricingPhases?.pricingPhaseList?.lastOrNull()?.priceAmountMicros
+
+    fun getCurrencyCode(planType: PlanType): String? =
+        getOfferForPlan(planType)?.pricingPhases?.pricingPhaseList?.lastOrNull()?.priceCurrencyCode
+
     fun getPeriodLabel(planType: PlanType = PlanType.MONTHLY): String {
         val offer = getOfferForPlan(planType)
         val billingPeriod = offer?.pricingPhases?.pricingPhaseList?.lastOrNull()?.billingPeriod

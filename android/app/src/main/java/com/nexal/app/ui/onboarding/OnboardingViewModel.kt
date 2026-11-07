@@ -8,6 +8,7 @@ import com.nexal.app.data.repository.NutritionRepository
 import com.nexal.app.data.repository.ProfileRepository
 import com.nexal.app.data.repository.WorkoutRepository
 import com.nexal.app.domain.model.*
+import com.nexal.app.ui.paywall.PaywallPrompt
 import com.nexal.app.util.Resource
 import com.nexal.app.util.generateId
 import com.nexal.app.util.todayFormatted
@@ -47,6 +48,7 @@ data class OnboardingUiState(
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
+    private val paywallPrompt: PaywallPrompt,
     private val aiRepository: AiRepository,
     private val workoutRepository: WorkoutRepository,
     private val nutritionRepository: NutritionRepository,
@@ -128,6 +130,8 @@ class OnboardingViewModel @Inject constructor(
                 createdAt = now,
                 updatedAt = now
             )
+            val firstSetup = profileRepository.getProfile()?.onboardingCompleted != true
+            if (firstSetup && !state.isPremium) paywallPrompt.queue()
             profileRepository.saveProfile(profile)
 
             if (!state.isPremium) {

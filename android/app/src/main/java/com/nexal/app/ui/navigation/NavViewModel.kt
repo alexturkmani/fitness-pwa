@@ -15,6 +15,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class NavViewModel @Inject constructor(
+    val paywallPrompt: com.nexal.app.ui.paywall.PaywallPrompt,
     val authRepository: AuthRepository,
     val profileRepository: ProfileRepository,
     private val workoutRepository: WorkoutRepository,

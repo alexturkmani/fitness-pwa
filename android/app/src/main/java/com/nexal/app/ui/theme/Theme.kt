@@ -10,6 +10,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
@@ -46,7 +47,7 @@ private val LightColorScheme = lightColorScheme(
     onError = Color.White,
 )
 
-private val DarkColorScheme = darkColorScheme(
+internal val DarkColorScheme = darkColorScheme(
     primary = Color(0xFFF2F3F5),
     onPrimary = Slate900,
     primaryContainer = Color(0xFF26282D),
@@ -107,6 +108,9 @@ object ThemeState {
     }
 }
 
+/** Photo screens on show. They are dark in both themes, so the system bars need light icons. */
+internal val photoScreensShowing = mutableIntStateOf(0)
+
 @Composable
 fun NexalTheme(
     darkTheme: Boolean = ThemeState.isDarkMode.value ?: true,
@@ -115,14 +119,15 @@ fun NexalTheme(
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     val view = LocalView.current
+    val darkIcons = !darkTheme && photoScreensShowing.intValue == 0
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = Color.Transparent.toArgb()
             window.navigationBarColor = Color.Transparent.toArgb()
             WindowCompat.getInsetsController(window, view).apply {
-                isAppearanceLightStatusBars = !darkTheme
-                isAppearanceLightNavigationBars = !darkTheme
+                isAppearanceLightStatusBars = darkIcons
+                isAppearanceLightNavigationBars = darkIcons
             }
         }
     }
