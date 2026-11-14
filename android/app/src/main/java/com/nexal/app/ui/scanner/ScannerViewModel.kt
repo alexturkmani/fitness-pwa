@@ -37,6 +37,16 @@ data class ScannerUiState(
     val addedToLog: Boolean = false
 )
 
+/**
+ * Protein grams per 100 kcal for a scanned product. The server computes this from
+ * unrounded Open Food Facts values, so it is the same whether the macros are per
+ * serving or per 100 g. Our macros are rounded to whole numbers, which skews the
+ * ratio on small servings, so they are only a fallback (e.g. older servers).
+ */
+internal fun scannedProteinRatio(product: ScannedProduct): Double =
+    product.proteinCalorieRatio.takeIf { it > 0.0 && it.isFinite() }
+        ?: getProteinCalorieRatio(product.macros)
+
 @HiltViewModel
 class ScannerViewModel @Inject constructor(
     private val nutritionRepo: NutritionRepository,
@@ -69,7 +79,7 @@ class ScannerViewModel @Inject constructor(
             when (val result = aiRepo.lookupBarcode(barcode)) {
                 is Resource.Success -> {
                     val product = result.data
-                    val ratio = getProteinCalorieRatio(product.macros)
+                    val ratio = scannedProteinRatio(product)
                     val rating = getRatioRating(ratio)
                     val ratingColor = when {
                         ratio >= 10 -> SuccessGreen
@@ -121,6 +131,8 @@ class ScannerViewModel @Inject constructor(
                 id = generateId(),
                 date = todayFormatted(),
                 foodName = product.name,
+                // The lookup returns macros for exactly this serving (or "100 g"),
+                // so one logged unit is one of those.
                 servingSize = product.servingSize,
                 quantity = 1,
                 macros = product.macros,

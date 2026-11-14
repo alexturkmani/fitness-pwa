@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import {
   jsonResponse, errorResponse, corsHeaders, requirePremium,
 } from "../_shared/helpers.ts";
+import { selectNutritionBasis } from "./basis.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders() });
@@ -34,19 +35,14 @@ serve(async (req) => {
     if (data.status === 0 || !data.product) return errorResponse("Product not found in database", 404);
 
     const product = data.product;
-    const n = product.nutriments || {};
-    const calories = Math.round(n["energy-kcal_100g"] || n["energy-kcal"] || 0);
-    const protein = Math.round((n.proteins_100g || n.proteins || 0) * 10) / 10;
-    const carbs = Math.round((n.carbohydrates_100g || n.carbohydrates || 0) * 10) / 10;
-    const fats = Math.round((n.fat_100g || n.fat || 0) * 10) / 10;
-    const proteinCalorieRatio = calories > 0 ? Math.round(((protein / calories) * 100) * 10) / 10 : 0;
+    const { servingSize, macros, proteinCalorieRatio } = selectNutritionBasis(product);
 
     return jsonResponse({
       barcode,
       name: product.product_name || "Unknown Product",
       brand: product.brands || undefined,
-      servingSize: product.serving_size || "100g",
-      macros: { calories, protein, carbs, fats },
+      servingSize,
+      macros,
       proteinCalorieRatio,
       imageUrl: product.image_url || undefined,
     });
