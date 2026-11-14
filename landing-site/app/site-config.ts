@@ -14,35 +14,6 @@ export function playStoreUrl(placement: string): string {
   return `${playStoreBaseUrl}&referrer=${encodeURIComponent(referrer.toString())}`;
 }
 
-export const appSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
-  '@id': `${siteUrl}/#app`,
-  name: 'Nexal',
-  url: `${siteUrl}/`,
-  description: 'Android fitness app with AI workout and meal plans, calorie and macro tracking, workout logging and progress insights.',
-  applicationCategory: 'HealthApplication',
-  operatingSystem: 'Android',
-  downloadUrl: playStoreBaseUrl,
-  installUrl: playStoreBaseUrl,
-  image: `${siteUrl}/nexal-logo.png`,
-  offers: {
-    '@type': 'Offer',
-    url: playStoreBaseUrl,
-    price: '0',
-    priceCurrency: 'USD',
-    description: 'Free to download with optional Premium subscriptions.',
-  },
-};
-
-export const websiteSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  '@id': `${siteUrl}/#website`,
-  name: 'Nexal',
-  url: `${siteUrl}/`,
-};
-
 export function seoPageMetadata(path: string, title: string, description: string): Metadata {
   return {
     title,
@@ -53,6 +24,7 @@ export function seoPageMetadata(path: string, title: string, description: string
       description,
       url: path,
       siteName: 'Nexal',
+      locale: 'en_US',
       type: 'website',
       images: [{ url: '/og.png', width: 1731, height: 909, alt: 'Nexal Android fitness app with workout, meal and progress screens' }],
     },

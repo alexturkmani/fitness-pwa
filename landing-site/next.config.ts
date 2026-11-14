@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   turbopack: { root },
   outputFileTracingRoot: root,
   poweredByHeader: false,
+  // AVIF first (smaller), WebP fallback; the optimizer negotiates via the Accept header.
+  images: { formats: ['image/avif', 'image/webp'] },
   async headers() {
     return process.env.VERCEL_ENV === 'preview'
       ? [{ source: '/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] }]

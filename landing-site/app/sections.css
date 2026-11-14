@@ -16,3 +16,17 @@
 .legal-page{min-height:100vh;padding:70px 24px;background:#f4f5ef}.legal-shell{width:min(760px,100%);margin:auto}.legal-brand{display:inline-block;font-weight:800;margin-bottom:70px}.legal-page h1{font-size:64px;margin-bottom:12px}.legal-date{color:#758078;margin-bottom:55px}.legal-page section{padding:26px 0;border-top:1px solid #ced5ce}.legal-page section h2{font-size:22px;margin:0 0 10px}.legal-page section p{color:#5f6b62;line-height:1.75;margin:0}.legal-page section a{color:#14945e;text-decoration:underline}
 .premium-screen{width:310px;height:480px;border-radius:36px 36px 0 0;background:#050606;overflow:hidden;box-shadow:0 0 0 10px #080c09,0 20px 70px #0008}
 @media(max-width:600px){.premium-screen{width:270px}}
+
+/* Touch targets (kept last so they win over earlier section rules): every standalone link, button and FAQ toggle is at least 48x48px
+   with 8px or more between neighbouring targets. Links inside running sentences
+   are exempt (WCAG 2.5.8 inline exception). */
+.nav-links a,footer .shell>div a,.designer-credit{display:inline-flex;align-items:center;justify-content:center;min-height:48px;min-width:48px}
+footer .shell>div{row-gap:8px}
+.footer-meta{gap:0!important}
+.play-button{min-height:52px}
+.play-button.compact{min-height:48px}
+.faq-list summary{min-height:48px;align-items:center;gap:16px}
+/* .text-link keeps its underline border; an invisible pseudo-element grows the hit area to 48px. */
+.text-link{position:relative}
+.text-link::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,48px);height:48px;transform:translate(-50%,-50%)}
+@media(max-width:600px){.hero-actions{gap:28px}}

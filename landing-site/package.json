@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "test:content": "node tests/content-quality.mjs",
-    "test:seo": "node tests/technical-seo.mjs && node tests/seo-guides.mjs"
+    "test:seo": "node tests/technical-seo.mjs && node tests/seo-guides.mjs && node tests/structured-data.mjs"
   },
   "dependencies": {
     "next": "16.2.6",

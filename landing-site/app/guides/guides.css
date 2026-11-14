@@ -10,3 +10,13 @@
 @media(max-width:900px){.guide-layout{grid-template-columns:1fr;gap:35px}.guide-sidebar{position:static}.guide-sidebar nav{padding:22px;background:#e8eee2;border-radius:18px}.guide-sidebar-offer{display:none}.guide-article{max-width:none}}
 @media(max-width:600px){.guide-hub-hero{padding-block:38px 55px}.guide-hero{padding-bottom:35px}.guide-hero>p{font-size:16px}.guide-breadcrumb{margin-bottom:25px}.guide-card{padding:23px}.guide-product{padding:24px}.guide-example th,.guide-example td{padding:12px;min-width:95px}.guide-article p,.guide-article li{font-size:15px}.guide-takeaway{padding:22px}.guide-hub-list,.guide-related,.home-guides{padding-bottom:65px}.guide-byline{gap:12px}}
 @media(prefers-reduced-motion:reduce){.guide-card{transition:none}.guide-card:hover{transform:none}}
+
+/* Touch targets (see globals.css). */
+.guide-topics a{min-height:48px}
+.guide-breadcrumb a,.guide-product p>a:only-child,.guide-sources li>a{display:inline-flex;align-items:center;min-height:48px;min-width:48px}
+.guide-breadcrumb a{justify-content:center}
+.guide-breadcrumb{align-items:center;row-gap:8px}
+.guide-sidebar nav{gap:8px}
+.guide-sidebar nav a{display:flex;align-items:center;min-height:48px}
+.guide-faq summary{min-height:48px;padding-block:10px;box-sizing:border-box}
+.home-guides>.text-link{display:inline-block}

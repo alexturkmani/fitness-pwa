@@ -1,15 +1,52 @@
 import Link from 'next/link';
 import '../seo-landing.css';
-import { appSchema } from '../site-config';
-import { BrandMark, PlayButton, SiteFooter } from './MarketingUi';
+import { landingGraph } from '../schema';
+import JsonLd from './JsonLd';
+import { BrandMark, PlayButton, SiteFooter, productLinks } from './MarketingUi';
+import InteractivePreview, { type PreviewConfig } from './InteractivePreview';
 import GuideCards from '../guides/GuideCards';
 
 type Props = {
+  page: { path: string; title: string; description: string };
   slug: string; kicker: string; title: string; intro: string; sectionTitle: string;
   benefits: { title: string; text: string }[];
   sections: { title: string; text: string }[];
   faqs: { q: string; a: string }[];
+  /** Tappable hero preview; pages without one keep the static showcase. */
+  preview?: PreviewConfig;
+  /** Overrides the slug-keyed feature details below. */
+  feature?: FeatureDetail;
+  comparison?: Comparison;
+  guideTopic?: 'WORKOUT PLANNING' | 'NUTRITION TRACKING' | 'CHOOSING AN APP';
 };
+
+type FeatureDetail = { heading: string; intro: string; points: { title: string; text: string }[] };
+
+export type Comparison = {
+  heading: string;
+  intro: string;
+  competitor: string;
+  rows: { feature: string; nexal: string; other: string }[];
+  /** When the table was last checked against public sources. ISO date. */
+  checked: string;
+  sources: { label: string; href: string }[];
+};
+
+function ComparisonTable({ comparison }: { comparison: Comparison }) {
+  const checked = new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${comparison.checked}T00:00:00Z`));
+  return <section className="seo-compare shell" id="comparison" aria-labelledby="comparison-heading">
+    <div className="seo-feature-intro"><span className="section-kicker">FEATURE BY FEATURE</span><h2 id="comparison-heading">{comparison.heading}</h2><p>{comparison.intro}</p></div>
+    <div className="seo-compare-scroll" tabIndex={0} role="region" aria-labelledby="comparison-heading">
+      {/* Explicit roles keep table semantics when the phone layout restyles rows as grids. */}
+      <table className="seo-compare-table" role="table">
+        <caption>Nexal and {comparison.competitor} compared on Android, checked {checked}</caption>
+        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Feature</th><th scope="col" role="columnheader">Nexal</th><th scope="col" role="columnheader">{comparison.competitor}</th></tr></thead>
+        <tbody role="rowgroup">{comparison.rows.map(row => <tr role="row" key={row.feature}><th scope="row" role="rowheader">{row.feature}</th><td role="cell" data-label="Nexal">{row.nexal}</td><td role="cell" data-label={comparison.competitor}>{row.other}</td></tr>)}</tbody>
+      </table>
+    </div>
+    <p className="seo-compare-note">Checked on <time dateTime={comparison.checked}>{checked}</time> against the Nexal app and {comparison.competitor}&apos;s public pages ({comparison.sources.map((source, index) => <span key={source.href}>{index > 0 && ', '}<a href={source.href} rel="nofollow noopener" target="_blank">{source.label}</a></span>)}). Features, prices and free allowances change and can vary by region, so check each app&apos;s current Google Play listing before you subscribe. {comparison.competitor} is a trademark of its owner; Nexal is not affiliated with or endorsed by it.</p>
+  </section>;
+}
 
 const previews: Record<string, { label: string; heading: string; rows: { day: string; type: string; name: string; detail: string }[] }> = {
   ai_workout_planner: { label: 'YOUR TRAINING WEEK', heading: 'A plan that fits your life.', rows: [
@@ -34,7 +71,7 @@ const previews: Record<string, { label: string; heading: string; rows: { day: st
   ] },
 };
 
-const featureDetails: Record<string, { heading: string; intro: string; points: { title: string; text: string }[] }> = {
+const featureDetails: Record<string, FeatureDetail> = {
   ai_workout_planner: {
     heading: 'AI workout planner and tracker in one Android app',
     intro: 'A generated plan gives you direction. A workout tracker shows what you actually completed. Nexal combines both, so your training history stays connected to your next session.',
@@ -73,19 +110,22 @@ function SeoShowcase({ slug }: { slug: string }) {
   </div>;
 }
 
-export default function SeoLanding({ slug, kicker, title, intro, sectionTitle, benefits, sections, faqs }: Props) {
+export default function SeoLanding({ page, slug, kicker, title, intro, sectionTitle, benefits, sections, faqs, preview, feature, comparison, guideTopic }: Props) {
+  const detail = feature ?? featureDetails[slug];
+  const topic = guideTopic ?? (slug === 'ai_workout_planner' ? 'WORKOUT PLANNING' : slug === 'workout_meal_planner_app' ? 'CHOOSING AN APP' : 'NUTRITION TRACKING');
   return <main className="seo-page" id="top">
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }} />
-    <nav className="nav shell"><Link href="/" className="brand" aria-label="Nexal home"><BrandMark /></Link><div className="nav-links"><Link href="/">Home</Link><a href="#benefits">Benefits</a><a href="#details">Details</a><a href="#faq">Questions</a></div><PlayButton compact placement={`${slug}_nav`} /></nav>
-    <header className="seo-hero shell"><div className="seo-hero-copy"><span className="eyebrow">{kicker}</span><h1>{title}</h1><p>{intro}</p><div className="hero-actions"><PlayButton placement={`${slug}_hero`} /><a className="text-link" href="#benefits">Explore the benefits <span>↓</span></a></div><div className="trust-row"><p>Free core tracking. Premium AI planning. Available on Android.</p></div></div><SeoShowcase slug={slug} /></header>
+    <JsonLd data={landingGraph(page.path, page.title, page.description, faqs.map(faq => ({ question: faq.q, answer: faq.a })))} />
+    <nav className="nav shell"><Link href="/" className="brand" aria-label="Nexal home"><BrandMark /></Link><div className="nav-links"><Link href="/">Home</Link><a href="#benefits">Benefits</a>{comparison ? <a href="#comparison">Compare</a> : <a href="#details">Details</a>}<a href="#faq">Questions</a></div><PlayButton compact placement={`${slug}_nav`} /></nav>
+    <header className="seo-hero shell"><div className="seo-hero-copy"><span className="eyebrow">{kicker}</span><h1>{title}</h1><p>{intro}</p><div className="hero-actions"><PlayButton placement={`${slug}_hero`} /><a className="text-link" href="#benefits">Explore the benefits <span>↓</span></a></div><div className="trust-row"><p>Free core tracking. Premium AI planning. Available on Android.</p></div></div>{preview ? <InteractivePreview config={preview} /> : <SeoShowcase slug={slug} />}</header>
     <div className="signal-strip" role="region" aria-label="Nexal benefits"><div className="shell"><span>◆ PERSONALIZED DAILY TARGETS</span><span>◆ AI-POWERED PLANS</span><span>◆ MEANINGFUL PROGRESS</span></div></div>
     <section className="seo-benefits shell" id="benefits"><div className="section-heading"><div><span className="section-kicker">BUILT AROUND YOUR ROUTINE</span><h2>{sectionTitle}</h2></div><p>Helpful tools for your daily fitness and nutrition decisions, all in one Android app.</p></div><div className="seo-benefit-grid">{benefits.map((benefit, index) => <article className={`seo-benefit-card seo-benefit-${index + 1}`} key={benefit.title}><span className="card-number">0{index + 1}</span><div className="seo-benefit-icon" aria-hidden="true">{index === 0 ? '◎' : index === 1 ? '✦' : '↗'}</div><h3>{benefit.title}</h3><p>{benefit.text}</p><div className="seo-benefit-meter" aria-hidden="true"><i /></div></article>)}</div></section>
-    {featureDetails[slug] && <section className="seo-feature-details shell"><div className="seo-feature-intro"><span className="section-kicker">WHAT YOU CAN ACTUALLY DO</span><h2>{featureDetails[slug].heading}</h2><p>{featureDetails[slug].intro}</p></div><div className="seo-feature-steps">{featureDetails[slug].points.map((point, index) => <article key={point.title}><span>0{index + 1}</span><h3>{point.title}</h3><p>{point.text}</p></article>)}</div><div className="seo-feature-action"><PlayButton placement={`${slug}_feature_details`} /></div></section>}
+    {detail && <section className="seo-feature-details shell"><div className="seo-feature-intro"><span className="section-kicker">WHAT YOU CAN ACTUALLY DO</span><h2>{detail.heading}</h2><p>{detail.intro}</p></div><div className="seo-feature-steps">{detail.points.map((point, index) => <article key={point.title}><span>0{index + 1}</span><h3>{point.title}</h3><p>{point.text}</p></article>)}</div><div className="seo-feature-action"><PlayButton placement={`${slug}_feature_details`} /></div></section>}
+    {comparison && <ComparisonTable comparison={comparison} />}
     <section className="seo-details" id="details"><div className="shell seo-details-grid"><div className="seo-details-copy"><span className="section-kicker light">PLAN. TRACK. PROGRESS.</span><h2>A clearer way to<br /><em>keep moving.</em></h2><p>Your plan and the actions you take belong together. Keep the details visible without losing sight of the bigger picture.</p><PlayButton placement={`${slug}_details`} /></div><div className="seo-detail-panel"><div className="seo-detail-panel-head"><span>ILLUSTRATIVE APP OVERVIEW</span><strong>Your momentum</strong></div><div className="seo-detail-chart" role="img" aria-label="Illustrative weekly progress chart"><div className="seo-detail-grid"/><div className="seo-detail-bars">{[42, 57, 48, 71, 64, 83, 92].map((height,index)=><i key={index} style={{height:`${height}%`}} />)}</div></div><div className="seo-detail-labels"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div><div className="seo-detail-caption"><span>Training</span><span>Nutrition</span><span>Progress</span></div></div></div></section>
     <section className="seo-copy shell"><span className="section-kicker">THE DETAILS</span><div className="seo-copy-grid">{sections.map((section, index) => <article key={section.title}><span className="seo-copy-number">0{index + 1}</span><h3>{section.title}</h3><p>{section.text}</p></article>)}</div></section>
     <section className="faq-section seo-faq shell" id="faq"><div><span className="section-kicker">THE DETAILS</span><h2>Nexal app<br /><em>questions.</em></h2></div><div className="faq-list">{faqs.map((faq, index) => <details key={faq.q} open={index === 0}><summary>{faq.q}<span>+</span></summary><p>{faq.a}</p></details>)}</div></section>
-    <section className="final-cta seo-final"><div className="shell"><BrandMark /><h2>Build a routine<br />you can <em>follow.</em></h2><p>Start with free tracking. Unlock AI planning when you are ready.</p><PlayButton placement={`${slug}_bottom`} /><div className="seo-links"><Link href="/ai-workout-planner">AI workout planner</Link><Link href="/ai-meal-planner">AI meal planner</Link><Link href="/workout-meal-planner-app">Workout and meal planner</Link><Link href="/calorie-macro-tracker">Calorie and macro tracker</Link></div></div></section>
-    <section className="home-guides shell" aria-labelledby="related-guides-heading"><span className="section-kicker">PUT THE DETAILS INTO PRACTICE</span><h2 id="related-guides-heading">Workout and nutrition guides</h2><GuideCards category={slug === 'ai_workout_planner' ? 'WORKOUT PLANNING' : slug === 'workout_meal_planner_app' ? 'CHOOSING AN APP' : 'NUTRITION TRACKING'} /><Link className="text-link" href="/guides">Explore all guides →</Link></section>
+    <section className="final-cta seo-final"><div className="shell"><BrandMark lazy /><h2>Build a routine<br />you can <em>follow.</em></h2><p>Start with free tracking. Unlock AI planning when you are ready.</p><PlayButton placement={`${slug}_bottom`} /><nav className="seo-links" aria-label="Nexal app features">{productLinks.filter(link => link.href !== page.path).map(link => <Link key={link.href} href={link.href}>{link.short}</Link>)}</nav></div></section>
+    <section className="home-guides shell" aria-labelledby="related-guides-heading"><span className="section-kicker">PUT THE DETAILS INTO PRACTICE</span><h2 id="related-guides-heading">Workout and nutrition guides</h2><GuideCards category={topic} /><Link className="text-link" href="/guides">Explore all guides →</Link></section>
     <SiteFooter />
   </main>;
 }

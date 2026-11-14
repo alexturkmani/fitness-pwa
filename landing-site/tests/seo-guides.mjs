@@ -25,7 +25,7 @@ for (const slug of slugs) {
   assert.ok(document.includes(`rel="canonical" href="${canonicalBase}${path}"`), `${path}: canonical`);
   const blocks = [...document.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].map(match => JSON.parse(match[1]));
   const graph = blocks.find(block => block['@graph'])?.['@graph'];
-  assert.ok(graph?.some(block => block['@type'] === 'Article' && block.mainEntityOfPage === `${canonicalBase}${path}`), `${path}: article schema`);
+  assert.ok(graph?.some(block => [block['@type']].flat().includes('Article') && block.mainEntityOfPage === `${canonicalBase}${path}`), `${path}: article schema`);
   assert.ok(graph?.some(block => block['@type'] === 'BreadcrumbList'), `${path}: breadcrumbs`);
   const playLinks = [...document.matchAll(/href="(https:\/\/play.google.com\/store\/apps\/details[^" ]*)"/g)];
   assert.ok(playLinks.length >= 2, `${path}: Play CTAs`);

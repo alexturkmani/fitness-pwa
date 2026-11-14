@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   title: { default: 'AI Workout & Meal Planner App for Android | Nexal', template: '%s | Nexal' },
   description: 'Create personalised AI workout and meal plans, track calories and macros, and follow your progress in one Android fitness app. Download Nexal today.',
   applicationName: 'Nexal',
-  alternates: { canonical: '/' },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 } },
   icons: { icon: '/nexal-logo.png', apple: '/nexal-logo.png' },
   openGraph: {
@@ -16,8 +15,8 @@ export const metadata: Metadata = {
     description: 'Personalised AI workout and meal plans, calorie and macro tracking, and progress insights in one Android app.',
     type: 'website',
     images: [{ url: '/og.png', width: 1731, height: 909, alt: 'Nexal Android fitness app with workout, meal and progress screens' }],
-    url: '/',
     siteName: 'Nexal',
+    locale: 'en_US',
   },
   twitter: {
     card: 'summary_large_image',
