@@ -52,3 +52,11 @@ preview-shots/
 /website/
 .gradle-user-home/
 /.gradle/
+
+# Marketing website: its own repo (alexturkmani/nexal-website)
+/landing-site/
+
+# Local notes, drafts and screenshots (not app source)
+/reports/
+/research_notes/
+/android/nexal-redesign-preview.jpg
